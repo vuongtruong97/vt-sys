@@ -1,8 +1,8 @@
 FROM node:20-bookworm-slim AS build
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
-COPY package.json package-lock.json* ./
-RUN npm install --no-audit --no-fund
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
 COPY prisma ./prisma
 COPY tsconfig.json ./
 COPY src ./src
@@ -17,5 +17,6 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
 COPY package.json ./
 EXPOSE 3001
-# db push đồng bộ schema (giai đoạn 1); khi có dữ liệu thật nên chuyển sang prisma migrate.
-CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/seed.js && node dist/main.js"]
+# Áp các migration trong prisma/migrations trước khi chạy.
+# DB cũ đã tạo bằng db push: chạy một lần `npx prisma migrate resolve --applied 0_init`.
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/seed.js && node dist/main.js"]

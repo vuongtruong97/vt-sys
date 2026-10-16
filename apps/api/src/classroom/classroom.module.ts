@@ -25,6 +25,7 @@ import { AuthGuard, AuthUser, CurrentUser } from '../auth/auth.guard';
 import { config } from '../common/config';
 import { PrismaService } from '../common/prisma.service';
 import { LivekitService, RoomRole } from './livekit.service';
+import { RecordingService } from './recording.service';
 
 class IdentityDto {
   @IsString() identity: string;
@@ -77,7 +78,12 @@ export class ClassroomService {
 @Controller('sessions')
 @UseGuards(AuthGuard)
 export class ClassroomController {
-  constructor(private svc: ClassroomService, private lk: LivekitService, private prisma: PrismaService) {}
+  constructor(
+    private svc: ClassroomService,
+    private lk: LivekitService,
+    private prisma: PrismaService,
+    private recordings: RecordingService,
+  ) {}
 
   @Get(':id')
   async info(@CurrentUser() user: AuthUser, @Param('id') id: string) {
@@ -226,6 +232,8 @@ export class ClassroomController {
   async end(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     const s = await this.svc.requireTeacher(user, id);
     await this.prisma.classSession.update({ where: { id }, data: { status: 'ENDED' } });
+    // Dừng ghi hình trước khi đóng phòng để egress kịp ghi xong file.
+    if (await this.recordings.active(id)) await this.recordings.stop(s).catch(() => {});
     try {
       await this.lk.rooms.deleteRoom(s.roomName);
     } catch {
@@ -285,7 +293,7 @@ export class ClassroomController {
 export class WebhookController {
   private log = new Logger('Webhook');
   private receiver = new WebhookReceiver(config.livekit.apiKey, config.livekit.apiSecret);
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private recordings: RecordingService) {}
 
   @Post('livekit')
   @HttpCode(200)
@@ -297,6 +305,12 @@ export class WebhookController {
     } catch {
       throw new UnauthorizedException('Chữ ký webhook không hợp lệ');
     }
+    if (event.egressInfo && event.event.startsWith('egress_')) {
+      await this.recordings.onEgress(event.egressInfo);
+      this.log.debug(`${event.event} ${event.egressInfo.egressId}`);
+      return { ok: true };
+    }
+
     const roomName = event.room?.name;
     if (!roomName) return { ok: true };
     const session = await this.prisma.classSession.findUnique({ where: { roomName } });
@@ -334,7 +348,7 @@ export class WebhookController {
 
 @Module({
   controllers: [ClassroomController, WebhookController],
-  providers: [ClassroomService, LivekitService],
-  exports: [ClassroomService, LivekitService],
+  providers: [ClassroomService, LivekitService, RecordingService],
+  exports: [ClassroomService, LivekitService, RecordingService],
 })
 export class ClassroomModule {}

@@ -11,6 +11,9 @@ rtc:
   # Trên VPS: xoá node_ip và bật use_external_ip: true.
   node_ip: 127.0.0.1
   use_external_ip: false
+# Cần cho ghi hình: LiveKit giao việc cho dịch vụ egress qua Redis.
+redis:
+  address: redis:6379
 room:
   empty_timeout: 900
   max_participants: 60

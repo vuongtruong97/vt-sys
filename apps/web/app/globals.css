@@ -147,6 +147,11 @@ td.num { font-variant-numeric: tabular-nums; }
 
 .toast { position: fixed; left: 50%; top: 72px; transform: translateX(-50%); background: var(--on-room); color: var(--room); padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 500; z-index: 50; box-shadow: 0 6px 24px #0006; max-width: calc(100% - 32px); }
 
+/* Ghi hình */
+.pill.rec { background: color-mix(in srgb, var(--danger) 30%, var(--room-2)); color: var(--on-room); font-weight: 600; }
+.cb.rec-on { background: var(--danger); color: #fff; }
+.side-head { flex-wrap: wrap; }
+
 /* Câu hỏi nhanh */
 .quiz-form { display: grid; gap: 8px; }
 .quiz-form textarea, .quiz-opt input:not([type]) { background: var(--tile); border: 1px solid var(--room-line); color: var(--on-room); border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 14px; width: 100%; resize: vertical; }

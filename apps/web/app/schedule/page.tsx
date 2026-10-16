@@ -75,7 +75,10 @@ export default function SchedulePage() {
                 <div key={s.id} className="item">
                   <div className="when"><b>{fmtTime(s.startsAt)}</b><span>{fmtDay(s.startsAt)}</span></div>
                   <div className="info"><span className="t">{s.course.title} · {s.title}</span></div>
-                  {teacher ? <Link className="btn ghost sm" href={`/teach/sessions/${s.id}`}>Điểm danh</Link> : <span />}
+                  <div className="row" style={{ gap: 6 }}>
+                    {s.status !== 'CANCELLED' && <Link className="btn ghost sm" href={`/sessions/${s.id}`}>Xem lại</Link>}
+                    {teacher && <Link className="btn ghost sm" href={`/teach/sessions/${s.id}`}>Điểm danh</Link>}
+                  </div>
                 </div>
               ))}
             </div>

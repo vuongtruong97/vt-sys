@@ -38,6 +38,7 @@ model User {
   joinRequests JoinRequest[]
   chatMessages ChatMessage[]
   quizAnswers  QuizAnswer[]
+  reminders    Reminder[]
 
   @@map("users")
 }
@@ -52,6 +53,7 @@ model Course {
   createdAt   DateTime       @default(now())
   sessions    ClassSession[]
   enrollments Enrollment[]
+  materials   Material[]
 
   @@map("courses")
 }
@@ -84,6 +86,9 @@ model ClassSession {
   whiteboard        Whiteboard?
   chatMessages      ChatMessage[]
   quizzes           Quiz[]
+  recordings        Recording[]
+  materials         Material[]
+  reminders         Reminder[]
 
   @@index([startsAt])
   @@map("sessions")
@@ -169,4 +174,65 @@ model QuizAnswer {
 
   @@unique([quizId, userId])
   @@map("quiz_answers")
+}
+
+enum RecordingStatus {
+  STARTING
+  RECORDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+/// Bản ghi hình một buổi học (LiveKit Egress, file MP4 trên S3/R2).
+model Recording {
+  id          String          @id @default(cuid())
+  sessionId   String
+  egressId    String          @unique
+  status      RecordingStatus @default(STARTING)
+  /// Đường dẫn file trong bucket.
+  key         String
+  durationSec Int?
+  sizeBytes   BigInt?
+  error       String?
+  startedAt   DateTime        @default(now())
+  endedAt     DateTime?
+  session     ClassSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("recordings")
+}
+
+/// Tài liệu giáo viên tải lên cho khoá học, có thể gắn với một buổi cụ thể.
+model Material {
+  id          String        @id @default(cuid())
+  courseId    String
+  sessionId   String?
+  name        String
+  key         String        @unique
+  contentType String
+  sizeBytes   Int
+  createdAt   DateTime      @default(now())
+  course      Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  session     ClassSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([courseId])
+  @@index([sessionId])
+  @@map("materials")
+}
+
+/// Nhắc lịch đã gửi; khoá theo giờ bắt đầu nên đổi giờ buổi học thì nhắc lại.
+model Reminder {
+  id        String       @id @default(cuid())
+  sessionId String
+  userId    String
+  /// "60": trước khoảng một giờ, "10": sắp vào lớp.
+  kind      String
+  startsAt  DateTime
+  sentAt    DateTime     @default(now())
+  session   ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId, kind, startsAt])
+  @@map("reminders")
 }

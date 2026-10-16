@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { AccessToken, DataPacket_Kind, RoomServiceClient, TrackSource, VideoGrant } from 'livekit-server-sdk';
 import { config } from '../common/config';
 
-export type RoomMeta = { board: boolean; allowStudentShare: boolean };
+export type RoomMeta = { board: boolean; allowStudentShare: boolean; recording?: boolean };
 export type RoomRole = 'teacher' | 'student';
 
 const STUDENT_SOURCES = [TrackSource.CAMERA, TrackSource.MICROPHONE];

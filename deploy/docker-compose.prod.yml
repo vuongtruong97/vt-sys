@@ -19,9 +19,33 @@ services:
       timeout: 3s
       retries: 20
 
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+
+  # Ghi hình. Egress dùng nhiều CPU (khoảng 2–4 nhân cho một bản ghi 720p).
+  egress:
+    image: livekit/egress:v1.8.6
+    restart: unless-stopped
+    depends_on:
+      - redis
+      - livekit
+    cap_add:
+      - SYS_ADMIN
+    environment:
+      EGRESS_CONFIG_BODY: |
+        api_key: ${LIVEKIT_API_KEY}
+        api_secret: ${LIVEKIT_API_SECRET}
+        ws_url: ws://livekit:7880
+        redis:
+          address: redis:6379
+        log_level: info
+
   livekit:
     image: livekit/livekit-server:v1.8.0
     restart: unless-stopped
+    depends_on:
+      - redis
     command: --config /etc/livekit.yaml
     environment:
       LIVEKIT_KEYS: "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
@@ -51,6 +75,14 @@ services:
       SEED_TEACHER_NAME: ${SEED_TEACHER_NAME}
       SEED_DEMO: "false"
       COOKIE_SECURE: "true"
+      S3_BUCKET: ${S3_BUCKET}
+      S3_ENDPOINT: ${S3_ENDPOINT}
+      S3_REGION: ${S3_REGION:-auto}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      APP_URL: https://${DOMAIN}
       TZ: Asia/Ho_Chi_Minh
 
   whiteboard:

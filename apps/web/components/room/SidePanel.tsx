@@ -1,6 +1,7 @@
 'use client';
 import { Participant } from 'livekit-client';
 import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { Materials } from '@/components/Materials';
 import { api } from '@/lib/api';
 import type { useQuizzes, useRoomChat } from './interaction';
 import { QuizPanel } from './Quiz';
@@ -20,6 +21,7 @@ export function SidePanel(props: {
   chat: ReturnType<typeof useRoomChat>;
   quiz: ReturnType<typeof useQuizzes>;
   teacherId: string | undefined;
+  courseId: string;
 }) {
   const { panel, setPanel, isTeacher } = props;
   return (
@@ -32,10 +34,15 @@ export function SidePanel(props: {
         {isTeacher && (
           <button className="tab" aria-pressed={panel === 'quiz'} onClick={() => setPanel('quiz')}>Câu hỏi</button>
         )}
+        <button className="tab" aria-pressed={panel === 'files'} onClick={() => setPanel('files')}>Tài liệu</button>
         <button className="tab x" aria-label="Đóng" onClick={() => setPanel(null)}>✕</button>
       </div>
       {panel === 'chat' ? (
         <ChatPanel chat={props.chat} teacherId={props.teacherId} say={props.say} />
+      ) : panel === 'files' ? (
+        <div className="side-body">
+          <Materials courseId={props.courseId} sessionId={props.sessionId} canEdit={isTeacher} room onMessage={props.say} />
+        </div>
       ) : panel === 'quiz' && isTeacher ? (
         <QuizPanel quiz={props.quiz} say={props.say} />
       ) : (

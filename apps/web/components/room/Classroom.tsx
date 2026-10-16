@@ -51,6 +51,7 @@ function useClock(endsAt: string) {
 export function Classroom(props: {
   sessionId: string;
   title: string;
+  courseId: string;
   courseTitle: string;
   endsAt: string;
   role: 'teacher' | 'student';
@@ -140,6 +141,25 @@ export function Classroom(props: {
   const myHand = handUp(localParticipant);
   const canShare = isTeacher || meta.allowStudentShare;
 
+  // Nút ghi hình chỉ hiện khi API đã cấu hình nơi lưu trữ.
+  const [canRecord, setCanRecord] = useState(false);
+  const [recBusy, setRecBusy] = useState(false);
+  useEffect(() => {
+    if (isTeacher) api<{ storage: boolean }>('/features').then((f) => setCanRecord(f.storage)).catch(() => {});
+  }, [isTeacher]);
+  const toggleRecording = async () => {
+    if (!meta.recording && !window.confirm('Bắt đầu ghi hình? Mọi người trong lớp sẽ thấy biểu tượng đang ghi.')) return;
+    setRecBusy(true);
+    try {
+      await api(`/sessions/${sessionId}/recording/${meta.recording ? 'stop' : 'start'}`, { method: 'POST' });
+      say(meta.recording ? 'Đã dừng ghi hình, bản ghi sẽ có trong vài phút' : 'Đang ghi hình');
+    } catch (e) {
+      say((e as Error).message);
+    } finally {
+      setRecBusy(false);
+    }
+  };
+
   const toggleBoard = async () => {
     try {
       await api(`/sessions/${sessionId}/mod/board`, { json: { open: !meta.board } });
@@ -164,6 +184,7 @@ export function Classroom(props: {
           <div className="sub">{participants.length} người trong lớp{isTeacher ? ' · bạn là giáo viên' : ''}</div>
         </div>
         <span className="grow" />
+        {meta.recording && <span className="pill rec" role="status">● Đang ghi hình</span>}
         {hands.length > 0 && (
           <button className="pill hand" style={{ border: 0 }} onClick={() => setPanel('people')}>
             ✋ {hands.length} người giơ tay
@@ -202,6 +223,7 @@ export function Classroom(props: {
             chat={chat}
             quiz={quiz}
             teacherId={teacherId}
+            courseId={props.courseId}
           />
         )}
         {!isTeacher && <QuizCard quiz={quiz} say={say} />}
@@ -232,6 +254,11 @@ export function Classroom(props: {
             <span className="label">{meta.board ? 'Đóng bảng trắng' : 'Bảng trắng'}</span>
           </button>
         )}
+        {isTeacher && canRecord && (
+          <button className={`cb${meta.recording ? ' rec-on' : ''}`} disabled={recBusy} onClick={toggleRecording}>
+            ● <span className="label">{meta.recording ? 'Dừng ghi hình' : 'Ghi hình'}</span>
+          </button>
+        )}
         {!isTeacher && (
           <button
             className={`cb${myHand ? ' hand-on' : ''}`}
@@ -253,6 +280,9 @@ export function Classroom(props: {
             {quiz.open && <span className="badge">{quiz.open.total ?? 0}</span>}
           </button>
         )}
+        <button className="cb" aria-pressed={panel === 'files'} onClick={() => setPanel(panel === 'files' ? null : 'files')}>
+          <span className="label">Tài liệu</span>
+        </button>
         <button className="cb" aria-pressed={panel === 'people'} onClick={() => setPanel(panel === 'people' ? null : 'people')}>
           <span className="label">Học viên</span>
           {isTeacher && hands.length > 0 && <span className="badge">{hands.length}</span>}

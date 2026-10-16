@@ -12,7 +12,7 @@ Thư mục này là nơi bắt đầu cho bất kỳ ai nhận tiếp dự án, 
 
 ## Tóm tắt trong 30 giây
 
-- **Sản phẩm:** website dạy học trực tuyến cho một giáo viên. Có lớp video nhiều người, chia sẻ màn hình, chat, giơ tay, bảng trắng chung, phòng chờ duyệt và điểm danh tự động.
+- **Sản phẩm:** website dạy học trực tuyến cho một giáo viên. Có lớp video nhiều người, chia sẻ màn hình, chat lưu lại, giơ tay, câu hỏi nhanh, bảng trắng chung, phòng chờ duyệt, điểm danh tự động, ghi hình và xem lại, tài liệu theo buổi, email nhắc lịch.
 - **Công nghệ:**
   - Next.js 14 (web)
   - NestJS 10 + Prisma 5 + PostgreSQL 16 (API)

@@ -50,8 +50,12 @@ Nguyên tắc chính:
 | Auth | `src/auth/auth.module.ts`, `auth.guard.ts` | Đăng ký, đăng nhập, JWT 7 ngày trong cookie `bd_session`. Có `AuthGuard`, `TeacherGuard` và decorator `@CurrentUser()` |
 | Courses | `src/courses/courses.module.ts` | Khoá học, thêm/xoá học viên bằng email, tạo và huỷ buổi học, lịch học (`/schedule`) |
 | Classroom | `src/classroom/classroom.module.ts` | Vào lớp, phòng chờ, quyền giáo viên, token bảng trắng, điểm danh, webhook LiveKit |
-| LiveKit | `src/classroom/livekit.service.ts` | Ký token; gọi RoomService để tạo phòng, đổi metadata, tắt mic, mời ra, đổi quyền |
-| Common | `src/common/config.ts`, `prisma.service.ts` | Đọc biến môi trường (thiếu là dừng ngay), kết nối Prisma |
+| LiveKit | `src/classroom/livekit.service.ts` | Ký token; gọi RoomService để tạo phòng, đổi metadata, tắt mic, mời ra, đổi quyền, phát tin dữ liệu xuống phòng (`broadcast`) |
+| Interaction | `src/classroom/interaction.module.ts` | Chat lưu DB rồi phát xuống phòng (chủ đề `chat`); câu hỏi nhanh (chủ đề `quiz`) |
+| Ghi hình | `src/classroom/recording.service.ts` | Bắt đầu/dừng LiveKit Egress, cập nhật trạng thái từ webhook `egress_*` |
+| Media | `src/classroom/media.module.ts` | API ghi hình, danh sách bản ghi, tải lên và mở tài liệu (link ký có hạn) |
+| Nhắc lịch | `src/notifications/reminder.module.ts` | Quét mỗi phút, gửi email nhắc lịch qua Resend |
+| Common | `src/common/config.ts`, `prisma.service.ts`, `storage.service.ts` | Đọc biến môi trường (thiếu là dừng ngay), kết nối Prisma, lưu file lên S3/R2 |
 | Seed | `src/seed.ts` | Tạo tài khoản giáo viên; `SEED_DEMO=true` thì thêm dữ liệu mẫu |
 
 ### apps/web (Next.js 14 App Router)
@@ -64,12 +68,17 @@ Nguyên tắc chính:
 | `/teach` | `app/teach/page.tsx` | Giáo viên: danh sách khoá học, tạo khoá |
 | `/teach/courses/[id]` | `app/teach/courses/[id]/page.tsx` | Buổi học, thêm học viên, công khai khoá |
 | `/teach/sessions/[id]` | `app/teach/sessions/[id]/page.tsx` | Bảng điểm danh |
+| `/sessions/[id]` | `app/sessions/[id]/page.tsx` | Xem lại buổi học: bản ghi hình và tài liệu (giáo viên và học viên) |
 | `/room/[id]` | `app/room/[id]/page.tsx` | Phòng kiểm tra thiết bị (PreJoin), phòng chờ, phòng học |
+
+`components/Materials.tsx` và `components/Recordings.tsx` dùng chung cho trang khoá học, trang xem lại và phòng học.
 
 Phòng học nằm trong `components/room/`:
 
-- `Classroom.tsx`: bố cục sân khấu (lưới video, màn hình chia sẻ, bảng trắng), thanh điều khiển, giơ tay, nhận tin điều khiển từ giáo viên.
-- `SidePanel.tsx`: tab Trò chuyện (`useChat`) và tab Học viên (phòng chờ, tắt mic, mời ra, cho chia sẻ màn hình, mời phát biểu).
+- `Classroom.tsx`: bố cục sân khấu (lưới video, màn hình chia sẻ, bảng trắng), thanh điều khiển, giơ tay, ghi hình, nhận tin điều khiển từ giáo viên.
+- `SidePanel.tsx`: tab Trò chuyện, tab Học viên (phòng chờ, tắt mic, mời ra, cho chia sẻ màn hình, mời phát biểu), tab Câu hỏi (giáo viên) và tab Tài liệu.
+- `interaction.ts`: hook `useRoomChat` (lịch sử từ API + tin mới qua chủ đề `chat`, đếm chưa đọc) và `useQuizzes`.
+- `Quiz.tsx`: tab Câu hỏi của giáo viên và thẻ trả lời nổi của học viên.
 - `Whiteboard.tsx`: canvas vẽ phấn, đồng bộ qua Yjs. Bảng có kích thước logic 1600×900, mỗi máy co giãn cho vừa khung.
 - `shared.ts`: kiểu dữ liệu chung, đọc vai trò và trạng thái giơ tay của người tham gia.
 
@@ -79,7 +88,13 @@ Phòng học nằm trong `components/room/`:
 
 ### LiveKit Server 1.8
 
-Image chính thức `livekit/livekit-server`. Khoá API truyền qua biến `LIVEKIT_KEYS`. Webhook gửi về `http://api:3001/webhooks/livekit`.
+Image chính thức `livekit/livekit-server`. Khoá API truyền qua biến `LIVEKIT_KEYS`. Webhook gửi về `http://api:3001/webhooks/livekit`. LiveKit dùng Redis để giao việc ghi hình cho dịch vụ `egress`.
+
+### Egress, Redis, S3
+
+- `livekit/egress` mở phòng bằng Chrome không giao diện, ghép video (bố cục `speaker`) và tải MP4 thẳng lên bucket.
+- Trên máy, dịch vụ `s3` là RustFS (tương thích MinIO); `s3-init` tạo bucket. Trên VPS dùng Cloudflare R2 hoặc S3 thật.
+- Bucket không công khai: API ký link tải có hạn (`StorageService.downloadUrl`). Tài liệu tải lên đi qua API (multipart), nên không cần cấu hình CORS cho bucket.
 
 ## Mô hình dữ liệu (`apps/api/prisma/schema.prisma`)
 
@@ -92,6 +107,11 @@ Image chính thức `livekit/livekit-server`. Khoá API truyền qua biến `LIV
 | `attendance` | Mỗi lần vào/ra phòng | ghi từ webhook `participant_joined` / `participant_left` |
 | `join_requests` | Xin vào lớp khi chưa có trong danh sách | PENDING, APPROVED, DENIED |
 | `whiteboards` | Trạng thái Yjs của bảng | cột snake_case vì máy chủ bảng trắng dùng SQL trực tiếp |
+| `chat_messages` | Tin nhắn trong buổi | API trả 200 tin gần nhất khi vào phòng |
+| `quizzes`, `quiz_answers` | Câu hỏi nhanh và câu trả lời | `correct` null là câu thăm dò; mỗi học viên một câu trả lời, đổi được tới khi đóng |
+| `recordings` | Bản ghi hình | `egressId` duy nhất; STARTING → RECORDING → PROCESSING → READY hoặc FAILED |
+| `materials` | Tài liệu | `sessionId` null là tài liệu chung của khoá |
+| `reminders` | Nhắc lịch đã gửi | khoá duy nhất (sessionId, userId, kind, startsAt): đổi giờ buổi học thì nhắc lại |
 
 ## Phân quyền trong phòng học
 
@@ -107,6 +127,8 @@ Image chính thức `livekit/livekit-server`. Khoá API truyền qua biến `LIV
 | Tắt mic | API gọi `mutePublishedTrack` trên track micro |
 | Mời ra | API gọi `removeParticipant` và đổi yêu cầu vào lớp (nếu có) sang DENIED |
 | Giờ vào lớp | Học viên vào được từ 10 phút trước giờ học đến 30 phút sau giờ kết thúc (`config.ts`). Giáo viên vào lúc nào cũng được |
+| Chat, câu hỏi nhanh | Gửi qua API (kiểm tra quyền, lưu DB), API phát xuống phòng bằng `sendData`. Kết quả câu hỏi đang mở chỉ gửi riêng cho giáo viên; đáp án đúng chỉ lộ khi đóng câu |
+| Đang ghi hình | Metadata phòng `{"recording":true}`; mọi người thấy biểu tượng ● Đang ghi hình |
 
 ## Luồng chính
 
@@ -120,7 +142,7 @@ Image chính thức `livekit/livekit-server`. Khoá API truyền qua biến `LIV
 
 ### Kết thúc buổi
 
-Giáo viên bấm "Kết thúc buổi học" thì gọi `POST /sessions/:id/end`: chuyển status sang ENDED và `deleteRoom`. Mọi người bị ngắt kết nối với lý do `ROOM_DELETED`. Webhook `room_finished` đóng các dòng điểm danh còn mở.
+Giáo viên bấm "Kết thúc buổi học" thì gọi `POST /sessions/:id/end`: chuyển status sang ENDED, dừng ghi hình nếu đang ghi, rồi `deleteRoom`. Mọi người bị ngắt kết nối với lý do `ROOM_DELETED`. Webhook `room_finished` đóng các dòng điểm danh còn mở.
 
 ### Bảng trắng
 
@@ -149,6 +171,17 @@ Giáo viên bật bảng thì metadata phòng `board=true`. Mỗi máy lấy tok
 | POST | `/sessions/:id/mod/allow-share` `{allow}`, `/mod/board` `{open}` | giáo viên |
 | POST | `/sessions/:id/end` | giáo viên |
 | GET | `/sessions/:id/attendance` | giáo viên |
+| GET, POST | `/sessions/:id/chat` `{text}` | trong lớp |
+| GET, POST | `/sessions/:id/quizzes` `{question, options[], correct?}` | xem: trong lớp; tạo: giáo viên |
+| POST | `/sessions/:id/quizzes/:quizId/answer` `{choice}` | học viên trong lớp |
+| POST | `/sessions/:id/quizzes/:quizId/close` | giáo viên |
+| POST | `/sessions/:id/recording/start`, `/recording/stop` | giáo viên, khi lớp đang diễn ra |
+| GET | `/sessions/:id/recordings` | giáo viên (mọi bản), học viên đã đăng ký (bản READY) |
+| GET | `/recordings/:id/url`; DELETE `/recordings/:id` | xem: thành viên khoá; xoá: giáo viên |
+| GET | `/courses/:id/materials?sessionId=` | thành viên khoá |
+| POST | `/courses/:id/materials` (multipart `file`, `sessionId?`) | giáo viên của khoá |
+| GET | `/materials/:id/url`; DELETE `/materials/:id` | xem: thành viên khoá; xoá: giáo viên |
+| GET | `/features` | đã đăng nhập (`{storage}`: đã cấu hình lưu trữ chưa) |
 | POST | `/webhooks/livekit` | LiveKit (kiểm tra chữ ký) |
 | GET | `/health` | kiểm tra sống |
 

@@ -8,7 +8,7 @@ Bảng Đen: website dạy học trực tuyến cho một giáo viên (video nhi
 
 ## Cấu trúc
 
-- `apps/api`: NestJS 10 + Prisma 5 + `livekit-server-sdk` ~2.7. Biên dịch bằng `tsc` (không dùng nest-cli). Mỗi module nằm gọn trong một file `*.module.ts` gồm DTO, service và controller.
+- `apps/api`: NestJS 10 + Prisma 5 + `livekit-server-sdk` ~2.7. Biên dịch bằng `tsc` (không dùng nest-cli). Mỗi module nằm gọn trong một file `*.module.ts` gồm DTO, service và controller. Cần Node 22.12+ (SDK chỉ có ESM, API là CommonJS).
 - `apps/web`: Next.js 14 App Router, toàn bộ trang là client component, gọi API qua `lib/api.ts` (`/api/*` rewrite sang API). Phòng học dùng `@livekit/components-react` ~2.6.
 - `apps/whiteboard`: Hocuspocus 2 (JavaScript ESM), lưu Yjs vào bảng `whiteboards`.
 - `deploy/`: compose, Caddy, LiveKit cho VPS. `docker-compose.yml` ở gốc dùng để chạy trên máy.
@@ -17,7 +17,7 @@ Bảng Đen: website dạy học trực tuyến cho một giáo viên (video nhi
 
 ```bash
 docker compose up --build                                  # chạy toàn bộ trên máy
-cd apps/api && npm run build                               # prisma generate + tsc
+cd apps/api && npm run build && npm test                   # prisma generate + tsc; Jest không cần DB
 cd apps/web && npm run typecheck && npm run build
 docker compose exec postgres psql -U bangden               # vào DB
 ```
@@ -28,11 +28,13 @@ docker compose exec postgres psql -U bangden               # vào DB
 - Mọi endpoint mới phải kiểm tra quyền: `@UseGuards(AuthGuard | TeacherGuard)`; thao tác trên buổi học dùng `ClassroomService.requireTeacher` / `roleOf`.
 - DTO luôn có decorator `class-validator` (ValidationPipe bật `whitelist`, thuộc tính không khai báo sẽ bị bỏ).
 - Không đưa API secret của LiveKit ra client. Quyền trong phòng chỉ cấp qua token hoặc `RoomServiceClient` phía API.
-- `identity` trong LiveKit = `users.id`; vai trò nằm trong metadata `{"role":"teacher"|"student"}`; metadata phòng là `{"board","allowStudentShare"}`.
-- Schema đang đồng bộ bằng `prisma db push`; khi thêm migration, cập nhật `apps/api/Dockerfile` và `docs/04-lo-trinh.md`.
+- `identity` trong LiveKit = `users.id`; vai trò nằm trong metadata `{"role":"teacher"|"student"}`; metadata phòng là `{"board","allowStudentShare","recording"}`.
+- Tin dữ liệu do server phát (chat, quiz) đi qua API rồi `LivekitService.broadcast`; client không tự phát những chủ đề này.
+- Schema dùng Prisma migrate: sửa `schema.prisma` thì thêm thư mục mới trong `prisma/migrations/` (API chạy `migrate deploy` khi khởi động). Không sửa migration đã commit.
+- File lưu qua `StorageService` (S3/R2); không để bucket công khai, link tải là URL ký có hạn.
 - Cập nhật `docs/` khi thay đổi kiến trúc, biến môi trường, API hoặc cách triển khai.
 
 ## Lưu ý
 
-- Code giai đoạn 1 chưa từng được build. Gặp lỗi build thì sửa theo phiên bản thư viện thật đã cài, đừng đổi kiến trúc.
-- Sau khi `npm install` thành công lần đầu, commit `package-lock.json` của từng app.
+- Cả ba app đã build được và có `package-lock.json`; Dockerfile dùng `npm ci`. Thêm thư viện thì commit lockfile cùng lúc.
+- Chưa chạy thử toàn bộ bằng Docker Compose; xem việc còn lại ở `docs/04-lo-trinh.md`.

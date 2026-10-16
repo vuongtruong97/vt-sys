@@ -19,6 +19,7 @@ Hướng dẫn đưa hệ thống lên một VPS bằng Docker Compose, có HTTP
 | --- | --- | --- |
 | Lớp ≤ 5 người, không ghi hình | 2 vCPU / 4 GB RAM / 40 GB SSD | ~15 Mbps lúc dạy |
 | Lớp ≤ 30 người | 4 vCPU / 8 GB RAM / 60 GB SSD | ~75 Mbps lúc dạy, ~3 TB/tháng nếu 2 buổi/ngày |
+| Có ghi hình | thêm 2–4 vCPU và 2 GB RAM cho egress (Chrome ghép video) | thêm lưu lượng tải MP4 lên R2 |
 
 Yêu cầu bắt buộc:
 
@@ -96,6 +97,36 @@ ACME_EMAIL=email-cua-ban@gmail.com
 
 Sửa `deploy/livekit.prod.yaml`: đổi `turn.domain` thành `live.<DOMAIN>` của bạn. Nếu đổi `LIVEKIT_API_KEY`, sửa luôn `webhook.api_key` cho trùng.
 
+### Lưu trữ bản ghi và tài liệu (Cloudflare R2)
+
+Bỏ qua phần này thì nút ghi hình và tải tài liệu sẽ ẩn; các chức năng khác vẫn chạy.
+
+1. Cloudflare → R2 → **Create bucket**, ví dụ `bangden`. Để bucket ở chế độ riêng tư (không bật public access).
+2. R2 → **Manage API tokens** → tạo token quyền **Object Read & Write** cho bucket đó.
+3. Điền vào `.env`:
+
+```ini
+S3_BUCKET=bangden
+S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
+S3_REGION=auto
+S3_ACCESS_KEY=<Access Key ID>
+S3_SECRET_KEY=<Secret Access Key>
+```
+
+Không cần cấu hình CORS: tài liệu tải lên đi qua API, còn link xem lại là link ký có hạn mở thẳng trong trình duyệt.
+
+### Email nhắc lịch (Resend)
+
+1. Tạo tài khoản tại resend.com, xác minh tên miền gửi (thêm bản ghi DNS họ yêu cầu).
+2. Tạo API key, điền vào `.env`:
+
+```ini
+RESEND_API_KEY=re_...
+EMAIL_FROM=Bảng Đen <noreply@example.vn>
+```
+
+API gửi email cho học viên khoảng 1 giờ và 10 phút trước mỗi buổi. Không có khoá thì chỉ ghi log.
+
 ## 4. Khởi động
 
 ```bash
@@ -119,6 +150,7 @@ dc ps
 3. Trong lớp, mở `chrome://webrtc-internals` để xem kết nối dùng UDP hay TCP/TURN.
 4. Điểm danh có dữ liệu sau khi rời phòng, nghĩa là webhook đã chạy.
 5. Bảng trắng vẽ được và đồng bộ, nghĩa là `board.example.vn` chạy tốt.
+6. Ghi hình thử 1 phút rồi dừng; vài phút sau trang **Xem lại** của buổi hiện "Xem được". Bản ghi FAILED thì xem `dc logs egress`.
 
 ## 6. Vận hành
 
@@ -131,7 +163,13 @@ dc up -d --build
 dc image prune -f
 ```
 
-API chạy `prisma db push` mỗi lần khởi động để đồng bộ schema. Nếu thay đổi schema có thể làm mất dữ liệu (xoá cột, đổi kiểu), lệnh này sẽ dừng và báo lỗi. Khi đó hãy chuyển sang Prisma migrate trước (xem [04-lo-trinh.md](04-lo-trinh.md)).
+API chạy `prisma migrate deploy` mỗi lần khởi động, áp các migration mới trong `apps/api/prisma/migrations/`. Migration lỗi thì API dừng và log ghi rõ lý do; dữ liệu cũ không bị đụng tới.
+
+Máy chủ đã chạy bản cũ (đồng bộ bằng `db push`) thì trước lần cập nhật đầu tiên chạy một lần:
+
+```bash
+dc run --rm api npx prisma migrate resolve --applied 0_init
+```
 
 ### Sao lưu
 

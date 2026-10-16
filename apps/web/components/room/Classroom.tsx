@@ -16,7 +16,9 @@ import {
 import { RoomEvent, Track } from 'livekit-client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/api';
-import { handUp, Panel, RoomMeta } from './shared';
+import { useQuizzes, useRoomChat } from './interaction';
+import { QuizCard } from './Quiz';
+import { handUp, Panel, roleOf, RoomMeta } from './shared';
 import { SidePanel } from './SidePanel';
 import { Whiteboard } from './Whiteboard';
 
@@ -71,6 +73,9 @@ export function Classroom(props: {
   }, [metadata]);
 
   const [panel, setPanel] = useState<Panel>(null);
+  const chat = useRoomChat(sessionId, panel === 'chat');
+  const quiz = useQuizzes(sessionId);
+  const teacherId = participants.find((p) => roleOf(p) === 'teacher')?.identity;
   const [toast, setToast] = useState('');
   const toastTimer = useRef<ReturnType<typeof setTimeout>>();
   const say = useCallback((msg: string) => {
@@ -194,8 +199,12 @@ export function Classroom(props: {
             participants={participants}
             sendControl={sendControl}
             say={say}
+            chat={chat}
+            quiz={quiz}
+            teacherId={teacherId}
           />
         )}
+        {!isTeacher && <QuizCard quiz={quiz} say={say} />}
       </div>
 
       <footer className="controls">
@@ -236,7 +245,14 @@ export function Classroom(props: {
         )}
         <button className="cb" aria-pressed={panel === 'chat'} onClick={() => setPanel(panel === 'chat' ? null : 'chat')}>
           <span className="label">Trò chuyện</span>
+          {chat.unread > 0 && <span className="badge">{chat.unread}</span>}
         </button>
+        {isTeacher && (
+          <button className="cb" aria-pressed={panel === 'quiz'} onClick={() => setPanel(panel === 'quiz' ? null : 'quiz')}>
+            <span className="label">Câu hỏi</span>
+            {quiz.open && <span className="badge">{quiz.open.total ?? 0}</span>}
+          </button>
+        )}
         <button className="cb" aria-pressed={panel === 'people'} onClick={() => setPanel(panel === 'people' ? null : 'people')}>
           <span className="label">Học viên</span>
           {isTeacher && hands.length > 0 && <span className="badge">{hands.length}</span>}

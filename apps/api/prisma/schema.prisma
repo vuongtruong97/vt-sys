@@ -36,6 +36,8 @@ model User {
   enrollments  Enrollment[]
   attendance   Attendance[]
   joinRequests JoinRequest[]
+  chatMessages ChatMessage[]
+  quizAnswers  QuizAnswer[]
 
   @@map("users")
 }
@@ -80,6 +82,8 @@ model ClassSession {
   attendance        Attendance[]
   joinRequests      JoinRequest[]
   whiteboard        Whiteboard?
+  chatMessages      ChatMessage[]
+  quizzes           Quiz[]
 
   @@index([startsAt])
   @@map("sessions")
@@ -121,4 +125,48 @@ model Whiteboard {
   session   ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@map("whiteboards")
+}
+
+/// Tin nhắn trong phòng học. API lưu rồi phát xuống phòng qua LiveKit (chủ đề "chat").
+model ChatMessage {
+  id        String       @id @default(cuid())
+  sessionId String
+  userId    String
+  text      String
+  createdAt DateTime     @default(now())
+  session   ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+  @@map("chat_messages")
+}
+
+/// Câu hỏi trắc nghiệm nhanh giáo viên đưa ra trong buổi học.
+model Quiz {
+  id        String       @id @default(cuid())
+  sessionId String
+  question  String
+  options   String[]
+  /// Vị trí đáp án đúng trong options; null nếu là câu thăm dò ý kiến.
+  correct   Int?
+  closedAt  DateTime?
+  createdAt DateTime     @default(now())
+  session   ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  answers   QuizAnswer[]
+
+  @@index([sessionId, createdAt])
+  @@map("quizzes")
+}
+
+model QuizAnswer {
+  id        String   @id @default(cuid())
+  quizId    String
+  userId    String
+  choice    Int
+  createdAt DateTime @default(now())
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([quizId, userId])
+  @@map("quiz_answers")
 }

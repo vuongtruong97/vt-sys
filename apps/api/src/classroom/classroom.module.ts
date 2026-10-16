@@ -335,5 +335,6 @@ export class WebhookController {
 @Module({
   controllers: [ClassroomController, WebhookController],
   providers: [ClassroomService, LivekitService],
+  exports: [ClassroomService, LivekitService],
 })
 export class ClassroomModule {}

@@ -5,13 +5,14 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import { AuthModule } from './auth/auth.module';
 import { ClassroomModule } from './classroom/classroom.module';
+import { InteractionModule } from './classroom/interaction.module';
 import { config } from './common/config';
 import { PrismaModule } from './common/prisma.service';
 import { CoursesModule } from './courses/courses.module';
 import { HealthController } from './health.controller';
 
 @Module({
-  imports: [PrismaModule, AuthModule, CoursesModule, ClassroomModule],
+  imports: [PrismaModule, AuthModule, CoursesModule, ClassroomModule, InteractionModule],
   controllers: [HealthController],
 })
 class AppModule {}

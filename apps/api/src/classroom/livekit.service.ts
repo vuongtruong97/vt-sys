@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AccessToken, RoomServiceClient, TrackSource, VideoGrant } from 'livekit-server-sdk';
+import { AccessToken, DataPacket_Kind, RoomServiceClient, TrackSource, VideoGrant } from 'livekit-server-sdk';
 import { config } from '../common/config';
 
 export type RoomMeta = { board: boolean; allowStudentShare: boolean };
@@ -70,6 +70,21 @@ export class LivekitService {
     const meta = { ...(await this.readMeta(name)), ...patch };
     await this.rooms.updateRoomMetadata(name, JSON.stringify(meta));
     return meta;
+  }
+
+  /**
+   * Phát một tin JSON xuống phòng theo chủ đề. Không có `to` thì gửi cả phòng.
+   * Phòng chưa mở (chưa ai vào) thì bỏ qua: dữ liệu đã nằm trong DB, người vào sau tự tải.
+   */
+  async broadcast(room: string, topic: string, payload: unknown, to?: string[]) {
+    try {
+      await this.rooms.sendData(room, new TextEncoder().encode(JSON.stringify(payload)), DataPacket_Kind.RELIABLE, {
+        topic,
+        destinationIdentities: to,
+      });
+    } catch (e) {
+      this.log.debug(`Không phát được tin "${topic}" xuống ${room}: ${(e as Error).message}`);
+    }
   }
 
   async students(room: string) {

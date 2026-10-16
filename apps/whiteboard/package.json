@@ -1,0 +1,16 @@
+{
+  "name": "bangden-whiteboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "@hocuspocus/extension-database": "~2.13.6",
+    "@hocuspocus/server": "~2.13.6",
+    "jsonwebtoken": "9.0.2",
+    "pg": "^8.13.0",
+    "yjs": "^13.6.19"
+  }
+}

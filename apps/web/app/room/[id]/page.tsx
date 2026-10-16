@@ -1,0 +1,185 @@
+'use client';
+import '@livekit/components-styles';
+import { LiveKitRoom, LocalUserChoices, PreJoin, RoomAudioRenderer } from '@livekit/components-react';
+import { DisconnectReason, RoomOptions, ScreenSharePresets, VideoPresets } from 'livekit-client';
+import Link from 'next/link';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Classroom } from '@/components/room/Classroom';
+import { api, ApiError } from '@/lib/api';
+import { useMe } from '@/lib/useMe';
+
+type SessionInfo = {
+  id: string;
+  title: string;
+  startsAt: string;
+  endsAt: string;
+  status: string;
+  course: { id: string; title: string };
+  role: 'teacher' | 'student' | null;
+};
+type JoinRes =
+  | { status: 'ok'; role: 'teacher' | 'student'; token: string; url: string }
+  | { status: 'waiting' }
+  | { status: 'denied' };
+
+type Phase =
+  | { k: 'prejoin' }
+  | { k: 'joining' }
+  | { k: 'waiting' }
+  | { k: 'in'; token: string; url: string; role: 'teacher' | 'student' }
+  | { k: 'left'; reason: string }
+  | { k: 'error'; message: string };
+
+export default function RoomPage({ params }: { params: { id: string } }) {
+  const me = useMe({ redirect: true });
+  const [info, setInfo] = useState<SessionInfo | null>(null);
+  const [phase, setPhase] = useState<Phase>({ k: 'prejoin' });
+  const [choices, setChoices] = useState<LocalUserChoices | null>(null);
+  const poll = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (!me) return;
+    api<SessionInfo>(`/sessions/${params.id}`)
+      .then(setInfo)
+      .catch((e) => setPhase({ k: 'error', message: e.message }));
+  }, [me, params.id]);
+
+  const stopPoll = () => {
+    if (poll.current) clearInterval(poll.current);
+    poll.current = null;
+  };
+  useEffect(() => stopPoll, []);
+
+  const join = useCallback(async () => {
+    try {
+      const r = await api<JoinRes>(`/sessions/${params.id}/join`, { method: 'POST' });
+      if (r.status === 'ok') {
+        stopPoll();
+        setPhase({ k: 'in', token: r.token, url: r.url, role: r.role });
+      } else if (r.status === 'waiting') {
+        setPhase({ k: 'waiting' });
+        if (!poll.current) poll.current = setInterval(join, 3000);
+      } else {
+        stopPoll();
+        setPhase({ k: 'error', message: 'Giáo viên đã từ chối yêu cầu vào lớp của bạn.' });
+      }
+    } catch (e) {
+      stopPoll();
+      setPhase({ k: 'error', message: e instanceof ApiError ? e.message : 'Không kết nối được máy chủ' });
+    }
+  }, [params.id]);
+
+  const roomOptions = useMemo<RoomOptions>(
+    () => ({
+      adaptiveStream: true,
+      dynacast: true,
+      videoCaptureDefaults: { deviceId: choices?.videoDeviceId || undefined, resolution: VideoPresets.h720.resolution },
+      audioCaptureDefaults: { deviceId: choices?.audioDeviceId || undefined },
+      publishDefaults: {
+        simulcast: true,
+        videoSimulcastLayers: [VideoPresets.h180, VideoPresets.h360],
+        screenShareEncoding: ScreenSharePresets.h1080fps15.encoding,
+        dtx: true,
+        red: true,
+      },
+    }),
+    [choices],
+  );
+
+  if (phase.k === 'error') {
+    return (
+      <div className="center"><div className="box">
+        <h2>Chưa vào được lớp</h2>
+        <p>{phase.message}</p>
+        <Link className="btn" href="/schedule">Về lịch học</Link>
+      </div></div>
+    );
+  }
+
+  if (phase.k === 'left') {
+    return (
+      <div className="center"><div className="box">
+        <h2>Bạn đã rời lớp</h2>
+        <p style={{ color: 'var(--on-room-muted)' }}>{phase.reason}</p>
+        <div className="row" style={{ justifyContent: 'center' }}>
+          <button className="btn" onClick={() => { setPhase({ k: 'joining' }); join(); }}>Vào lại lớp</button>
+          <Link className="btn ghost" style={{ color: 'var(--on-room)' }} href="/schedule">Về lịch học</Link>
+        </div>
+      </div></div>
+    );
+  }
+
+  if (phase.k === 'waiting') {
+    return (
+      <div className="center"><div className="box">
+        <h2>Đang chờ giáo viên duyệt</h2>
+        <p style={{ color: 'var(--on-room-muted)' }}>Bạn chưa có trong danh sách lớp. Giáo viên sẽ thấy yêu cầu của bạn và cho vào. Trang tự vào lớp khi được duyệt.</p>
+        <button className="btn ghost" style={{ color: 'var(--on-room)' }} onClick={() => { stopPoll(); setPhase({ k: 'prejoin' }); }}>Huỷ</button>
+      </div></div>
+    );
+  }
+
+  if (phase.k === 'in' && info && choices) {
+    return (
+      <LiveKitRoom
+        className="classroom"
+        data-lk-theme="default"
+        serverUrl={phase.url}
+        token={phase.token}
+        connect
+        options={roomOptions}
+        audio={choices.audioEnabled}
+        video={choices.videoEnabled}
+        onDisconnected={(reason?: DisconnectReason) =>
+          setPhase({
+            k: 'left',
+            reason:
+              reason === DisconnectReason.PARTICIPANT_REMOVED
+                ? 'Giáo viên đã mời bạn ra khỏi lớp.'
+                : reason === DisconnectReason.ROOM_DELETED
+                  ? 'Giáo viên đã kết thúc buổi học.'
+                  : 'Điểm danh đã được ghi lại.',
+          })
+        }
+        onError={(e) => console.error(e)}
+      >
+        <Classroom sessionId={info.id} title={info.title} courseTitle={info.course.title} endsAt={info.endsAt} role={phase.role} />
+        <RoomAudioRenderer />
+      </LiveKitRoom>
+    );
+  }
+
+  // Phòng chờ kiểm tra thiết bị
+  return (
+    <div className="center" style={{ alignItems: 'start' }}>
+      <div className="box" style={{ width: '100%', maxWidth: 640 }}>
+        <div>
+          <p style={{ color: 'var(--on-room-muted)', fontSize: 13 }}>{info?.course.title ?? 'Đang tải…'}</p>
+          <h2>{info?.title ?? ''}</h2>
+          <p style={{ color: 'var(--on-room-muted)', fontSize: 13, marginTop: 6 }}>
+            Kiểm tra camera và micro trước khi vào lớp. {info?.role === null && 'Bạn chưa có trong danh sách lớp nên cần chờ giáo viên duyệt.'}
+          </p>
+        </div>
+        <div className="prejoin" data-lk-theme="default" style={{ width: '100%' }}>
+          {me && (
+            <PreJoin
+              defaults={{ username: me.name, videoEnabled: true, audioEnabled: info?.role === 'teacher' }}
+              joinLabel={phase.k === 'joining' ? 'Đang vào…' : 'Vào lớp'}
+              micLabel="Micro"
+              camLabel="Camera"
+              userLabel="Tên hiển thị"
+              persistUserChoices
+              onSubmit={(c) => {
+                setChoices(c);
+                setPhase({ k: 'joining' });
+                join();
+              }}
+              onError={(e) => console.warn(e)}
+            />
+          )}
+        </div>
+        <p style={{ color: 'var(--on-room-muted)', fontSize: 12 }}>Tên hiển thị trong lớp lấy theo tài khoản của bạn.</p>
+      </div>
+    </div>
+  );
+}

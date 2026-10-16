@@ -1,0 +1,21 @@
+# Cấu hình LiveKit cho chạy thử trên máy (Docker Desktop).
+# Khoá API lấy từ biến môi trường LIVEKIT_KEYS trong docker-compose.yml.
+port: 7880
+log_level: info
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 50100
+  # Chạy trên máy: trình duyệt kết nối tới 127.0.0.1.
+  # Muốn thử bằng điện thoại trong cùng mạng Wi-Fi: đổi thành IP LAN của máy, ví dụ 192.168.1.10.
+  # Trên VPS: xoá node_ip và bật use_external_ip: true.
+  node_ip: 127.0.0.1
+  use_external_ip: false
+room:
+  empty_timeout: 900
+  max_participants: 60
+webhook:
+  # Phải trùng tên khoá trong LIVEKIT_API_KEY của file .env
+  api_key: bangden
+  urls:
+    - http://api:3001/webhooks/livekit

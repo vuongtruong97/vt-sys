@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  TEACHER
+  STUDENT
+}
+
+enum SessionStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+  CANCELLED
+}
+
+enum JoinStatus {
+  PENDING
+  APPROVED
+  DENIED
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  name         String
+  passwordHash String
+  role         Role          @default(STUDENT)
+  createdAt    DateTime      @default(now())
+  courses      Course[]      @relation("TeacherCourses")
+  enrollments  Enrollment[]
+  attendance   Attendance[]
+  joinRequests JoinRequest[]
+
+  @@map("users")
+}
+
+model Course {
+  id          String         @id @default(cuid())
+  teacherId   String
+  teacher     User           @relation("TeacherCourses", fields: [teacherId], references: [id])
+  title       String
+  description String         @default("")
+  published   Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+  sessions    ClassSession[]
+  enrollments Enrollment[]
+
+  @@map("courses")
+}
+
+model Enrollment {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@map("enrollments")
+}
+
+model ClassSession {
+  id                String        @id @default(cuid())
+  courseId          String
+  course            Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title             String
+  startsAt          DateTime
+  endsAt            DateTime
+  roomName          String        @unique
+  status            SessionStatus @default(SCHEDULED)
+  allowStudentShare Boolean       @default(false)
+  createdAt         DateTime      @default(now())
+  attendance        Attendance[]
+  joinRequests      JoinRequest[]
+  whiteboard        Whiteboard?
+
+  @@index([startsAt])
+  @@map("sessions")
+}
+
+/// Một dòng cho mỗi lần vào phòng, ghi từ webhook LiveKit.
+model Attendance {
+  id        String       @id @default(cuid())
+  sessionId String
+  userId    String
+  joinedAt  DateTime
+  leftAt    DateTime?
+  session   ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, userId])
+  @@map("attendance")
+}
+
+/// Người chưa có trong danh sách lớp xin vào phòng.
+model JoinRequest {
+  id        String       @id @default(cuid())
+  sessionId String
+  userId    String
+  status    JoinStatus   @default(PENDING)
+  createdAt DateTime     @default(now())
+  session   ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@map("join_requests")
+}
+
+/// Trạng thái Yjs của bảng trắng; máy chủ bảng trắng đọc/ghi bảng này bằng SQL.
+model Whiteboard {
+  sessionId String       @id @map("session_id")
+  state     Bytes
+  updatedAt DateTime     @updatedAt @map("updated_at")
+  session   ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("whiteboards")
+}

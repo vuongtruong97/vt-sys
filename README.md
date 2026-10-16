@@ -4,6 +4,8 @@ Nền tảng dạy học trực tuyến cho giáo viên cá nhân: lớp học v
 
 Đây là **giai đoạn 1**, chạy thử trên máy bằng Docker Compose.
 
+> **Người mới nhận dự án:** đọc [docs/README.md](docs/README.md) trước. Trong đó có kiến trúc, hướng dẫn cài đặt, triển khai VPS và việc cần làm tiếp.
+
 ## Thành phần
 
 | Thư mục | Công nghệ | Việc |
@@ -102,11 +104,6 @@ Khi chạy API ngoài Docker, webhook điểm danh của LiveKit (`http://api:30
 - Schema đồng bộ bằng `prisma db push`. Trước khi có dữ liệu thật nên chuyển sang `prisma migrate`.
 - Chưa có nhắc lịch qua email/Zalo, thanh toán.
 
-## Đưa lên VPS (tóm tắt)
+## Đưa lên VPS
 
-1. VPS Ubuntu 4 vCPU / 8 GB, mở cổng 80, 443/TCP, 7881/TCP, 50000–60000/UDP, 3478/UDP.
-2. Ba tên miền: `ten-mien.vn` (web), `live.ten-mien.vn` (LiveKit), `board.ten-mien.vn` (bảng trắng). Đặt Caddy hoặc Nginx phía trước để có HTTPS.
-3. Trong `livekit.yaml`: bỏ `node_ip`, đặt `use_external_ip: true`, mở rộng dải cổng UDP, bật TURN.
-4. `.env`: secret mạnh, `LIVEKIT_PUBLIC_URL=wss://live.ten-mien.vn`, `WHITEBOARD_PUBLIC_URL=wss://board.ten-mien.vn`, `COOKIE_SECURE=true`, `SEED_DEMO=false`.
-
-Hướng dẫn chi tiết và cấu hình Caddy sẽ có ở bước triển khai lên VPS.
+Xem [docs/03-trien-khai-vps.md](docs/03-trien-khai-vps.md). File cấu hình nằm trong `deploy/`.

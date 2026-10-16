@@ -1,0 +1,155 @@
+# 01 · Tổng quan và kiến trúc
+
+## Mục tiêu
+
+Một giáo viên tự dạy lớp trực tuyến trên website của mình, thay cho Zoom hoặc Google Meet:
+
+- lớp từ 1–30 người bật camera (thiết kế cho phép tới khoảng 50);
+- chia sẻ màn hình để dạy slide và code;
+- quản lý khoá học, lịch học, danh sách học viên, điểm danh;
+- về sau: ghi hình, xem lại, tóm tắt bằng AI, thu học phí.
+
+## Kiến trúc
+
+```
+                  ┌───────────────────────── Trình duyệt ─────────────────────────┐
+                  │  Next.js UI  ·  LiveKit client SDK  ·  Yjs + Hocuspocus provider │
+                  └──────┬────────────────────────┬──────────────────────┬─────────┘
+                    HTTP │ /api/*            WebRTC│ (UDP, dự phòng TCP)    │ WebSocket
+                         ▼                        ▼                      ▼
+                 ┌──────────────┐        ┌──────────────────┐   ┌──────────────────┐
+                 │ web (Next.js)│        │ livekit (SFU)    │   │ whiteboard       │
+                 │ :3000        │        │ :7880 signal     │   │ (Hocuspocus)     │
+                 │ rewrite /api │        │ :7881 TCP media  │   │ :1234            │
+                 └──────┬───────┘        │ :50000+ UDP media│   └────────┬─────────┘
+                        │ proxy           └───┬──────────▲───┘            │ SQL
+                        ▼                     │ webhook  │ RoomService    │
+                 ┌──────────────┐◄────────────┘          │ (token, mute…) │
+                 │ api (NestJS) │────────────────────────┘                │
+                 │ :3001        │                                         │
+                 └──────┬───────┘                                         │
+                        │ Prisma                                          │
+                        ▼                                                 ▼
+                 ┌─────────────────────────── PostgreSQL :5432 ───────────────────┐
+                 └────────────────────────────────────────────────────────────────┘
+```
+
+Nguyên tắc chính:
+
+1. **Video không đi qua web hay API.** Trình duyệt kết nối thẳng tới LiveKit, nên tải video không làm chậm web.
+2. **API là nơi duy nhất cấp quyền.** Nó kiểm tra tài khoản, danh sách lớp và giờ học, rồi ký token LiveKit có hạn ngắn ghi rõ quyền. Trình duyệt không bao giờ giữ API secret của LiveKit.
+3. **Cùng site cho cookie.** Trình duyệt chỉ gọi `/api/*` trên tên miền web; Next.js rewrite sang API. Cookie đăng nhập `bd_session` (httpOnly) vì vậy là cookie cùng site.
+4. **Modular monolith.** API là một tiến trình, chia module theo nghiệp vụ, để sau này tách thành dịch vụ riêng nếu cần.
+
+## Các thành phần
+
+### apps/api (NestJS 10, Prisma 5)
+
+| Module | File | Việc |
+| --- | --- | --- |
+| Auth | `src/auth/auth.module.ts`, `auth.guard.ts` | Đăng ký, đăng nhập, JWT 7 ngày trong cookie `bd_session`. Có `AuthGuard`, `TeacherGuard` và decorator `@CurrentUser()` |
+| Courses | `src/courses/courses.module.ts` | Khoá học, thêm/xoá học viên bằng email, tạo và huỷ buổi học, lịch học (`/schedule`) |
+| Classroom | `src/classroom/classroom.module.ts` | Vào lớp, phòng chờ, quyền giáo viên, token bảng trắng, điểm danh, webhook LiveKit |
+| LiveKit | `src/classroom/livekit.service.ts` | Ký token; gọi RoomService để tạo phòng, đổi metadata, tắt mic, mời ra, đổi quyền |
+| Common | `src/common/config.ts`, `prisma.service.ts` | Đọc biến môi trường (thiếu là dừng ngay), kết nối Prisma |
+| Seed | `src/seed.ts` | Tạo tài khoản giáo viên; `SEED_DEMO=true` thì thêm dữ liệu mẫu |
+
+### apps/web (Next.js 14 App Router)
+
+| Đường dẫn | File | Việc |
+| --- | --- | --- |
+| `/` | `app/page.tsx` | Trang chủ, các khoá học công khai |
+| `/login`, `/register` | `components/AuthForm.tsx` | Đăng nhập, đăng ký (tài khoản mới luôn là học viên) |
+| `/schedule` | `app/schedule/page.tsx` | Lịch học; nút "Vào lớp" mở trước giờ học 10 phút |
+| `/teach` | `app/teach/page.tsx` | Giáo viên: danh sách khoá học, tạo khoá |
+| `/teach/courses/[id]` | `app/teach/courses/[id]/page.tsx` | Buổi học, thêm học viên, công khai khoá |
+| `/teach/sessions/[id]` | `app/teach/sessions/[id]/page.tsx` | Bảng điểm danh |
+| `/room/[id]` | `app/room/[id]/page.tsx` | Phòng kiểm tra thiết bị (PreJoin), phòng chờ, phòng học |
+
+Phòng học nằm trong `components/room/`:
+
+- `Classroom.tsx`: bố cục sân khấu (lưới video, màn hình chia sẻ, bảng trắng), thanh điều khiển, giơ tay, nhận tin điều khiển từ giáo viên.
+- `SidePanel.tsx`: tab Trò chuyện (`useChat`) và tab Học viên (phòng chờ, tắt mic, mời ra, cho chia sẻ màn hình, mời phát biểu).
+- `Whiteboard.tsx`: canvas vẽ phấn, đồng bộ qua Yjs. Bảng có kích thước logic 1600×900, mỗi máy co giãn cho vừa khung.
+- `shared.ts`: kiểu dữ liệu chung, đọc vai trò và trạng thái giơ tay của người tham gia.
+
+### apps/whiteboard (Hocuspocus 2)
+
+`src/server.js` xác thực bằng JWT do API cấp (`/sessions/:id/board-token`). Mỗi buổi học là một tài liệu Yjs tên `session:<id>`, lưu vào bảng `whiteboards` (gom thay đổi, tối đa 2 giây ghi một lần).
+
+### LiveKit Server 1.8
+
+Image chính thức `livekit/livekit-server`. Khoá API truyền qua biến `LIVEKIT_KEYS`. Webhook gửi về `http://api:3001/webhooks/livekit`.
+
+## Mô hình dữ liệu (`apps/api/prisma/schema.prisma`)
+
+| Bảng | Ý nghĩa | Ghi chú |
+| --- | --- | --- |
+| `users` | Tài khoản | `role`: TEACHER, STUDENT. Giáo viên chỉ được tạo bằng seed hoặc sửa DB |
+| `courses` | Khoá học | `published` quyết định hiện trên trang chủ |
+| `enrollments` | Học viên thuộc khoá | khoá duy nhất (userId, courseId) |
+| `sessions` | Buổi học, một phòng LiveKit | `roomName` dạng `bd-<hex>`; `status`: SCHEDULED, LIVE, ENDED, CANCELLED; `allowStudentShare` |
+| `attendance` | Mỗi lần vào/ra phòng | ghi từ webhook `participant_joined` / `participant_left` |
+| `join_requests` | Xin vào lớp khi chưa có trong danh sách | PENDING, APPROVED, DENIED |
+| `whiteboards` | Trạng thái Yjs của bảng | cột snake_case vì máy chủ bảng trắng dùng SQL trực tiếp |
+
+## Phân quyền trong phòng học
+
+| Việc | Cách làm |
+| --- | --- |
+| Vai trò | Ghi trong metadata của token LiveKit: `{"role":"teacher"}` hoặc `"student"` |
+| Giáo viên | `roomAdmin: true`, phát mọi nguồn |
+| Học viên | `canPublishSources` chỉ có camera và micro. Thêm màn hình khi giáo viên bật quyền |
+| Bật/tắt quyền chia sẻ | `POST /sessions/:id/mod/allow-share`: lưu vào DB, gọi `updateParticipant` cho từng học viên đang trong phòng, cập nhật metadata phòng để giao diện đổi theo |
+| Bảng trắng mở hay đóng | Metadata phòng `{"board":true}`; mọi máy cùng chuyển sang bảng |
+| Giơ tay | Attribute `hand` = `"1"` của người tham gia (token có `canUpdateOwnMetadata`) |
+| Mời phát biểu, hạ tay | Giáo viên gửi tin dữ liệu chủ đề `control` riêng cho học viên đó; trình duyệt học viên tự hạ tay và bật micro |
+| Tắt mic | API gọi `mutePublishedTrack` trên track micro |
+| Mời ra | API gọi `removeParticipant` và đổi yêu cầu vào lớp (nếu có) sang DENIED |
+| Giờ vào lớp | Học viên vào được từ 10 phút trước giờ học đến 30 phút sau giờ kết thúc (`config.ts`). Giáo viên vào lúc nào cũng được |
+
+## Luồng chính
+
+### Vào lớp
+
+1. `/room/[id]` gọi `GET /sessions/:id`, hiện PreJoin (chọn camera, micro).
+2. Bấm "Vào lớp" thì gọi `POST /sessions/:id/join`.
+   - Có trong danh sách lớp hoặc đã được duyệt: kiểm tra giờ, `ensureRoom`, ký token và trả về `{status:'ok', token, url, role}`.
+   - Chưa có quyền: tạo `join_requests` PENDING, trả về `{status:'waiting'}`. Trình duyệt gọi lại mỗi 3 giây cho tới khi được duyệt.
+3. Trình duyệt kết nối LiveKit. LiveKit gửi webhook `participant_joined`, API ghi điểm danh.
+
+### Kết thúc buổi
+
+Giáo viên bấm "Kết thúc buổi học" thì gọi `POST /sessions/:id/end`: chuyển status sang ENDED và `deleteRoom`. Mọi người bị ngắt kết nối với lý do `ROOM_DELETED`. Webhook `room_finished` đóng các dòng điểm danh còn mở.
+
+### Bảng trắng
+
+Giáo viên bật bảng thì metadata phòng `board=true`. Mỗi máy lấy token `GET /sessions/:id/board-token` rồi kết nối Hocuspocus. Nét vẽ là `Y.Map {c, w, pts: Y.Array<number>}` trong `Y.Array 'strokes'`; điểm được thêm khi đang kéo, nên người khác thấy nét vẽ hiện ra ngay.
+
+## Danh sách API
+
+| Phương thức | Đường dẫn | Quyền |
+| --- | --- | --- |
+| POST | `/auth/register`, `/auth/login`, `/auth/logout` | mọi người |
+| GET | `/auth/me` | đã đăng nhập |
+| GET | `/courses/public` | mọi người |
+| GET, POST | `/courses` | giáo viên |
+| GET, PATCH | `/courses/:id` | giáo viên của khoá |
+| POST | `/courses/:id/enrollments` `{email}` | giáo viên của khoá |
+| DELETE | `/courses/:id/enrollments/:userId` | giáo viên của khoá |
+| POST | `/courses/:id/sessions` `{title, startsAt, endsAt}` | giáo viên của khoá |
+| PATCH | `/sessions/:id` `{title?, startsAt?, endsAt?, cancelled?}` | giáo viên của khoá |
+| GET | `/schedule` | đã đăng nhập |
+| GET | `/sessions/:id` | đã đăng nhập (trả về kèm `role`) |
+| POST | `/sessions/:id/join` | đã đăng nhập |
+| GET | `/sessions/:id/board-token` | trong lớp |
+| GET | `/sessions/:id/join-requests` | giáo viên |
+| POST | `/sessions/:id/join-requests/:reqId` `{approve}` | giáo viên |
+| POST | `/sessions/:id/mod/mute` `{identity}`, `/mod/mute-all`, `/mod/remove` `{identity}` | giáo viên |
+| POST | `/sessions/:id/mod/allow-share` `{allow}`, `/mod/board` `{open}` | giáo viên |
+| POST | `/sessions/:id/end` | giáo viên |
+| GET | `/sessions/:id/attendance` | giáo viên |
+| POST | `/webhooks/livekit` | LiveKit (kiểm tra chữ ký) |
+| GET | `/health` | kiểm tra sống |
+
+`identity` của người tham gia LiveKit chính là `users.id`.

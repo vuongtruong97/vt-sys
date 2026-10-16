@@ -1,0 +1,20 @@
+# Caddy tự xin chứng chỉ HTTPS (Let's Encrypt) cho ba tên miền.
+# Cần bản ghi DNS A của DOMAIN, live.DOMAIN, board.DOMAIN trỏ về IP VPS.
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy web:3000
+}
+
+# Signaling LiveKit (WebSocket). Media không đi qua Caddy.
+live.{$DOMAIN} {
+	reverse_proxy livekit:7880
+}
+
+# Bảng trắng (WebSocket)
+board.{$DOMAIN} {
+	reverse_proxy whiteboard:1234
+}

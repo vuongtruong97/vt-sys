@@ -6,8 +6,9 @@
 | --- | --- |
 | Code giai đoạn 1 (api, web, whiteboard, compose) | Xong |
 | Giai đoạn 2 (phần không cần dịch vụ ngoài + ghi hình, tài liệu, nhắc lịch) | Xong về code; xem bảng giai đoạn 2 bên dưới |
+| Giai đoạn 3 (quản trị, chia nhóm, webinar) | Xong về code; thanh toán, gói học, AI chưa làm |
 | Build (`npm ci`, `tsc`, `next build`) | **Qua** trên Node 22/24, cả ba app; có `package-lock.json` |
-| Kiểm thử tự động | 24 test Jest cho API (`cd apps/api && npm test`), chạy không cần DB |
+| Kiểm thử tự động | 41 test Jest cho API (`cd apps/api && npm test`), chạy không cần DB |
 | Khởi động API | Đã thử: mọi module và route khởi tạo được, chỉ dừng ở bước kết nối DB khi không có Postgres |
 | Schema | Prisma migrate (`prisma/migrations/`), API chạy `migrate deploy` khi khởi động |
 | Chạy thử bằng Docker Compose trên máy | **Chưa**: máy phát triển chưa chạy được Docker Desktop lúc viết |
@@ -74,18 +75,29 @@ DB mới tạo (volume trống) thì không cần bước này.
 | Nhắc lịch | **Xong** (email) | `reminder.module.ts`, Resend. Zalo OA chưa làm |
 | Tài liệu theo buổi | **Xong** | Tài liệu chung của khoá hoặc theo buổi; tab Tài liệu trong phòng |
 | Câu hỏi nhanh | **Xong** | Trắc nghiệm có đáp án hoặc thăm dò; kết quả trực tiếp cho giáo viên |
-| Kiểm thử tự động | **Một phần** | Jest cho API: chat, câu hỏi nhanh, ghi hình, nhắc lịch. Chưa có Playwright |
+| Kiểm thử tự động | **Một phần** | Jest cho API: chat, câu hỏi nhanh, ghi hình, nhắc lịch, chia nhóm, webinar. Chưa có Playwright |
 | Giám sát | Chưa | Prometheus lấy metrics LiveKit (`prometheus_port`), Grafana, Sentry cho web/API |
 | Kiểm thử tải | Chưa | `lk load-test` với 30 người giả lập trên VPS thật |
 
 ## Giai đoạn 3: kinh doanh và quy mô
 
-- Thanh toán: VietQR + đối soát chuyển khoản (SePay/Casso) để tự thêm học viên vào khoá khi nhận tiền.
-- Gói học: theo khoá, theo số buổi, theo tháng; học 1-1 với lịch trống của giáo viên.
-- Chép lời và tóm tắt bằng AI từ bản ghi.
-- Chia nhóm nhỏ: tạo phòng LiveKit con, chuyển token.
-- Chế độ webinar: Egress phát HLS qua CDN cho lớp hàng nghìn người.
-- Nhiều giáo viên: thêm trang quản trị, phân quyền admin.
+| Việc | Trạng thái | Ghi chú, file |
+| --- | --- | --- |
+| Nhiều giáo viên, quản trị | **Xong** (code) | Vai trò ADMIN, trang `/admin`: đổi vai trò, chuyển khoá học. `admin.module.ts` |
+| Chia nhóm nhỏ | **Xong** (code) | Phòng con `<roomName>-g<n>`, `breakout.module.ts`, `components/room/Breakout.tsx`. Chưa chạy thử với nhiều trình duyệt |
+| Webinar HLS | **Xong** (code) | Egress HLS → S3 → API chuyển tiếp (có header cho CDN), trang `/live/[id]`. Chưa chạy thử thật |
+| Thanh toán (VietQR + SePay/Casso) | Chưa | Cần tài khoản SePay/Casso và tài khoản ngân hàng thật |
+| Gói học (theo khoá, số buổi, tháng; 1-1) | Chưa | Phụ thuộc thanh toán |
+| Chép lời, tóm tắt bằng AI | Chưa | Cần dịch vụ nhận dạng giọng nói tiếng Việt (chạy trên bản ghi MP4) và một mô hình ngôn ngữ để tóm tắt |
+
+### Điểm cần kiểm tra kỹ (giai đoạn 3)
+
+- **Chuyển phòng khi chia nhóm:** trình duyệt gắn lại `LiveKitRoom` với `key={token}`, cờ `switching` chặn màn hình "Bạn đã rời lớp" trong 1,5 giây. Kiểm tra trên mạng chậm: nếu phòng cũ ngắt kết nối muộn hơn, tăng thời gian chờ trong `app/room/[id]/page.tsx`.
+- **Điểm danh khi chia nhóm:** mỗi lần chuyển phòng là một cặp rời/vào, nên cột "Số lần vào" tăng; tổng số phút vẫn đúng.
+- **Bảng trắng và ghi hình** chỉ ở phòng chính; bản ghi không có nội dung các nhóm.
+- **Tên file HLS:** API giả định Egress đặt playlist và đoạn video cùng thư mục với `filenamePrefix` (`live/<id>/<thời điểm>/`). Nếu trang xem báo "Luồng chưa sẵn sàng" mãi, xem đường dẫn thật trên bucket và sửa `live.service.ts`.
+- **Webinar riêng tư** không được CDN cache (`Cache-Control: private`), mọi người xem đều tải từ VPS.
+- **Đổi vai trò:** `TeacherGuard` và `AdminGuard` đọc vai trò trong DB nên cấp/thu quyền có hiệu lực ngay với API; giao diện đổi theo ở lần tải trang tiếp theo (qua `/auth/me`). Các chỗ còn đọc `user.role` từ JWT (ví dụ `/schedule`) có thể dùng vai trò cũ tới khi cookie được cấp lại.
 
 ## Ghi chú cho người làm tiếp
 

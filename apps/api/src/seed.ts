@@ -16,11 +16,12 @@ async function main() {
   let teacher = await prisma.user.findUnique({ where: { email } });
   if (!teacher) {
     teacher = await prisma.user.create({
-      data: { email, name, role: 'TEACHER', passwordHash: await bcrypt.hash(password, 10) },
+      data: { email, name, role: 'ADMIN', passwordHash: await bcrypt.hash(password, 10) },
     });
-    console.log(`Đã tạo tài khoản giáo viên ${email}`);
-  } else if (teacher.role !== 'TEACHER') {
-    await prisma.user.update({ where: { id: teacher.id }, data: { role: 'TEACHER' } });
+    console.log(`Đã tạo tài khoản quản trị ${email}`);
+  } else if (teacher.role !== 'ADMIN') {
+    // Tài khoản trong SEED_TEACHER_EMAIL là chủ trang: luôn có quyền quản trị.
+    await prisma.user.update({ where: { id: teacher.id }, data: { role: 'ADMIN' } });
   }
 
   if (process.env.SEED_DEMO !== 'true') return;

@@ -195,7 +195,7 @@ export class CoursesController {
   async schedule(@CurrentUser() user: AuthUser) {
     const since = new Date(Date.now() - 14 * 24 * 3600 * 1000);
     const courseFilter =
-      user.role === 'TEACHER' ? { teacherId: user.id } : { enrollments: { some: { userId: user.id } } };
+      user.role !== 'STUDENT' ? { teacherId: user.id } : { enrollments: { some: { userId: user.id } } };
     const sessions = await this.prisma.classSession.findMany({
       where: { startsAt: { gte: since }, course: courseFilter },
       orderBy: { startsAt: 'asc' },

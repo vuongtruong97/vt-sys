@@ -55,6 +55,9 @@ Nguyên tắc chính:
 | Ghi hình | `src/classroom/recording.service.ts` | Bắt đầu/dừng LiveKit Egress, cập nhật trạng thái từ webhook `egress_*` |
 | Media | `src/classroom/media.module.ts` | API ghi hình, danh sách bản ghi, tải lên và mở tài liệu (link ký có hạn) |
 | Nhắc lịch | `src/notifications/reminder.module.ts` | Quét mỗi phút, gửi email nhắc lịch qua Resend |
+| Chia nhóm | `src/classroom/breakout.module.ts` | Xếp nhóm, gọi về, nhắn mọi nhóm; phòng nhóm `<roomName>-g<n>` |
+| Webinar | `src/classroom/live.service.ts`, `webinar.module.ts` | Egress phát HLS lên S3; API chuyển tiếp playlist và đoạn video cho người xem |
+| Quản trị | `src/admin/admin.module.ts` | Thống kê, đổi vai trò tài khoản, chuyển khoá học giữa giáo viên (`AdminGuard` đọc vai trò từ DB) |
 | Common | `src/common/config.ts`, `prisma.service.ts`, `storage.service.ts` | Đọc biến môi trường (thiếu là dừng ngay), kết nối Prisma, lưu file lên S3/R2 |
 | Seed | `src/seed.ts` | Tạo tài khoản giáo viên; `SEED_DEMO=true` thì thêm dữ liệu mẫu |
 
@@ -69,6 +72,8 @@ Nguyên tắc chính:
 | `/teach/courses/[id]` | `app/teach/courses/[id]/page.tsx` | Buổi học, thêm học viên, công khai khoá |
 | `/teach/sessions/[id]` | `app/teach/sessions/[id]/page.tsx` | Bảng điểm danh |
 | `/sessions/[id]` | `app/sessions/[id]/page.tsx` | Xem lại buổi học: bản ghi hình và tài liệu (giáo viên và học viên) |
+| `/live/[id]` | `app/live/[id]/page.tsx` | Xem phát trực tiếp bằng hls.js; luồng công khai không cần đăng nhập |
+| `/admin` | `app/admin/page.tsx` | Quản trị: thống kê, vai trò tài khoản, chuyển khoá học |
 | `/room/[id]` | `app/room/[id]/page.tsx` | Phòng kiểm tra thiết bị (PreJoin), phòng chờ, phòng học |
 
 `components/Materials.tsx` và `components/Recordings.tsx` dùng chung cho trang khoá học, trang xem lại và phòng học.
@@ -79,6 +84,7 @@ Phòng học nằm trong `components/room/`:
 - `SidePanel.tsx`: tab Trò chuyện, tab Học viên (phòng chờ, tắt mic, mời ra, cho chia sẻ màn hình, mời phát biểu), tab Câu hỏi (giáo viên) và tab Tài liệu.
 - `interaction.ts`: hook `useRoomChat` (lịch sử từ API + tin mới qua chủ đề `chat`, đếm chưa đọc) và `useQuizzes`.
 - `Quiz.tsx`: tab Câu hỏi của giáo viên và thẻ trả lời nổi của học viên.
+- `Breakout.tsx`: tab Nhóm của giáo viên (xếp nhóm, ghé nhóm, nhắn, gọi về). Trang phòng (`app/room/[id]/page.tsx`) có `switchRoom`: gọi lại `/join` rồi gắn lại `LiveKitRoom` bằng token mới.
 - `Whiteboard.tsx`: canvas vẽ phấn, đồng bộ qua Yjs. Bảng có kích thước logic 1600×900, mỗi máy co giãn cho vừa khung.
 - `shared.ts`: kiểu dữ liệu chung, đọc vai trò và trạng thái giơ tay của người tham gia.
 
@@ -100,7 +106,7 @@ Image chính thức `livekit/livekit-server`. Khoá API truyền qua biến `LIV
 
 | Bảng | Ý nghĩa | Ghi chú |
 | --- | --- | --- |
-| `users` | Tài khoản | `role`: TEACHER, STUDENT. Giáo viên chỉ được tạo bằng seed hoặc sửa DB |
+| `users` | Tài khoản | `role`: ADMIN, TEACHER, STUDENT. Tài khoản trong `SEED_TEACHER_EMAIL` là ADMIN; ADMIN cấp quyền giáo viên ở `/admin` |
 | `courses` | Khoá học | `published` quyết định hiện trên trang chủ |
 | `enrollments` | Học viên thuộc khoá | khoá duy nhất (userId, courseId) |
 | `sessions` | Buổi học, một phòng LiveKit | `roomName` dạng `bd-<hex>`; `status`: SCHEDULED, LIVE, ENDED, CANCELLED; `allowStudentShare` |
@@ -111,6 +117,8 @@ Image chính thức `livekit/livekit-server`. Khoá API truyền qua biến `LIV
 | `quizzes`, `quiz_answers` | Câu hỏi nhanh và câu trả lời | `correct` null là câu thăm dò; mỗi học viên một câu trả lời, đổi được tới khi đóng |
 | `recordings` | Bản ghi hình | `egressId` duy nhất; STARTING → RECORDING → PROCESSING → READY hoặc FAILED |
 | `materials` | Tài liệu | `sessionId` null là tài liệu chung của khoá |
+| `breakout_groups` | Nhóm nhỏ của buổi | `members` là mảng `users.id`; `sessions.breakoutActive` bật thì học viên vào phòng nhóm |
+| `live_streams` | Phát trực tiếp, một dòng mỗi buổi | `public`: ai có link cũng xem; `prefix`: thư mục HLS trên bucket |
 | `reminders` | Nhắc lịch đã gửi | khoá duy nhất (sessionId, userId, kind, startsAt): đổi giờ buổi học thì nhắc lại |
 
 ## Phân quyền trong phòng học
@@ -129,6 +137,9 @@ Image chính thức `livekit/livekit-server`. Khoá API truyền qua biến `LIV
 | Giờ vào lớp | Học viên vào được từ 10 phút trước giờ học đến 30 phút sau giờ kết thúc (`config.ts`). Giáo viên vào lúc nào cũng được |
 | Chat, câu hỏi nhanh | Gửi qua API (kiểm tra quyền, lưu DB), API phát xuống phòng bằng `sendData`. Kết quả câu hỏi đang mở chỉ gửi riêng cho giáo viên; đáp án đúng chỉ lộ khi đóng câu |
 | Đang ghi hình | Metadata phòng `{"recording":true}`; mọi người thấy biểu tượng ● Đang ghi hình |
+| Đang phát trực tiếp | Metadata phòng `{"live":true}` |
+| Chia nhóm | `POST /join` quyết định phòng: học viên có trong `breakout_groups` vào phòng nhóm; giáo viên gửi `{group}` để ghé. Tin `breakout` (`start`/`end`) chỉ báo trình duyệt gọi lại `/join`. Chat, câu hỏi, tắt mic, mời ra, quyền chia sẻ áp dụng cho mọi phòng của buổi (`ClassroomService.rooms`) |
+| Quản trị | `AdminGuard` đọc vai trò trong DB mỗi lần gọi. `/auth/me` cấp lại cookie khi vai trò đổi, nên người được cấp quyền giáo viên không phải đăng nhập lại |
 
 ## Luồng chính
 
@@ -182,6 +193,12 @@ Giáo viên bật bảng thì metadata phòng `board=true`. Mỗi máy lấy tok
 | POST | `/courses/:id/materials` (multipart `file`, `sessionId?`) | giáo viên của khoá |
 | GET | `/materials/:id/url`; DELETE `/materials/:id` | xem: thành viên khoá; xoá: giáo viên |
 | GET | `/features` | đã đăng nhập (`{storage}`: đã cấu hình lưu trữ chưa) |
+| GET, POST | `/sessions/:id/breakouts` `{groups:[{name, members[]}], minutes?}` | giáo viên |
+| POST | `/sessions/:id/breakouts/end`, `/breakouts/announce` `{text}` | giáo viên |
+| POST | `/sessions/:id/live/start` `{public?}`, `/live/stop` | giáo viên, khi lớp đang diễn ra |
+| GET | `/live/:id`, `/live/:id/:file` (playlist, đoạn video) | luồng công khai: mọi người; riêng tư: thành viên khoá |
+| GET | `/admin/stats`, `/admin/users?q=&role=`, `/admin/courses` | quản trị viên |
+| PATCH | `/admin/users/:id` `{role}`, `/admin/courses/:id/teacher` `{teacherId}` | quản trị viên |
 | POST | `/webhooks/livekit` | LiveKit (kiểm tra chữ ký) |
 | GET | `/health` | kiểm tra sống |
 

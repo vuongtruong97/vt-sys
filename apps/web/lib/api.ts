@@ -23,7 +23,7 @@ export async function api<T = unknown>(path: string, init: RequestInit & { json?
   return data as T;
 }
 
-export type Me = { id: string; name: string; email: string; role: 'TEACHER' | 'STUDENT' };
+export type Me = { id: string; name: string; email: string; role: 'ADMIN' | 'TEACHER' | 'STUDENT' };
 
 export type ScheduleItem = {
   id: string;

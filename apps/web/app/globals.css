@@ -147,6 +147,15 @@ td.num { font-variant-numeric: tabular-nums; }
 
 .toast { position: fixed; left: 50%; top: 72px; transform: translateX(-50%); background: var(--on-room); color: var(--room); padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 500; z-index: 50; box-shadow: 0 6px 24px #0006; max-width: calc(100% - 32px); }
 
+/* Xem trực tiếp */
+.live-video { width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 12px; }
+
+/* Quản trị */
+.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.stat { display: grid; gap: 2px; padding: 14px 16px; }
+.stat b { font-size: 24px; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 13px; color: var(--muted); }
+
 /* Ghi hình */
 .pill.rec { background: color-mix(in srgb, var(--danger) 30%, var(--room-2)); color: var(--on-room); font-weight: 600; }
 .cb.rec-on { background: var(--danger); color: #fff; }

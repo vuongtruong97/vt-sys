@@ -3,10 +3,13 @@ import { Module, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
+import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
+import { BreakoutModule } from './classroom/breakout.module';
 import { ClassroomModule } from './classroom/classroom.module';
 import { InteractionModule } from './classroom/interaction.module';
 import { MediaModule } from './classroom/media.module';
+import { WebinarModule } from './classroom/webinar.module';
 import { StorageModule } from './common/storage.service';
 import { ReminderModule } from './notifications/reminder.module';
 import { config } from './common/config';
@@ -15,7 +18,7 @@ import { CoursesModule } from './courses/courses.module';
 import { HealthController } from './health.controller';
 
 @Module({
-  imports: [PrismaModule, StorageModule, AuthModule, CoursesModule, ClassroomModule, InteractionModule, MediaModule, ReminderModule],
+  imports: [PrismaModule, StorageModule, AuthModule, CoursesModule, ClassroomModule, InteractionModule, MediaModule, ReminderModule, AdminModule, BreakoutModule, WebinarModule],
   controllers: [HealthController],
 })
 class AppModule {}

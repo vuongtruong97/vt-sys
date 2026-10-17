@@ -38,6 +38,13 @@ export class StorageService {
     await this.internal!.send(new DeleteObjectCommand({ Bucket: s.bucket, Key: key }));
   }
 
+  /** Đọc file để API chuyển tiếp (dùng cho HLS: playlist và đoạn video không ký từng file được). */
+  async get(key: string) {
+    this.require();
+    const r = await this.internal!.send(new GetObjectCommand({ Bucket: s.bucket, Key: key }));
+    return { body: r.Body as NodeJS.ReadableStream, contentType: r.ContentType, length: r.ContentLength };
+  }
+
   /** URL tải có hạn; `filename` đặt tên file khi trình duyệt lưu về. */
   async downloadUrl(key: string, filename?: string, expiresIn = 3600) {
     this.require();

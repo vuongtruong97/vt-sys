@@ -9,8 +9,9 @@ import {
 import type { Request } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../common/config';
+import { PrismaService } from '../common/prisma.service';
 
-export type AuthUser = { id: string; name: string; email: string; role: 'TEACHER' | 'STUDENT' };
+export type AuthUser = { id: string; name: string; email: string; role: 'ADMIN' | 'TEACHER' | 'STUDENT' };
 
 type JwtPayload = { sub: string; name: string; email: string; role: AuthUser['role'] };
 
@@ -39,14 +40,40 @@ export class AuthGuard implements CanActivate {
   }
 }
 
+/**
+ * Giáo viên hoặc quản trị viên. Đọc vai trò trong DB (JWT có hạn 7 ngày),
+ * để người vừa bị thu quyền giáo viên không tạo khoá học bằng cookie cũ.
+ */
 @Injectable()
 export class TeacherGuard implements CanActivate {
-  canActivate(ctx: ExecutionContext): boolean {
+  constructor(private prisma: PrismaService) {}
+
+  async canActivate(ctx: ExecutionContext): Promise<boolean> {
     const req = ctx.switchToHttp().getRequest<Request & { user?: AuthUser }>();
     const user = readUser(req);
     if (!user) throw new UnauthorizedException('Bạn cần đăng nhập');
-    if (user.role !== 'TEACHER') throw new ForbiddenException('Chỉ giáo viên làm được thao tác này');
-    req.user = user;
+    const db = await this.prisma.user.findUnique({ where: { id: user.id }, select: { role: true } });
+    if (!db || db.role === 'STUDENT') throw new ForbiddenException('Chỉ giáo viên làm được thao tác này');
+    req.user = { ...user, role: db.role };
+    return true;
+  }
+}
+
+/**
+ * Chỉ quản trị viên. Kiểm tra lại vai trò trong DB (không tin JWT 7 ngày),
+ * để thu quyền quản trị có hiệu lực ngay.
+ */
+@Injectable()
+export class AdminGuard implements CanActivate {
+  constructor(private prisma: PrismaService) {}
+
+  async canActivate(ctx: ExecutionContext): Promise<boolean> {
+    const req = ctx.switchToHttp().getRequest<Request & { user?: AuthUser }>();
+    const user = readUser(req);
+    if (!user) throw new UnauthorizedException('Bạn cần đăng nhập');
+    const db = await this.prisma.user.findUnique({ where: { id: user.id }, select: { role: true } });
+    if (db?.role !== 'ADMIN') throw new ForbiddenException('Chỉ quản trị viên làm được thao tác này');
+    req.user = { ...user, role: 'ADMIN' };
     return true;
   }
 }

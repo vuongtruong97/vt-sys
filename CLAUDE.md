@@ -29,7 +29,8 @@ docker compose exec postgres psql -U bangden               # vào DB
 - DTO luôn có decorator `class-validator` (ValidationPipe bật `whitelist`, thuộc tính không khai báo sẽ bị bỏ).
 - Không đưa API secret của LiveKit ra client. Quyền trong phòng chỉ cấp qua token hoặc `RoomServiceClient` phía API.
 - `identity` trong LiveKit = `users.id`; vai trò nằm trong metadata `{"role":"teacher"|"student"}`; metadata phòng là `{"board","allowStudentShare","recording"}`.
-- Tin dữ liệu do server phát (chat, quiz) đi qua API rồi `LivekitService.broadcast`; client không tự phát những chủ đề này.
+- Tin dữ liệu do server phát (chat, quiz, breakout) đi qua API rồi `LivekitService.broadcast`; client không tự phát những chủ đề này. Tin gửi cả lớp dùng `ClassroomService.rooms(s)` để tới cả các phòng nhóm.
+- Vai trò: ADMIN ⊃ TEACHER. Kiểm tra "là giáo viên" bằng `role !== 'STUDENT'`, không so sánh `=== 'TEACHER'`.
 - Schema dùng Prisma migrate: sửa `schema.prisma` thì thêm thư mục mới trong `prisma/migrations/` (API chạy `migrate deploy` khi khởi động). Không sửa migration đã commit.
 - File lưu qua `StorageService` (S3/R2); không để bucket công khai, link tải là URL ký có hạn.
 - Cập nhật `docs/` khi thay đổi kiến trúc, biến môi trường, API hoặc cách triển khai.

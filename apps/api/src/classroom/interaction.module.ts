@@ -12,7 +12,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import type { Quiz } from '@prisma/client';
+import type { ClassSession, Quiz } from '@prisma/client';
 import { Transform } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -93,6 +93,11 @@ export class InteractionService {
     return { counts, total: counts.reduce((a, b) => a + b, 0) };
   }
 
+  /** Phát cho cả lớp: phòng chính và các phòng nhóm đang mở. */
+  async toClass(s: ClassSession, topic: string, payload: unknown, to?: string[]) {
+    for (const r of await this.room.rooms(s)) await this.lk.broadcast(r, topic, payload, to);
+  }
+
   /** Dạng gửi cho học viên khi câu hỏi đang mở: không lộ đáp án. */
   publicQuiz(q: Quiz) {
     return { id: q.id, question: q.question, options: q.options, closed: !!q.closedAt };
@@ -128,7 +133,7 @@ export class InteractionController {
       include: { user: { select: { id: true, name: true } } },
     });
     const msg = toChat(m);
-    await this.lk.broadcast(s.roomName, TOPIC.chat, msg);
+    await this.svc.toClass(s, TOPIC.chat, msg);
     return msg;
   }
 
@@ -166,11 +171,11 @@ export class InteractionController {
     if (dto.correct != null && dto.correct >= options.length) throw new BadRequestException('Đáp án đúng không nằm trong các lựa chọn');
     // Mỗi lúc chỉ một câu hỏi mở: đóng câu trước nếu giáo viên quên.
     const open = await this.prisma.quiz.findMany({ where: { sessionId: id, closedAt: null } });
-    for (const q of open) await this.close(s.roomName, q);
+    for (const q of open) await this.close(s, q);
     const q = await this.prisma.quiz.create({
       data: { sessionId: id, question: dto.question, options, correct: dto.correct ?? null },
     });
-    await this.lk.broadcast(s.roomName, TOPIC.quiz, { type: 'open', quiz: this.svc.publicQuiz(q) });
+    await this.svc.toClass(s, TOPIC.quiz, { type: 'open', quiz: this.svc.publicQuiz(q) });
     return { ...this.svc.publicQuiz(q), correct: q.correct, counts: options.map(() => 0), total: 0 };
   }
 
@@ -189,7 +194,7 @@ export class InteractionController {
       create: { quizId, userId: user.id, choice: dto.choice },
       update: { choice: dto.choice },
     });
-    await this.lk.broadcast(s.roomName, TOPIC.quiz, { type: 'tally', quizId, ...(await this.svc.counts(q)) }, [s.course.teacherId]);
+    await this.svc.toClass(s, TOPIC.quiz, { type: 'tally', quizId, ...(await this.svc.counts(q)) }, [s.course.teacherId]);
     return { mine: dto.choice };
   }
 
@@ -199,13 +204,13 @@ export class InteractionController {
     const s = await this.room.requireTeacher(user, id);
     const q = await this.prisma.quiz.findFirst({ where: { id: quizId, sessionId: id } });
     if (!q) throw new NotFoundException('Không tìm thấy câu hỏi');
-    return this.close(s.roomName, q);
+    return this.close(s, q);
   }
 
-  private async close(roomName: string, q: Quiz) {
+  private async close(s: ClassSession, q: Quiz) {
     const closed = q.closedAt ? q : await this.prisma.quiz.update({ where: { id: q.id }, data: { closedAt: new Date() } });
     const result = { ...this.svc.publicQuiz(closed), correct: closed.correct, ...(await this.svc.counts(closed)) };
-    await this.lk.broadcast(roomName, TOPIC.quiz, { type: 'close', quiz: result });
+    await this.svc.toClass(s, TOPIC.quiz, { type: 'close', quiz: result });
     return result;
   }
 }

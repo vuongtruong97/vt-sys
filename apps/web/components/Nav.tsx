@@ -16,7 +16,8 @@ export function Nav({ me }: { me: Me | null | undefined }) {
         {me && (
           <>
             <Link href="/schedule" className="link">Lịch học</Link>
-            {me.role === 'TEACHER' && <Link href="/teach" className="link">Quản lý lớp</Link>}
+            {me.role !== 'STUDENT' && <Link href="/teach" className="link">Quản lý lớp</Link>}
+            {me.role === 'ADMIN' && <Link href="/admin" className="link">Quản trị</Link>}
           </>
         )}
         <span className="grow" />

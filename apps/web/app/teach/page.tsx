@@ -14,7 +14,7 @@ export default function TeachPage() {
 
   const load = () => api<Course[]>('/courses').then(setCourses).catch((e) => setError(e.message));
   useEffect(() => {
-    if (me?.role === 'TEACHER') load();
+    if (me && me.role !== 'STUDENT') load();
   }, [me]);
 
   const create = async (e: FormEvent<HTMLFormElement>) => {
@@ -31,7 +31,7 @@ export default function TeachPage() {
     }
   };
 
-  if (me && me.role !== 'TEACHER') {
+  if (me && me.role === 'STUDENT') {
     return (<><Nav me={me} /><main className="container page"><p>Trang này chỉ dành cho giáo viên.</p></main></>);
   }
 

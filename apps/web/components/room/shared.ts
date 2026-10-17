@@ -1,6 +1,6 @@
 import type { Participant } from 'livekit-client';
 
-export type RoomMeta = { board: boolean; allowStudentShare: boolean; recording?: boolean };
+export type RoomMeta = { board: boolean; allowStudentShare: boolean; recording?: boolean; live?: boolean };
 export type Panel = 'chat' | 'people' | 'quiz' | 'files' | 'groups' | null;
 
 /** Vai trò lấy từ metadata trong token do API cấp. */

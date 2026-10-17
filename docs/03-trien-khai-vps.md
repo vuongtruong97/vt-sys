@@ -20,6 +20,7 @@ Hướng dẫn đưa hệ thống lên một VPS bằng Docker Compose, có HTTP
 | Lớp ≤ 5 người, không ghi hình | 2 vCPU / 4 GB RAM / 40 GB SSD | ~15 Mbps lúc dạy |
 | Lớp ≤ 30 người | 4 vCPU / 8 GB RAM / 60 GB SSD | ~75 Mbps lúc dạy, ~3 TB/tháng nếu 2 buổi/ngày |
 | Có ghi hình | thêm 2–4 vCPU và 2 GB RAM cho egress (Chrome ghép video) | thêm lưu lượng tải MP4 lên R2 |
+| Ghi hình và phát trực tiếp cùng lúc | mỗi việc là một egress riêng: tính gấp đôi dòng trên | người xem webinar nên đi qua CDN (xem mục 6) |
 
 Yêu cầu bắt buộc:
 
@@ -150,7 +151,8 @@ dc ps
 3. Trong lớp, mở `chrome://webrtc-internals` để xem kết nối dùng UDP hay TCP/TURN.
 4. Điểm danh có dữ liệu sau khi rời phòng, nghĩa là webhook đã chạy.
 5. Bảng trắng vẽ được và đồng bộ, nghĩa là `board.example.vn` chạy tốt.
-6. Ghi hình thử 1 phút rồi dừng; vài phút sau trang **Xem lại** của buổi hiện "Xem được". Bản ghi FAILED thì xem `dc logs egress`.
+6. Bấm **Phát trực tiếp** (công khai), mở link `/live/<id>` bằng điện thoại 4G: video chạy sau 10–20 giây.
+7. Ghi hình thử 1 phút rồi dừng; vài phút sau trang **Xem lại** của buổi hiện "Xem được". Bản ghi FAILED thì xem `dc logs egress`.
 
 ## 6. Vận hành
 
@@ -202,6 +204,14 @@ Sửa `.env` rồi `dc up -d`.
 
 - Đổi `JWT_SECRET`: mọi người phải đăng nhập lại.
 - Đổi `LIVEKIT_API_SECRET`: chỉ ảnh hưởng các phòng đang mở.
+
+### Webinar cho nhiều người xem (CDN)
+
+Người xem tải HLS qua `https://<DOMAIN>/api/live/<id>/...`. API đặt sẵn header cache: đoạn video `max-age=86400, immutable`, playlist trực tiếp `max-age=2`. Với vài chục người xem không cần làm gì thêm. Với hàng trăm, hàng nghìn người, bật proxy Cloudflare (mây cam) cho tên miền **chính** (không phải `live`, `board`) và thêm Cache Rule:
+
+- Khi URI path bắt đầu bằng `/api/live/` → **Eligible for cache**, Edge TTL **dùng header của máy chủ** (Respect origin).
+
+Mặc định Cloudflare cache file `.ts` nhưng không cache `.m3u8`; rule trên cho cache cả playlist theo `max-age=2`, nên mỗi vài giây chỉ một yêu cầu tới VPS. Luồng riêng tư (`private`) không được CDN cache, mọi người xem đều đi tới VPS.
 
 ## 7. Khi lớp đông hơn
 

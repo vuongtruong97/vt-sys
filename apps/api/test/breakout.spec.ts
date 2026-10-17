@@ -10,7 +10,7 @@ function setup(s = session()) {
     prisma,
     lk,
     breakout: new BreakoutController(prisma as any, room, lk as any),
-    classroom: new ClassroomController(room, lk as any, prisma as any, {} as any),
+    classroom: new ClassroomController(room, lk as any, prisma as any, {} as any, {} as any),
   };
 }
 

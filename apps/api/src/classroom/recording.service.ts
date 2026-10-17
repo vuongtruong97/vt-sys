@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import type { ClassSession } from '@prisma/client';
+import type { ClassSession, RecordingStatus } from '@prisma/client';
 import {
   EgressClient,
   EgressInfo,
@@ -12,6 +12,23 @@ import { config } from '../common/config';
 import { PrismaService } from '../common/prisma.service';
 import { StorageService } from '../common/storage.service';
 import { LivekitService } from './livekit.service';
+
+/** Trạng thái egress của LiveKit → trạng thái lưu trong DB (dùng chung cho ghi hình và phát trực tiếp). */
+export function egressStatus(info: EgressInfo, current: RecordingStatus): RecordingStatus {
+  switch (info.status) {
+    case EgressStatus.EGRESS_ACTIVE:
+      return 'RECORDING';
+    case EgressStatus.EGRESS_ENDING:
+      return 'PROCESSING';
+    case EgressStatus.EGRESS_COMPLETE:
+      return 'READY';
+    case EgressStatus.EGRESS_FAILED:
+    case EgressStatus.EGRESS_ABORTED:
+      return 'FAILED';
+    default:
+      return current;
+  }
+}
 
 /**
  * Ghi hình bằng LiveKit Egress (RoomComposite: ghép cả phòng thành một video).
@@ -82,16 +99,7 @@ export class RecordingService {
     const rec = await this.prisma.recording.findUnique({ where: { egressId: info.egressId } });
     if (!rec) return;
     const file = info.fileResults?.[0];
-    const status =
-      info.status === EgressStatus.EGRESS_ACTIVE
-        ? 'RECORDING'
-        : info.status === EgressStatus.EGRESS_ENDING
-          ? 'PROCESSING'
-          : info.status === EgressStatus.EGRESS_COMPLETE
-            ? 'READY'
-            : info.status === EgressStatus.EGRESS_FAILED || info.status === EgressStatus.EGRESS_ABORTED
-              ? 'FAILED'
-              : rec.status;
+    const status = egressStatus(info, rec.status);
     const done = status === 'READY' || status === 'FAILED';
     await this.prisma.recording.update({
       where: { id: rec.id },

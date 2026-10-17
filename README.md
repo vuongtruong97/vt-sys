@@ -1,6 +1,6 @@
 # vt-sys · Bảng Đen
 
-Nền tảng dạy học trực tuyến cho giáo viên cá nhân: lớp học video nhiều người, chia sẻ màn hình, bảng trắng chung, phòng chờ duyệt và điểm danh tự động. Từ giai đoạn 2 có thêm: chat lưu lại, câu hỏi nhanh trong lớp, ghi hình và xem lại, tài liệu theo buổi, email nhắc lịch.
+Nền tảng dạy học trực tuyến cho giáo viên cá nhân: lớp học video nhiều người, chia sẻ màn hình, bảng trắng chung, phòng chờ duyệt và điểm danh tự động. Từ giai đoạn 2 có thêm: chat lưu lại, câu hỏi nhanh trong lớp, ghi hình và xem lại, tài liệu theo buổi, email nhắc lịch. Giai đoạn 3: nhiều giáo viên với trang quản trị, chia nhóm nhỏ, phát trực tiếp (webinar HLS).
 
 Chạy thử trên máy bằng Docker Compose; trạng thái từng phần xem [docs/04-lo-trinh.md](docs/04-lo-trinh.md).
 
@@ -36,7 +36,7 @@ Với `SEED_DEMO=true`, hệ thống tạo sẵn:
 
 | Tài khoản | Email | Mật khẩu |
 | --- | --- | --- |
-| Giáo viên | `giaovien@bangden.local` | `doimatkhau123` |
+| Giáo viên, quản trị viên | `giaovien@bangden.local` | `doimatkhau123` |
 | 5 học viên | `hocvien1@bangden.local` … `hocvien5@bangden.local` | `hocvien123` |
 
 Kèm khoá "Python cơ bản" với một buổi học bắt đầu sau 5 phút, nên học viên vào lớp được ngay.
@@ -110,7 +110,7 @@ Khi chạy API ngoài Docker, webhook điểm danh của LiveKit (`http://api:30
 
 - Chưa chạy thử toàn bộ bằng Docker Compose; build và test đơn vị đã qua (xem [docs/04-lo-trinh.md](docs/04-lo-trinh.md)).
 - Nhắc lịch mới có email (Resend), chưa có Zalo.
-- Chưa có giám sát (Prometheus, Grafana, Sentry), test Playwright, thanh toán.
+- Chưa có giám sát (Prometheus, Grafana, Sentry), test Playwright, thanh toán, gói học, tóm tắt bằng AI.
 
 ## Đưa lên VPS
 

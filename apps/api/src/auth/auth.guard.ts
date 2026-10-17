@@ -40,14 +40,21 @@ export class AuthGuard implements CanActivate {
   }
 }
 
+/**
+ * Giáo viên hoặc quản trị viên. Đọc vai trò trong DB (JWT có hạn 7 ngày),
+ * để người vừa bị thu quyền giáo viên không tạo khoá học bằng cookie cũ.
+ */
 @Injectable()
 export class TeacherGuard implements CanActivate {
-  canActivate(ctx: ExecutionContext): boolean {
+  constructor(private prisma: PrismaService) {}
+
+  async canActivate(ctx: ExecutionContext): Promise<boolean> {
     const req = ctx.switchToHttp().getRequest<Request & { user?: AuthUser }>();
     const user = readUser(req);
     if (!user) throw new UnauthorizedException('Bạn cần đăng nhập');
-    if (user.role === 'STUDENT') throw new ForbiddenException('Chỉ giáo viên làm được thao tác này');
-    req.user = user;
+    const db = await this.prisma.user.findUnique({ where: { id: user.id }, select: { role: true } });
+    if (!db || db.role === 'STUDENT') throw new ForbiddenException('Chỉ giáo viên làm được thao tác này');
+    req.user = { ...user, role: db.role };
     return true;
   }
 }

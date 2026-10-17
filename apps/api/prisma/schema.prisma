@@ -88,6 +88,7 @@ model ClassSession {
   breakoutEndsAt    DateTime?
   createdAt         DateTime        @default(now())
   breakoutGroups    BreakoutGroup[]
+  liveStream        LiveStream?
   attendance        Attendance[]
   joinRequests      JoinRequest[]
   whiteboard        Whiteboard?
@@ -181,6 +182,24 @@ model QuizAnswer {
 
   @@unique([quizId, userId])
   @@map("quiz_answers")
+}
+
+/// Phát trực tiếp (webinar): Egress ghép phòng thành HLS trên S3, người xem không vào LiveKit.
+model LiveStream {
+  id        String          @id @default(cuid())
+  sessionId String          @unique
+  egressId  String          @unique
+  status    RecordingStatus @default(STARTING)
+  /// true: ai có link cũng xem được; false: chỉ giáo viên và học viên của khoá.
+  public    Boolean         @default(false)
+  /// Thư mục trên bucket, ví dụ live/<sessionId>/<thời điểm>
+  prefix    String
+  error     String?
+  startedAt DateTime        @default(now())
+  endedAt   DateTime?
+  session   ClassSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("live_streams")
 }
 
 /// Nhóm nhỏ trong buổi học. Phòng LiveKit của nhóm là `<roomName>-g<index>`.

@@ -25,6 +25,7 @@ import { AuthGuard, AuthUser, CurrentUser } from '../auth/auth.guard';
 import { config } from '../common/config';
 import { PrismaService } from '../common/prisma.service';
 import { LivekitService, RoomRole } from './livekit.service';
+import { LiveStreamService } from './live.service';
 import { RecordingService } from './recording.service';
 
 class IdentityDto {
@@ -98,6 +99,7 @@ export class ClassroomController {
     private lk: LivekitService,
     private prisma: PrismaService,
     private recordings: RecordingService,
+    private live: LiveStreamService,
   ) {}
 
   @Get(':id')
@@ -276,6 +278,7 @@ export class ClassroomController {
     await this.prisma.classSession.update({ where: { id }, data: { status: 'ENDED', breakoutActive: false } });
     // Dừng ghi hình trước khi đóng phòng để egress kịp ghi xong file.
     if (await this.recordings.active(id)) await this.recordings.stop(s).catch(() => {});
+    await this.live.stop(s).catch(() => {});
     for (const r of rooms) {
       try {
         await this.lk.rooms.deleteRoom(r);
@@ -337,7 +340,7 @@ export class ClassroomController {
 export class WebhookController {
   private log = new Logger('Webhook');
   private receiver = new WebhookReceiver(config.livekit.apiKey, config.livekit.apiSecret);
-  constructor(private prisma: PrismaService, private recordings: RecordingService) {}
+  constructor(private prisma: PrismaService, private recordings: RecordingService, private live: LiveStreamService) {}
 
   @Post('livekit')
   @HttpCode(200)
@@ -350,7 +353,7 @@ export class WebhookController {
       throw new UnauthorizedException('Chữ ký webhook không hợp lệ');
     }
     if (event.egressInfo && event.event.startsWith('egress_')) {
-      await this.recordings.onEgress(event.egressInfo);
+      if (!(await this.live.onEgress(event.egressInfo))) await this.recordings.onEgress(event.egressInfo);
       this.log.debug(`${event.event} ${event.egressInfo.egressId}`);
       return { ok: true };
     }
@@ -396,7 +399,7 @@ export class WebhookController {
 
 @Module({
   controllers: [ClassroomController, WebhookController],
-  providers: [ClassroomService, LivekitService, RecordingService],
-  exports: [ClassroomService, LivekitService, RecordingService],
+  providers: [ClassroomService, LivekitService, RecordingService, LiveStreamService],
+  exports: [ClassroomService, LivekitService, RecordingService, LiveStreamService],
 })
 export class ClassroomModule {}

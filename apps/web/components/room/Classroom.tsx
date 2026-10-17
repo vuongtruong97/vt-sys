@@ -186,6 +186,28 @@ export function Classroom(props: {
     }
   };
 
+  const toggleLive = async () => {
+    setRecBusy(true);
+    try {
+      if (meta.live) {
+        if (!window.confirm('Dừng phát trực tiếp? Người xem sẽ thấy bản xem lại sau ít phút.')) return;
+        await api(`/sessions/${sessionId}/live/stop`, { method: 'POST' });
+        say('Đã dừng phát trực tiếp');
+        return;
+      }
+      if (!window.confirm('Bắt đầu phát trực tiếp buổi học? Mọi người trong lớp sẽ thấy biểu tượng đang phát.')) return;
+      const isPublic = window.confirm('Cho phép AI CÓ LINK cũng xem được?\n\nOK: công khai\nHuỷ: chỉ học viên của khoá');
+      await api(`/sessions/${sessionId}/live/start`, { json: { public: isPublic } });
+      const link = `${window.location.origin}/live/${sessionId}`;
+      await navigator.clipboard?.writeText(link).catch(() => {});
+      say(`Đang phát trực tiếp. Đã chép link xem: ${link}`);
+    } catch (e) {
+      say((e as Error).message);
+    } finally {
+      setRecBusy(false);
+    }
+  };
+
   const toggleBoard = async () => {
     try {
       await api(`/sessions/${sessionId}/mod/board`, { json: { open: !meta.board } });
@@ -216,6 +238,7 @@ export function Classroom(props: {
           </span>
         )}
         {meta.recording && <span className="pill rec" role="status">● Đang ghi hình</span>}
+        {meta.live && <span className="pill rec" role="status">📡 Đang phát trực tiếp</span>}
         {hands.length > 0 && (
           <button className="pill hand" style={{ border: 0 }} onClick={() => setPanel('people')}>
             ✋ {hands.length} người giơ tay
@@ -291,6 +314,11 @@ export function Classroom(props: {
         {isTeacher && canRecord && !group && (
           <button className={`cb${meta.recording ? ' rec-on' : ''}`} disabled={recBusy} onClick={toggleRecording}>
             ● <span className="label">{meta.recording ? 'Dừng ghi hình' : 'Ghi hình'}</span>
+          </button>
+        )}
+        {isTeacher && canRecord && !group && (
+          <button className={`cb${meta.live ? ' rec-on' : ''}`} disabled={recBusy} onClick={toggleLive}>
+            📡 <span className="label">{meta.live ? 'Dừng phát' : 'Phát trực tiếp'}</span>
           </button>
         )}
         {!isTeacher && (

@@ -16,7 +16,9 @@ import {
 import { RoomEvent, Track } from 'livekit-client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/api';
-import { handUp, Panel, RoomMeta } from './shared';
+import { useQuizzes, useRoomChat } from './interaction';
+import { QuizCard } from './Quiz';
+import { handUp, Panel, roleOf, RoomMeta } from './shared';
 import { SidePanel } from './SidePanel';
 import { Whiteboard } from './Whiteboard';
 
@@ -49,6 +51,7 @@ function useClock(endsAt: string) {
 export function Classroom(props: {
   sessionId: string;
   title: string;
+  courseId: string;
   courseTitle: string;
   endsAt: string;
   role: 'teacher' | 'student';
@@ -71,6 +74,9 @@ export function Classroom(props: {
   }, [metadata]);
 
   const [panel, setPanel] = useState<Panel>(null);
+  const chat = useRoomChat(sessionId, panel === 'chat');
+  const quiz = useQuizzes(sessionId);
+  const teacherId = participants.find((p) => roleOf(p) === 'teacher')?.identity;
   const [toast, setToast] = useState('');
   const toastTimer = useRef<ReturnType<typeof setTimeout>>();
   const say = useCallback((msg: string) => {
@@ -135,6 +141,25 @@ export function Classroom(props: {
   const myHand = handUp(localParticipant);
   const canShare = isTeacher || meta.allowStudentShare;
 
+  // Nút ghi hình chỉ hiện khi API đã cấu hình nơi lưu trữ.
+  const [canRecord, setCanRecord] = useState(false);
+  const [recBusy, setRecBusy] = useState(false);
+  useEffect(() => {
+    if (isTeacher) api<{ storage: boolean }>('/features').then((f) => setCanRecord(f.storage)).catch(() => {});
+  }, [isTeacher]);
+  const toggleRecording = async () => {
+    if (!meta.recording && !window.confirm('Bắt đầu ghi hình? Mọi người trong lớp sẽ thấy biểu tượng đang ghi.')) return;
+    setRecBusy(true);
+    try {
+      await api(`/sessions/${sessionId}/recording/${meta.recording ? 'stop' : 'start'}`, { method: 'POST' });
+      say(meta.recording ? 'Đã dừng ghi hình, bản ghi sẽ có trong vài phút' : 'Đang ghi hình');
+    } catch (e) {
+      say((e as Error).message);
+    } finally {
+      setRecBusy(false);
+    }
+  };
+
   const toggleBoard = async () => {
     try {
       await api(`/sessions/${sessionId}/mod/board`, { json: { open: !meta.board } });
@@ -159,6 +184,7 @@ export function Classroom(props: {
           <div className="sub">{participants.length} người trong lớp{isTeacher ? ' · bạn là giáo viên' : ''}</div>
         </div>
         <span className="grow" />
+        {meta.recording && <span className="pill rec" role="status">● Đang ghi hình</span>}
         {hands.length > 0 && (
           <button className="pill hand" style={{ border: 0 }} onClick={() => setPanel('people')}>
             ✋ {hands.length} người giơ tay
@@ -194,8 +220,13 @@ export function Classroom(props: {
             participants={participants}
             sendControl={sendControl}
             say={say}
+            chat={chat}
+            quiz={quiz}
+            teacherId={teacherId}
+            courseId={props.courseId}
           />
         )}
+        {!isTeacher && <QuizCard quiz={quiz} say={say} />}
       </div>
 
       <footer className="controls">
@@ -223,6 +254,11 @@ export function Classroom(props: {
             <span className="label">{meta.board ? 'Đóng bảng trắng' : 'Bảng trắng'}</span>
           </button>
         )}
+        {isTeacher && canRecord && (
+          <button className={`cb${meta.recording ? ' rec-on' : ''}`} disabled={recBusy} onClick={toggleRecording}>
+            ● <span className="label">{meta.recording ? 'Dừng ghi hình' : 'Ghi hình'}</span>
+          </button>
+        )}
         {!isTeacher && (
           <button
             className={`cb${myHand ? ' hand-on' : ''}`}
@@ -236,6 +272,16 @@ export function Classroom(props: {
         )}
         <button className="cb" aria-pressed={panel === 'chat'} onClick={() => setPanel(panel === 'chat' ? null : 'chat')}>
           <span className="label">Trò chuyện</span>
+          {chat.unread > 0 && <span className="badge">{chat.unread}</span>}
+        </button>
+        {isTeacher && (
+          <button className="cb" aria-pressed={panel === 'quiz'} onClick={() => setPanel(panel === 'quiz' ? null : 'quiz')}>
+            <span className="label">Câu hỏi</span>
+            {quiz.open && <span className="badge">{quiz.open.total ?? 0}</span>}
+          </button>
+        )}
+        <button className="cb" aria-pressed={panel === 'files'} onClick={() => setPanel(panel === 'files' ? null : 'files')}>
+          <span className="label">Tài liệu</span>
         </button>
         <button className="cb" aria-pressed={panel === 'people'} onClick={() => setPanel(panel === 'people' ? null : 'people')}>
           <span className="label">Học viên</span>

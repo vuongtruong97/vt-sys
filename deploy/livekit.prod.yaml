@@ -12,6 +12,9 @@ turn:
   # Cùng tên miền với signaling; TURN/UDP cho mạng chặn UDP thường.
   domain: live.example.vn   # ĐỔI thành live.<DOMAIN>
   udp_port: 3478
+# Cần cho ghi hình: LiveKit giao việc cho dịch vụ egress qua Redis.
+redis:
+  address: redis:6379
 room:
   empty_timeout: 900
   max_participants: 60

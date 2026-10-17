@@ -143,7 +143,7 @@ export default function RoomPage({ params }: { params: { id: string } }) {
         }
         onError={(e) => console.error(e)}
       >
-        <Classroom sessionId={info.id} title={info.title} courseTitle={info.course.title} endsAt={info.endsAt} role={phase.role} />
+        <Classroom sessionId={info.id} title={info.title} courseId={info.course.id} courseTitle={info.course.title} endsAt={info.endsAt} role={phase.role} />
         <RoomAudioRenderer />
       </LiveKitRoom>
     );

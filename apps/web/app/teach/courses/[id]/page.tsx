@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { Materials } from '@/components/Materials';
 import { Nav } from '@/components/Nav';
 import { api } from '@/lib/api';
 import { fmtDay, fmtTime, toLocalInput } from '@/lib/format';
@@ -97,6 +98,7 @@ export default function CoursePage({ params }: { params: { id: string } }) {
                       <div className="row">
                         {s.status !== 'CANCELLED' && <Link className="btn sm" href={`/room/${s.id}`}>Mở lớp</Link>}
                         <Link className="btn ghost sm" href={`/teach/sessions/${s.id}`}>Điểm danh</Link>
+                        <Link className="btn ghost sm" href={`/sessions/${s.id}`}>Ghi hình, tài liệu</Link>
                         {s.status === 'SCHEDULED' && (
                           <button className="btn ghost sm" onClick={() => run(() => api(`/sessions/${s.id}`, { method: 'PATCH', json: { cancelled: true } }), 'Đã huỷ buổi học')}>Huỷ</button>
                         )}
@@ -146,6 +148,12 @@ export default function CoursePage({ params }: { params: { id: string } }) {
                 </div>
               </section>
             </div>
+
+            <section className="stack">
+              <h2>Tài liệu của khoá</h2>
+              <p className="small muted">Tài liệu tải lên ở đây dùng chung cho mọi buổi. Tài liệu riêng từng buổi tải trong trang "Ghi hình, tài liệu" của buổi đó hoặc ngay trong phòng học.</p>
+              <Materials courseId={course.id} canEdit />
+            </section>
           </>
         )}
       </main>

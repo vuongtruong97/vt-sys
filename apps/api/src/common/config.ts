@@ -18,6 +18,31 @@ export const config = {
     /** URL trình duyệt dùng để kết nối, ví dụ ws://localhost:7880 */
     publicUrl: required('LIVEKIT_PUBLIC_URL'),
   },
+  /**
+   * Lưu trữ S3/R2 cho bản ghi hình và tài liệu. Bỏ trống S3_BUCKET thì hai tính năng này tắt.
+   * Chạy trên máy dùng MinIO trong docker-compose.yml.
+   */
+  storage: {
+    bucket: process.env.S3_BUCKET || '',
+    region: process.env.S3_REGION || 'auto',
+    /** Địa chỉ API và Egress gọi tới, ví dụ http://minio:9000 hoặc https://<account>.r2.cloudflarestorage.com */
+    endpoint: process.env.S3_ENDPOINT || '',
+    /** Địa chỉ trình duyệt mở link tải. Mặc định bằng S3_ENDPOINT. */
+    publicEndpoint: process.env.S3_PUBLIC_ENDPOINT || process.env.S3_ENDPOINT || '',
+    accessKey: process.env.S3_ACCESS_KEY || '',
+    secretKey: process.env.S3_SECRET_KEY || '',
+    /** MinIO cần true; R2 và AWS để false. */
+    forcePathStyle: process.env.S3_FORCE_PATH_STYLE === 'true',
+  },
+  /** Gửi email qua Resend. Bỏ trống RESEND_API_KEY thì chỉ ghi log, không gửi. */
+  email: {
+    resendKey: process.env.RESEND_API_KEY || '',
+    from: process.env.EMAIL_FROM || 'Bảng Đen <noreply@example.vn>',
+  },
+  /** Địa chỉ trang web, dùng cho link trong email. */
+  appUrl: (process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, ''),
+  /** Dung lượng tối đa một tài liệu tải lên (MB). */
+  maxMaterialMb: Number(process.env.MAX_MATERIAL_MB ?? 50),
   /** Học viên được vào lớp sớm bao nhiêu phút */
   openBeforeMinutes: 10,
   /** Học viên còn vào được bao lâu sau giờ kết thúc */

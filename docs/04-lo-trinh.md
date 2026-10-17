@@ -4,33 +4,39 @@
 
 | Hạng mục | Trạng thái |
 | --- | --- |
-| Code giai đoạn 1 (api, web, whiteboard, compose) | Đã viết xong |
-| Build (`npm install`, `tsc`, `next build`) | **Chưa chạy lần nào.** Code được viết trong môi trường không tải được thư viện npm |
-| Kiểm tra cú pháp TypeScript/JS | Đã qua |
-| Đối chiếu API thư viện | Đã đối chiếu với mã nguồn `livekit-server-sdk` 2.7.2, `@livekit/components-react` 2.6.9, `livekit-client` 2.x, Hocuspocus 2.13 |
-| Chạy thử trên máy | Chưa |
-| Triển khai VPS | Có cấu hình mẫu trong `deploy/`, chưa chạy thử |
-| Kiểm thử tự động | Chưa có |
+| Code giai đoạn 1 (api, web, whiteboard, compose) | Xong |
+| Giai đoạn 2 (phần không cần dịch vụ ngoài + ghi hình, tài liệu, nhắc lịch) | Xong về code; xem bảng giai đoạn 2 bên dưới |
+| Build (`npm ci`, `tsc`, `next build`) | **Qua** trên Node 22/24, cả ba app; có `package-lock.json` |
+| Kiểm thử tự động | 24 test Jest cho API (`cd apps/api && npm test`), chạy không cần DB |
+| Khởi động API | Đã thử: mọi module và route khởi tạo được, chỉ dừng ở bước kết nối DB khi không có Postgres |
+| Schema | Prisma migrate (`prisma/migrations/`), API chạy `migrate deploy` khi khởi động |
+| Chạy thử bằng Docker Compose trên máy | **Chưa**: máy phát triển chưa chạy được Docker Desktop lúc viết |
+| Triển khai VPS | Có cấu hình trong `deploy/`, chưa chạy thử |
 
 ## Việc cần làm ngay
 
 Theo thứ tự:
 
-1. **Build và sửa lỗi.** Chạy `docker compose up --build`. Lỗi có khả năng gặp nhất:
-   - lệch kiểu TypeScript với thư viện;
-   - thiếu import;
-   - Next.js báo lỗi lúc prerender trang client.
-
-   Chạy riêng `npm run build` trong `apps/api` và `npm run typecheck` trong `apps/web` để xem lỗi rõ hơn.
-2. **Tạo `package-lock.json`** cho cả ba app sau khi `npm install` thành công, rồi commit, để các lần build sau dùng đúng phiên bản thư viện.
-3. **Kiểm thử thủ công** theo [02-phat-trien.md](02-phat-trien.md#kiểm-thử-thủ-công-một-buổi-học): 2–3 trình duyệt, đủ các chức năng.
-4. **Chuyển sang Prisma migrate** trước khi có dữ liệu thật:
-   ```bash
-   cd apps/api
-   npx prisma migrate dev --name init     # tạo prisma/migrations/
-   ```
-   Sau đó trong `apps/api/Dockerfile`, đổi `prisma db push --skip-generate` thành `prisma migrate deploy`.
+1. **Chạy `docker compose up --build`** và sửa lỗi lúc chạy (cái mà build không bắt được: kết nối giữa các dịch vụ, cookie qua rewrite, webhook).
+2. **Kiểm thử thủ công** theo [02-phat-trien.md](02-phat-trien.md#kiểm-thử-thủ-công-một-buổi-học): 2–3 trình duyệt, đủ các chức năng, gồm chat, câu hỏi nhanh, tài liệu và ghi hình.
+3. **Kiểm tra ghi hình** (cần `node_ip` là IP LAN, xem mục dưới): bắt đầu, dừng, chờ trạng thái READY, mở "Xem lại".
+4. Viết test Playwright cho luồng đăng nhập → vào lớp → chat, khi đã có môi trường chạy được.
 5. Triển khai VPS theo [03-trien-khai-vps.md](03-trien-khai-vps.md) và dạy thử một buổi thật.
+
+### DB đã tạo bằng `db push` trước đây
+
+Bản cũ đồng bộ schema bằng `prisma db push`, không có lịch sử migration. Với DB như vậy, đánh dấu migration đầu là đã áp dụng một lần rồi khởi động lại API:
+
+```bash
+docker compose run --rm api npx prisma migrate resolve --applied 0_init
+```
+
+DB mới tạo (volume trống) thì không cần bước này.
+
+### Lỗi đã sửa khi build lần đầu
+
+- `livekit-server-sdk` 2.7 chỉ có bản ESM, còn API biên dịch ra CommonJS. Node 20 không `require` được gói ESM nên API sẽ sập khi khởi động. Dockerfile đã chuyển sang `node:22-bookworm-slim` (Node 22.12+ hỗ trợ `require(esm)`). **Không hạ về Node 20.**
+- Next.js 14.2.15 có lỗ hổng bảo mật, đã nâng lên 14.2.35.
 
 ## Điểm cần kiểm tra kỹ khi chạy thử
 
@@ -40,6 +46,11 @@ Theo thứ tự:
 - **Webhook:** LiveKit gửi `Content-Type: application/webhook+json`; `main.ts` đã khai báo body parser cho kiểu này và bật `rawBody` để kiểm tra chữ ký.
 - **Cookie qua rewrite:** đăng nhập phải đặt được cookie `bd_session` khi đi qua `/api/*` của Next.js.
 - **Múi giờ:** API định dạng giờ theo `Asia/Ho_Chi_Minh`. Ô nhập giờ ở trang tạo buổi học dùng giờ của máy người dùng.
+- **Ghi hình trên máy:** egress chạy trong container, kết nối media tới `rtc.node_ip`. Với `node_ip: 127.0.0.1`, egress gọi vào chính nó nên không nhận được video. Muốn thử ghi hình, đổi `node_ip` trong `livekit.yaml` sang IP LAN của máy (như khi thử bằng điện thoại).
+- **Ghi hình trên VPS:** egress gọi tới IP công khai của chính VPS (hairpin NAT). Thường chạy được với Docker; nếu bản ghi FAILED với lỗi kết nối, chạy egress với `network_mode: host`.
+- **Phiên bản egress:** compose dùng `livekit/egress:v1.8.6` cho hợp với LiveKit server 1.8.0. Nâng LiveKit server thì nâng egress cùng lúc.
+- **Chữ ký link tải:** `S3_PUBLIC_ENDPOINT` phải là địa chỉ trình duyệt mở được (trên máy là `http://localhost:9000`); chữ ký gắn với host nên không thay host trong URL sau khi ký.
+- **Tải tài liệu lên:** đi qua Next.js rewrite rồi tới API (multipart, tối đa `MAX_MATERIAL_MB`, mặc định 50 MB, giữ trong RAM). Kiểm tra file lớn đi qua rewrite trọn vẹn.
 
 ## Khác biệt so với thiết kế
 
@@ -47,23 +58,25 @@ Theo thứ tự:
 | --- | --- | --- |
 | Auth.js, đăng nhập Google | Email + mật khẩu, JWT tự ký | Chạy được ngay trên máy, không cần tạo OAuth client. Thêm Google ở giai đoạn sau |
 | tldraw hoặc Excalidraw | Canvas vẽ phấn tự viết trên Yjs | Ít phụ thuộc, dễ kiểm soát đồng bộ. Có thể thay bằng tldraw nếu cần hình khối, chữ |
-| Redis, BullMQ | Chưa dùng | Giai đoạn 1 chưa có việc chạy nền; một node LiveKit không cần Redis |
-| Lưu chat vào `chat_messages` | Chat chỉ trong phiên (data channel của LiveKit) | Để giai đoạn 2 |
-| Prometheus, Grafana, Sentry | Chưa có | Để giai đoạn 2 |
+| Redis, BullMQ | Redis chỉ cho LiveKit + Egress; nhắc lịch không dùng BullMQ | Nhắc lịch quét DB mỗi phút, bảng `reminders` chống gửi trùng: đơn giản hơn, không mất việc khi Redis khởi động lại |
+| Chat qua data channel | Chat đi qua API (`POST /sessions/:id/chat`), API lưu rồi phát xuống phòng | Người vào muộn thấy lịch sử; tên người gửi do server xác định |
+| Trang `/recordings/[id]` | Trang `/sessions/[id]` gom bản ghi và tài liệu của buổi | Học viên có một chỗ để xem lại cả hai |
+| MinIO cho S3 trên máy | RustFS | MinIO đã ngừng phát hành image cộng đồng |
+| Prometheus, Grafana, Sentry | Chưa có | Còn lại của giai đoạn 2 |
 
 ## Giai đoạn 2: trước và sau giờ học
 
-| Việc | Gợi ý cách làm | File liên quan |
+| Việc | Trạng thái | Ghi chú, file |
 | --- | --- | --- |
-| Ghi hình | Thêm service `livekit/egress` vào compose (cần Redis). API gọi `EgressClient.startRoomCompositeEgress`, lưu MP4 lên R2/S3. Thêm bảng `recordings`; webhook `egress_ended` cập nhật trạng thái | `classroom.module.ts`, `schema.prisma`, compose |
-| Xem lại bản ghi | Trang `/recordings/[id]`, URL ký có hạn tới R2 | web mới |
-| Lưu chat | Webhook không có nội dung chat: client gửi kèm lên API, hoặc dùng agent/data stream. Đơn giản nhất: `POST /sessions/:id/chat` mỗi lần gửi | `SidePanel.tsx`, API |
-| Nhắc lịch | BullMQ + Redis: job 60 phút và 10 phút trước giờ học, gửi email (Resend, SES) hoặc Zalo OA | module Notification mới |
-| Tài liệu theo buổi | Bảng `materials`, tải lên R2, hiện trong lịch học và phòng học | |
-| Câu hỏi nhanh | Tin dữ liệu chủ đề `quiz` trong phòng, kết quả lưu qua API | `Classroom.tsx` |
-| Giám sát | Prometheus lấy metrics LiveKit (`prometheus_port`), Grafana, Sentry cho web/API | compose |
-| Kiểm thử tải | `lk load-test` với 30 người giả lập trên VPS thật | |
-| Kiểm thử tự động | Jest cho API (service + controller), Playwright cho luồng đăng nhập, vào lớp | |
+| Ghi hình | **Xong** (code) | Egress RoomComposite → MP4 lên S3/R2; webhook `egress_*`. `recording.service.ts`, `media.module.ts`. Chưa chạy thử thật |
+| Xem lại bản ghi | **Xong** | `/sessions/[id]`, link ký có hạn 4 giờ |
+| Lưu chat | **Xong** | `interaction.module.ts`, `components/room/interaction.ts` |
+| Nhắc lịch | **Xong** (email) | `reminder.module.ts`, Resend. Zalo OA chưa làm |
+| Tài liệu theo buổi | **Xong** | Tài liệu chung của khoá hoặc theo buổi; tab Tài liệu trong phòng |
+| Câu hỏi nhanh | **Xong** | Trắc nghiệm có đáp án hoặc thăm dò; kết quả trực tiếp cho giáo viên |
+| Kiểm thử tự động | **Một phần** | Jest cho API: chat, câu hỏi nhanh, ghi hình, nhắc lịch. Chưa có Playwright |
+| Giám sát | Chưa | Prometheus lấy metrics LiveKit (`prometheus_port`), Grafana, Sentry cho web/API |
+| Kiểm thử tải | Chưa | `lk load-test` với 30 người giả lập trên VPS thật |
 
 ## Giai đoạn 3: kinh doanh và quy mô
 

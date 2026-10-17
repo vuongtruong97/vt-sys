@@ -17,9 +17,15 @@ services:
       timeout: 3s
       retries: 20
 
+  # LiveKit và Egress trao đổi việc ghi hình qua Redis.
+  redis:
+    image: redis:7.4-alpine
+
   livekit:
     image: livekit/livekit-server:v1.8.0
     command: --config /etc/livekit.yaml
+    depends_on:
+      - redis
     environment:
       LIVEKIT_KEYS: "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
     volumes:
@@ -28,6 +34,56 @@ services:
       - "7880:7880"
       - "7881:7881"
       - "50000-50100:50000-50100/udp"
+
+  # Ghi hình: mở phòng bằng Chrome không giao diện, ghép video, tải MP4 lên S3.
+  egress:
+    image: livekit/egress:v1.8.6
+    depends_on:
+      - redis
+      - livekit
+    cap_add:
+      - SYS_ADMIN
+    environment:
+      EGRESS_CONFIG_BODY: |
+        api_key: ${LIVEKIT_API_KEY}
+        api_secret: ${LIVEKIT_API_SECRET}
+        ws_url: ws://livekit:7880
+        redis:
+          address: redis:6379
+        log_level: info
+
+  # S3 chạy trên máy (RustFS, tương thích MinIO) cho bản ghi hình và tài liệu.
+  # Trên VPS dùng Cloudflare R2 hoặc S3 thật thay cho dịch vụ này.
+  s3:
+    image: rustfs/rustfs:1.0.2
+    environment:
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY}
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: 0.0.0.0:9000
+    volumes:
+      - s3data:/data
+    ports:
+      - "9000:9000"
+
+  # Tạo bucket một lần rồi thoát.
+  s3-init:
+    image: amazon/aws-cli:2.38.1
+    depends_on:
+      - s3
+    environment:
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY}
+      AWS_DEFAULT_REGION: us-east-1
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        for i in $$(seq 1 30); do
+          aws --endpoint-url http://s3:9000 s3api head-bucket --bucket ${S3_BUCKET} 2>/dev/null && exit 0
+          aws --endpoint-url http://s3:9000 s3 mb s3://${S3_BUCKET} && exit 0
+          sleep 2
+        done
+        echo "Không tạo được bucket ${S3_BUCKET}"; exit 1
 
   api:
     build: ./apps/api
@@ -49,6 +105,17 @@ services:
       SEED_TEACHER_NAME: ${SEED_TEACHER_NAME}
       SEED_DEMO: ${SEED_DEMO}
       COOKIE_SECURE: ${COOKIE_SECURE}
+      # Trong mạng Docker, API và Egress gọi s3:9000; trình duyệt mở link qua localhost:9000.
+      S3_BUCKET: ${S3_BUCKET}
+      S3_ENDPOINT: http://s3:9000
+      S3_PUBLIC_ENDPOINT: http://localhost:9000
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_FORCE_PATH_STYLE: "true"
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      APP_URL: http://localhost:3000
       TZ: Asia/Ho_Chi_Minh
     ports:
       - "3001:3001"
@@ -77,3 +144,4 @@ services:
 
 volumes:
   pgdata:
+  s3data:

@@ -1,8 +1,10 @@
 'use client';
-import { useChat } from '@livekit/components-react';
 import { Participant } from 'livekit-client';
 import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { Materials } from '@/components/Materials';
 import { api } from '@/lib/api';
+import type { useQuizzes, useRoomChat } from './interaction';
+import { QuizPanel } from './Quiz';
 import { handUp, Panel, roleOf, RoomMeta } from './shared';
 
 type JoinRequest = { id: string; user: { id: string; name: string; email: string } };
@@ -16,8 +18,12 @@ export function SidePanel(props: {
   participants: Participant[];
   sendControl: (identity: string, type: 'speak' | 'lower') => Promise<void>;
   say: (msg: string) => void;
+  chat: ReturnType<typeof useRoomChat>;
+  quiz: ReturnType<typeof useQuizzes>;
+  teacherId: string | undefined;
+  courseId: string;
 }) {
-  const { panel, setPanel } = props;
+  const { panel, setPanel, isTeacher } = props;
   return (
     <aside className="side">
       <div className="side-head">
@@ -25,48 +31,67 @@ export function SidePanel(props: {
         <button className="tab" aria-pressed={panel === 'people'} onClick={() => setPanel('people')}>
           Học viên ({props.participants.length})
         </button>
+        {isTeacher && (
+          <button className="tab" aria-pressed={panel === 'quiz'} onClick={() => setPanel('quiz')}>Câu hỏi</button>
+        )}
+        <button className="tab" aria-pressed={panel === 'files'} onClick={() => setPanel('files')}>Tài liệu</button>
         <button className="tab x" aria-label="Đóng" onClick={() => setPanel(null)}>✕</button>
       </div>
-      {panel === 'chat' ? <ChatPanel /> : <PeoplePanel {...props} />}
+      {panel === 'chat' ? (
+        <ChatPanel chat={props.chat} teacherId={props.teacherId} say={props.say} />
+      ) : panel === 'files' ? (
+        <div className="side-body">
+          <Materials courseId={props.courseId} sessionId={props.sessionId} canEdit={isTeacher} room onMessage={props.say} />
+        </div>
+      ) : panel === 'quiz' && isTeacher ? (
+        <QuizPanel quiz={props.quiz} say={props.say} />
+      ) : (
+        <PeoplePanel {...props} />
+      )}
     </aside>
   );
 }
 
-function ChatPanel() {
-  const { chatMessages, send, isSending } = useChat();
+function ChatPanel({ chat, teacherId, say }: { chat: ReturnType<typeof useRoomChat>; teacherId: string | undefined; say: (m: string) => void }) {
+  const { messages, send } = chat;
   const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
   const end = useRef<HTMLDivElement>(null);
-  useEffect(() => end.current?.scrollIntoView({ block: 'end' }), [chatMessages.length]);
+  useEffect(() => end.current?.scrollIntoView({ block: 'end' }), [messages.length]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const v = text.trim();
     if (!v) return;
-    await send(v);
-    setText('');
+    setSending(true);
+    try {
+      await send(v);
+      setText('');
+    } catch (err) {
+      say((err as Error).message);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
     <>
       <div className="side-body" aria-live="polite">
-        {chatMessages.length === 0 && <p className="sub" style={{ color: 'var(--on-room-muted)', fontSize: 13 }}>Chưa có tin nhắn. Tin nhắn chỉ hiện trong buổi học này.</p>}
-        {chatMessages.map((m) => {
-          const teacher = m.from ? roleOf(m.from) === 'teacher' : false;
-          return (
-            <div key={m.id ?? m.timestamp} className="msg">
-              <div className="who">
-                <b className={teacher ? 'gv' : ''}>{m.from?.name || m.from?.identity || 'Ẩn danh'}</b> ·{' '}
-                {new Date(m.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-              </div>
-              <div className="txt">{m.message}</div>
+        {messages.length === 0 && <p className="sub" style={{ color: 'var(--on-room-muted)', fontSize: 13 }}>Chưa có tin nhắn. Tin nhắn được lưu lại cùng buổi học.</p>}
+        {messages.map((m) => (
+          <div key={m.id} className="msg">
+            <div className="who">
+              <b className={m.from.id === teacherId ? 'gv' : ''}>{m.from.name}</b> ·{' '}
+              {new Date(m.at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
             </div>
-          );
-        })}
+            <div className="txt">{m.text}</div>
+          </div>
+        ))}
         <div ref={end} />
       </div>
       <form className="chat-form" onSubmit={submit}>
         <input id="chat-input" value={text} onChange={(e) => setText(e.target.value)} placeholder="Nhắn cho cả lớp" autoComplete="off" maxLength={1000} />
-        <button className="mini pri" disabled={isSending}>Gửi</button>
+        <button className="mini pri" disabled={sending}>Gửi</button>
       </form>
     </>
   );

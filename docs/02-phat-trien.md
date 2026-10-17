@@ -50,8 +50,19 @@ Seed chỉ chạy dữ liệu mẫu khi giáo viên chưa có khoá học nào. 
    - mở bảng trắng, vẽ ở cả hai máy;
    - học viên giơ tay, giáo viên **Mời phát biểu**;
    - tắt mic từng người, tắt mic tất cả, mời ra;
-   - chat.
-5. Giáo viên **Kết thúc buổi học**, rồi mở **Điểm danh** của buổi đó.
+   - chat; tải lại trang học viên, tin cũ vẫn còn;
+   - giáo viên tab **Câu hỏi** → gửi câu có đáp án đúng; học viên trả lời trên thẻ nổi, đổi ý; giáo viên thấy số liệu chạy, bấm **Đóng và công bố**;
+   - tab **Tài liệu**: giáo viên tải file lên, học viên bấm **Mở**;
+   - **Ghi hình** → vài phút → **Dừng ghi hình** (cần `node_ip` là IP LAN, xem bên dưới).
+5. Giáo viên **Kết thúc buổi học**, rồi mở **Điểm danh** và **Xem lại** (bản ghi, tài liệu) của buổi đó.
+
+### Thử ghi hình trên máy
+
+Egress chạy trong container và kết nối media tới `rtc.node_ip`. Mặc định `127.0.0.1` thì egress không nhận được video. Đổi `node_ip` trong `livekit.yaml` thành IP LAN (ví dụ `192.168.1.10`), rồi `docker compose up -d livekit`. Bản ghi xong nằm trong bucket `bangden` của dịch vụ `s3` (RustFS, cổng 9000).
+
+### Nhắc lịch
+
+Không có `RESEND_API_KEY` thì API chỉ ghi log: `docker compose logs -f api | grep Email`. Tạo một buổi học bắt đầu sau 15 phút cho khoá có học viên, chờ tối đa 1 phút sẽ thấy dòng nhắc lịch.
 
 ## Biến môi trường
 
@@ -69,8 +80,13 @@ Tất cả nằm trong `.env` ở thư mục gốc; `docker-compose.yml` truyề
 | `SEED_TEACHER_EMAIL`, `SEED_TEACHER_PASSWORD`, `SEED_TEACHER_NAME` | api | Tài khoản giáo viên tạo lúc khởi động | xem file |
 | `SEED_DEMO` | api | `true` thì tạo dữ liệu mẫu | `true` |
 | `COOKIE_SECURE` | api | `true` khi chạy sau HTTPS | `false` |
+| `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` | s3, api, s3-init | Nơi lưu bản ghi và tài liệu. Bỏ trống `S3_BUCKET` thì hai tính năng này tắt | `bangden`, xem file |
+| `S3_ENDPOINT`, `S3_REGION` | api (chỉ VPS) | Địa chỉ R2/S3. Trên máy compose đặt sẵn `http://s3:9000` | trống, `auto` |
+| `RESEND_API_KEY`, `EMAIL_FROM` | api | Gửi email nhắc lịch. Bỏ trống thì chỉ ghi log | trống |
 
-Biến cố định trong compose: `LIVEKIT_URL=http://livekit:7880` (API gọi RoomService), `API_INTERNAL_URL=http://api:3001` (web rewrite, đặt lúc build), `TZ=Asia/Ho_Chi_Minh`.
+Biến cố định trong compose: `LIVEKIT_URL=http://livekit:7880` (API gọi RoomService), `API_INTERNAL_URL=http://api:3001` (web rewrite, đặt lúc build), `S3_ENDPOINT=http://s3:9000` và `S3_PUBLIC_ENDPOINT=http://localhost:9000` (trình duyệt mở link tải), `APP_URL` (link trong email), `TZ=Asia/Ho_Chi_Minh`.
+
+Chạy app ngoài Docker cần **Node 22.12 trở lên**: `livekit-server-sdk` chỉ có bản ESM và API (CommonJS) cần `require(esm)`.
 
 **Lưu ý:** `WHITEBOARD_PUBLIC_URL` và `API_INTERNAL_URL` được ghi cứng vào web lúc build. Đổi chúng thì phải `docker compose up --build web`.
 
@@ -79,7 +95,7 @@ Biến cố định trong compose: `LIVEKIT_URL=http://livekit:7880` (API gọi 
 Cách này cho hot reload nhanh hơn. Hạ tầng vẫn chạy bằng Docker:
 
 ```bash
-docker compose up postgres livekit
+docker compose up postgres redis livekit egress s3 s3-init
 ```
 
 **API** (terminal 1):
@@ -96,9 +112,15 @@ LIVEKIT_API_SECRET=doi-secret-livekit-nay-dai-it-nhat-32-ky-tu
 LIVEKIT_URL=http://localhost:7880
 LIVEKIT_PUBLIC_URL=ws://localhost:7880
 SEED_DEMO=true
+S3_BUCKET=bangden
+S3_ENDPOINT=http://localhost:9000
+S3_ACCESS_KEY=bangden-s3
+S3_SECRET_KEY=doi-secret-s3-nay-di
+S3_REGION=us-east-1
+S3_FORCE_PATH_STYLE=true
 EOF
 set -a; . ./.env.local; set +a
-npm run build && npm run db:push && npm run seed
+npm run build && npm run db:migrate && npm run seed
 npm start                      # hoặc: npm run dev (tsc --watch) rồi chạy lại npm start
 ```
 
@@ -130,10 +152,11 @@ Trên Linux, thêm `extra_hosts: ["host.docker.internal:host-gateway"]` vào ser
 
 - Nhánh `main` luôn chạy được. Làm việc trên nhánh riêng: `feat/ghi-hinh`, `fix/webhook-diem-danh`.
 - Commit nhỏ, mô tả bằng tiếng Việt hoặc tiếng Anh, nói rõ thay đổi gì và vì sao.
-- Sửa schema thì sửa `apps/api/prisma/schema.prisma`, chạy `npm run db:push` trên máy. Khi đã có dữ liệu thật, chuyển sang migration (xem [04-lo-trinh.md](04-lo-trinh.md)).
+- Sửa schema thì sửa `apps/api/prisma/schema.prisma`, rồi tạo migration (cần Postgres đang chạy): `cd apps/api && npm run db:new-migration -- --name ten-thay-doi`. Đọc lại file SQL trong `prisma/migrations/` trước khi commit. API tự áp migration (`prisma migrate deploy`) khi khởi động.
 - Thêm endpoint thì kiểm tra quyền bằng `AuthGuard`/`TeacherGuard` và `ClassroomService.requireTeacher`. Mọi DTO phải có `class-validator`, vì `ValidationPipe` đang bật `whitelist`.
 - Chuỗi hiển thị cho người dùng viết bằng tiếng Việt, nói rõ việc gì xảy ra và cách sửa.
-- Trước khi mở PR: `cd apps/api && npm run build`, `cd apps/web && npm run typecheck && npm run build`.
+- Trước khi mở PR: `cd apps/api && npm run build && npm test`, `cd apps/web && npm run typecheck && npm run build`.
+- Test API nằm trong `apps/api/test/`, dùng Prisma và LiveKit giả nên không cần DB. Jest không nạp được `livekit-server-sdk` (ESM), nên `jest.config.js` thay nó bằng `test/livekit-stub.ts`.
 
 ## Lệnh hay dùng
 

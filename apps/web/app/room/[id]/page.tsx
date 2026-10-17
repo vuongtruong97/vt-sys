@@ -96,6 +96,8 @@ export default function RoomPage({ params }: { params: { id: string } }) {
         screenShareEncoding: ScreenSharePresets.h1080fps15.encoding,
         dtx: true,
         red: true,
+        // Tắt mic thì nhả hẳn thiết bị, không chỉ mute track (trình duyệt hết báo đang thu âm).
+        stopMicTrackOnMute: true,
       },
     }),
     [choices],

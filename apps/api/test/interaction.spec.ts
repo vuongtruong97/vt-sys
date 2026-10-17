@@ -30,7 +30,15 @@ describe('Trò chuyện', () => {
     );
     const msg = await ctl.send(student, 's1', { text: 'Em chào thầy' });
     expect(msg.from).toEqual({ id: student.id, name: 'Lan' });
-    expect(lk.broadcast).toHaveBeenCalledWith('bd-room', 'chat', msg);
+    expect(lk.broadcast).toHaveBeenCalledWith('bd-room', 'chat', msg, undefined);
+  });
+
+  it('đang chia nhóm: tin phát tới phòng chính và mọi phòng nhóm', async () => {
+    const { prisma, lk, ctl } = setup(session({ breakoutActive: true }));
+    prisma.breakoutGroup.findMany.mockResolvedValue([{ index: 0 }, { index: 1 }]);
+    prisma.chatMessage.create.mockResolvedValue({ id: 'm2', text: 'a', createdAt: new Date(), user: { id: teacher.id, name: teacher.name } });
+    await ctl.send(teacher, 's1', { text: 'Cả lớp chú ý' });
+    expect(lk.broadcast.mock.calls.map((c) => c[0])).toEqual(['bd-room', 'bd-room-g0', 'bd-room-g1']);
   });
 
   it('người chưa được vào lớp không gửi được tin', async () => {

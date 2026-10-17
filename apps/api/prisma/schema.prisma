@@ -73,16 +73,21 @@ model Enrollment {
 }
 
 model ClassSession {
-  id                String        @id @default(cuid())
+  id                String          @id @default(cuid())
   courseId          String
-  course            Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course            Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
   title             String
   startsAt          DateTime
   endsAt            DateTime
-  roomName          String        @unique
-  status            SessionStatus @default(SCHEDULED)
-  allowStudentShare Boolean       @default(false)
-  createdAt         DateTime      @default(now())
+  roomName          String          @unique
+  status            SessionStatus   @default(SCHEDULED)
+  allowStudentShare Boolean         @default(false)
+  /// Đang chia nhóm: học viên có trong breakout_groups vào phòng nhóm thay vì phòng chính.
+  breakoutActive    Boolean         @default(false)
+  /// Giờ giáo viên hẹn gọi các nhóm về (chỉ để hiện đồng hồ, không tự đóng).
+  breakoutEndsAt    DateTime?
+  createdAt         DateTime        @default(now())
+  breakoutGroups    BreakoutGroup[]
   attendance        Attendance[]
   joinRequests      JoinRequest[]
   whiteboard        Whiteboard?
@@ -176,6 +181,20 @@ model QuizAnswer {
 
   @@unique([quizId, userId])
   @@map("quiz_answers")
+}
+
+/// Nhóm nhỏ trong buổi học. Phòng LiveKit của nhóm là `<roomName>-g<index>`.
+model BreakoutGroup {
+  id        String       @id @default(cuid())
+  sessionId String
+  index     Int
+  name      String
+  /// users.id của học viên trong nhóm.
+  members   String[]
+  session   ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, index])
+  @@map("breakout_groups")
 }
 
 enum RecordingStatus {

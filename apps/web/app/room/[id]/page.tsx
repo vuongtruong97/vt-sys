@@ -17,8 +17,9 @@ type SessionInfo = {
   course: { id: string; title: string };
   role: 'teacher' | 'student' | null;
 };
+import type { GroupInfo } from '@/components/room/shared';
 type JoinRes =
-  | { status: 'ok'; role: 'teacher' | 'student'; token: string; url: string }
+  | { status: 'ok'; role: 'teacher' | 'student'; token: string; url: string; group: GroupInfo | null }
   | { status: 'waiting' }
   | { status: 'denied' };
 
@@ -26,7 +27,7 @@ type Phase =
   | { k: 'prejoin' }
   | { k: 'joining' }
   | { k: 'waiting' }
-  | { k: 'in'; token: string; url: string; role: 'teacher' | 'student' }
+  | { k: 'in'; token: string; url: string; role: 'teacher' | 'student'; group: GroupInfo | null }
   | { k: 'left'; reason: string }
   | { k: 'error'; message: string };
 
@@ -50,12 +51,15 @@ export default function RoomPage({ params }: { params: { id: string } }) {
   };
   useEffect(() => stopPoll, []);
 
-  const join = useCallback(async () => {
+  /** Đang chuyển phòng (nhóm ↔ phòng chính): bỏ qua sự kiện ngắt kết nối của phòng cũ. */
+  const switching = useRef(false);
+
+  const join = useCallback(async (group?: number) => {
     try {
-      const r = await api<JoinRes>(`/sessions/${params.id}/join`, { method: 'POST' });
+      const r = await api<JoinRes>(`/sessions/${params.id}/join`, { json: group != null ? { group } : {} });
       if (r.status === 'ok') {
         stopPoll();
-        setPhase({ k: 'in', token: r.token, url: r.url, role: r.role });
+        setPhase({ k: 'in', token: r.token, url: r.url, role: r.role, group: r.group });
       } else if (r.status === 'waiting') {
         setPhase({ k: 'waiting' });
         if (!poll.current) poll.current = setInterval(join, 3000);
@@ -68,6 +72,17 @@ export default function RoomPage({ params }: { params: { id: string } }) {
       setPhase({ k: 'error', message: e instanceof ApiError ? e.message : 'Không kết nối được máy chủ' });
     }
   }, [params.id]);
+
+  /** Chuyển sang phòng nhóm hoặc về phòng chính; server quyết định phòng (giáo viên chọn được nhóm). */
+  const switchRoom = useCallback(
+    async (group?: number) => {
+      switching.current = true;
+      await join(group);
+      // Phòng cũ ngắt kết nối sau khi LiveKitRoom mới gắn vào; đợi một nhịp rồi mới nhận sự kiện rời lớp trở lại.
+      setTimeout(() => (switching.current = false), 1500);
+    },
+    [join],
+  );
 
   const roomOptions = useMemo<RoomOptions>(
     () => ({
@@ -122,6 +137,8 @@ export default function RoomPage({ params }: { params: { id: string } }) {
   if (phase.k === 'in' && info && choices) {
     return (
       <LiveKitRoom
+        // Token mới (đổi phòng) thì gắn lại LiveKitRoom từ đầu.
+        key={phase.token}
         className="classroom"
         data-lk-theme="default"
         serverUrl={phase.url}
@@ -131,6 +148,7 @@ export default function RoomPage({ params }: { params: { id: string } }) {
         audio={choices.audioEnabled}
         video={choices.videoEnabled}
         onDisconnected={(reason?: DisconnectReason) =>
+          !switching.current &&
           setPhase({
             k: 'left',
             reason:
@@ -143,7 +161,16 @@ export default function RoomPage({ params }: { params: { id: string } }) {
         }
         onError={(e) => console.error(e)}
       >
-        <Classroom sessionId={info.id} title={info.title} courseId={info.course.id} courseTitle={info.course.title} endsAt={info.endsAt} role={phase.role} />
+        <Classroom
+          sessionId={info.id}
+          title={info.title}
+          courseId={info.course.id}
+          courseTitle={info.course.title}
+          endsAt={info.endsAt}
+          role={phase.role}
+          group={phase.group}
+          switchRoom={switchRoom}
+        />
         <RoomAudioRenderer />
       </LiveKitRoom>
     );

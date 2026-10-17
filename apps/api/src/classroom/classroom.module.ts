@@ -17,7 +17,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { ClassSession, Course } from '@prisma/client';
-import { IsBoolean, IsString } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, Min } from 'class-validator';
 import type { Request } from 'express';
 import jwt from 'jsonwebtoken';
 import { WebhookReceiver } from 'livekit-server-sdk';
@@ -38,6 +38,10 @@ class OpenDto {
 }
 class DecideDto {
   @IsBoolean() approve: boolean;
+}
+class JoinDto {
+  /** Giáo viên chọn ghé nhóm nào khi đang chia nhóm; bỏ trống là phòng chính. Học viên gửi lên sẽ bị bỏ qua. */
+  @IsOptional() @IsInt() @Min(0) group?: number;
 }
 
 type SessionWithCourse = ClassSession & { course: Course };
@@ -73,7 +77,18 @@ export class ClassroomService {
     if (s.course.teacherId !== user.id) throw new ForbiddenException('Chỉ giáo viên của lớp làm được thao tác này');
     return s;
   }
+
+  /** Mọi phòng LiveKit của buổi: phòng chính và các phòng nhóm đang mở. Dùng để phát tin cho cả lớp. */
+  async rooms(s: ClassSession): Promise<string[]> {
+    if (!s.breakoutActive) return [s.roomName];
+    const groups = await this.prisma.breakoutGroup.findMany({ where: { sessionId: s.id }, select: { index: true } });
+    return [s.roomName, ...groups.map((g) => groupRoom(s.roomName, g.index))];
+  }
 }
+
+export const groupRoom = (roomName: string, index: number) => `${roomName}-g${index}`;
+/** Tên phòng chính từ tên phòng nhóm; phòng chính thì trả về chính nó. */
+export const mainRoom = (name: string) => name.replace(/-g\d+$/, '');
 
 @Controller('sessions')
 @UseGuards(AuthGuard)
@@ -106,7 +121,7 @@ export class ClassroomController {
    */
   @Post(':id/join')
   @HttpCode(200)
-  async join(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+  async join(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: JoinDto = {}) {
     const s = await this.svc.session(id);
     if (s.status === 'CANCELLED') throw new BadRequestException('Buổi học này đã bị huỷ');
 
@@ -130,15 +145,28 @@ export class ClassroomController {
       await this.prisma.classSession.update({ where: { id: s.id }, data: { status: 'LIVE' } });
     }
 
-    await this.lk.ensureRoom(s.roomName, { board: false, allowStudentShare: s.allowStudentShare });
+    // Đang chia nhóm: học viên vào phòng nhóm của mình, giáo viên vào nhóm đã chọn.
+    let group: { index: number; name: string; count: number; endsAt: Date | null } | null = null;
+    if (s.breakoutActive) {
+      const groups = await this.prisma.breakoutGroup.findMany({ where: { sessionId: s.id }, orderBy: { index: 'asc' } });
+      const g =
+        role === 'teacher'
+          ? dto.group != null ? groups.find((x) => x.index === dto.group) : undefined
+          : groups.find((x) => x.members.includes(user.id));
+      if (role === 'teacher' && dto.group != null && !g) throw new BadRequestException('Không có nhóm này');
+      if (g) group = { index: g.index, name: g.name, count: groups.length, endsAt: s.breakoutEndsAt };
+    }
+    const room = group ? groupRoom(s.roomName, group.index) : s.roomName;
+
+    await this.lk.ensureRoom(room, { board: false, allowStudentShare: s.allowStudentShare });
     const token = await this.lk.token({
-      room: s.roomName,
+      room,
       identity: user.id,
       name: user.name,
       role,
       allowStudentShare: s.allowStudentShare,
     });
-    return { status: 'ok', role, token, url: config.livekit.publicUrl };
+    return { status: 'ok', role, token, url: config.livekit.publicUrl, group };
   }
 
   /** Token cho máy chủ bảng trắng (Hocuspocus). */
@@ -188,14 +216,17 @@ export class ClassroomController {
   @HttpCode(204)
   async mute(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: IdentityDto) {
     const s = await this.svc.requireTeacher(user, id);
-    await this.lk.muteMic(s.roomName, dto.identity);
+    // Học viên có thể đang ở phòng nhóm: thử từng phòng của buổi.
+    for (const r of await this.svc.rooms(s)) await this.lk.muteMic(r, dto.identity).catch(() => {});
   }
 
   @Post(':id/mod/mute-all')
   @HttpCode(204)
   async muteAll(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     const s = await this.svc.requireTeacher(user, id);
-    for (const p of await this.lk.students(s.roomName)) await this.lk.muteMic(s.roomName, p.identity);
+    for (const r of await this.svc.rooms(s)) {
+      for (const p of await this.lk.students(r).catch(() => [])) await this.lk.muteMic(r, p.identity).catch(() => {});
+    }
   }
 
   @Post(':id/mod/remove')
@@ -208,7 +239,12 @@ export class ClassroomController {
       where: { sessionId: id, userId: dto.identity },
       data: { status: 'DENIED' },
     });
-    await this.lk.rooms.removeParticipant(s.roomName, dto.identity);
+    // Bỏ khỏi nhóm để vào lại không được xếp về nhóm cũ.
+    const groups = await this.prisma.breakoutGroup.findMany({ where: { sessionId: id } });
+    for (const g of groups.filter((x) => x.members.includes(dto.identity))) {
+      await this.prisma.breakoutGroup.update({ where: { id: g.id }, data: { members: g.members.filter((m) => m !== dto.identity) } });
+    }
+    for (const r of await this.svc.rooms(s)) await this.lk.rooms.removeParticipant(r, dto.identity).catch(() => {});
   }
 
   @Post(':id/mod/allow-share')
@@ -216,8 +252,13 @@ export class ClassroomController {
   async allowShare(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: AllowDto) {
     const s = await this.svc.requireTeacher(user, id);
     await this.prisma.classSession.update({ where: { id }, data: { allowStudentShare: dto.allow } });
-    await this.lk.setStudentShare(s.roomName, dto.allow);
-    return this.lk.patchMeta(s.roomName, { allowStudentShare: dto.allow });
+    const [main, ...groups] = await this.svc.rooms(s);
+    for (const r of groups) {
+      await this.lk.setStudentShare(r, dto.allow).catch(() => {});
+      await this.lk.patchMeta(r, { allowStudentShare: dto.allow }).catch(() => {});
+    }
+    await this.lk.setStudentShare(main, dto.allow);
+    return this.lk.patchMeta(main, { allowStudentShare: dto.allow });
   }
 
   @Post(':id/mod/board')
@@ -231,13 +272,16 @@ export class ClassroomController {
   @HttpCode(204)
   async end(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     const s = await this.svc.requireTeacher(user, id);
-    await this.prisma.classSession.update({ where: { id }, data: { status: 'ENDED' } });
+    const rooms = await this.svc.rooms(s);
+    await this.prisma.classSession.update({ where: { id }, data: { status: 'ENDED', breakoutActive: false } });
     // Dừng ghi hình trước khi đóng phòng để egress kịp ghi xong file.
     if (await this.recordings.active(id)) await this.recordings.stop(s).catch(() => {});
-    try {
-      await this.lk.rooms.deleteRoom(s.roomName);
-    } catch {
-      /* phòng đã đóng */
+    for (const r of rooms) {
+      try {
+        await this.lk.rooms.deleteRoom(r);
+      } catch {
+        /* phòng đã đóng */
+      }
     }
   }
 
@@ -313,7 +357,9 @@ export class WebhookController {
 
     const roomName = event.room?.name;
     if (!roomName) return { ok: true };
-    const session = await this.prisma.classSession.findUnique({ where: { roomName } });
+    // Phòng nhóm (`<roomName>-g<n>`) ghi điểm danh vào cùng buổi học với phòng chính.
+    const isGroup = mainRoom(roomName) !== roomName;
+    const session = await this.prisma.classSession.findUnique({ where: { roomName: mainRoom(roomName) } });
     if (!session) return { ok: true };
 
     const at = event.createdAt ? new Date(Number(event.createdAt) * 1000) : new Date();
@@ -335,6 +381,8 @@ export class WebhookController {
         }
         break;
       case 'room_finished':
+        // Phòng nhóm đóng không có nghĩa buổi học kết thúc; ai rời phòng nhóm đã có participant_left.
+        if (isGroup) break;
         await this.prisma.attendance.updateMany({ where: { sessionId: session.id, leftAt: null }, data: { leftAt: at } });
         if (session.status === 'LIVE') {
           await this.prisma.classSession.update({ where: { id: session.id }, data: { status: 'ENDED' } });

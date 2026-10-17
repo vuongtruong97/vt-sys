@@ -16,6 +16,7 @@ import {
 import { RoomEvent, Track } from 'livekit-client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/api';
+import type { GroupInfo } from './shared';
 import { useQuizzes, useRoomChat } from './interaction';
 import { QuizCard } from './Quiz';
 import { handUp, Panel, roleOf, RoomMeta } from './shared';
@@ -55,8 +56,11 @@ export function Classroom(props: {
   courseTitle: string;
   endsAt: string;
   role: 'teacher' | 'student';
+  /** Phòng nhóm đang ở; null là phòng chính. */
+  group: GroupInfo | null;
+  switchRoom: (group?: number) => Promise<void>;
 }) {
-  const { sessionId, role } = props;
+  const { sessionId, role, group, switchRoom } = props;
   const isTeacher = role === 'teacher';
   const room = useRoomContext();
   const { localParticipant } = useLocalParticipant();
@@ -108,6 +112,28 @@ export function Classroom(props: {
     [isTeacher, localParticipant, say],
   );
   useDataChannel('control', onControl);
+
+  // Chia nhóm: server báo "start"/"end", trình duyệt gọi lại join để sang đúng phòng.
+  const [notice, setNotice] = useState('');
+  const onBreakout = useCallback(
+    (msg: { payload: Uint8Array }) => {
+      try {
+        const data = JSON.parse(decoder.decode(msg.payload));
+        if (data.type === 'announce') {
+          setNotice(`${data.from}: ${data.text}`);
+        } else if (!isTeacher && (data.type === 'start' || data.type === 'end')) {
+          say(data.type === 'start' ? 'Đang chuyển bạn sang phòng nhóm…' : 'Giáo viên gọi các nhóm về, đang về phòng chính…');
+          switchRoom();
+        }
+      } catch {
+        /* bỏ qua tin không hợp lệ */
+      }
+    },
+    [isTeacher, say, switchRoom],
+  );
+  useDataChannel('breakout', onBreakout);
+
+  const groupLeft = group?.endsAt ? Math.round((new Date(group.endsAt).getTime() - Date.now()) / 60_000) : null;
 
   const sendControl = useCallback(
     (identity: string, type: 'speak' | 'lower') =>
@@ -184,6 +210,11 @@ export function Classroom(props: {
           <div className="sub">{participants.length} người trong lớp{isTeacher ? ' · bạn là giáo viên' : ''}</div>
         </div>
         <span className="grow" />
+        {group && (
+          <span className="pill hand" role="status">
+            {group.name} / {group.count} nhóm{groupLeft != null && (groupLeft > 0 ? ` · còn ${groupLeft} phút` : ' · đã hết giờ')}
+          </span>
+        )}
         {meta.recording && <span className="pill rec" role="status">● Đang ghi hình</span>}
         {hands.length > 0 && (
           <button className="pill hand" style={{ border: 0 }} onClick={() => setPanel('people')}>
@@ -224,6 +255,8 @@ export function Classroom(props: {
             quiz={quiz}
             teacherId={teacherId}
             courseId={props.courseId}
+            group={group}
+            switchRoom={switchRoom}
           />
         )}
         {!isTeacher && <QuizCard quiz={quiz} say={say} />}
@@ -249,12 +282,13 @@ export function Classroom(props: {
             <span className="label">Chia sẻ màn hình</span>
           </button>
         )}
-        {isTeacher && (
+        {/* Bảng trắng và ghi hình gắn với phòng chính; ẩn khi giáo viên đang ghé nhóm. */}
+        {isTeacher && !group && (
           <button className="cb" aria-pressed={meta.board} onClick={toggleBoard}>
             <span className="label">{meta.board ? 'Đóng bảng trắng' : 'Bảng trắng'}</span>
           </button>
         )}
-        {isTeacher && canRecord && (
+        {isTeacher && canRecord && !group && (
           <button className={`cb${meta.recording ? ' rec-on' : ''}`} disabled={recBusy} onClick={toggleRecording}>
             ● <span className="label">{meta.recording ? 'Dừng ghi hình' : 'Ghi hình'}</span>
           </button>
@@ -274,6 +308,11 @@ export function Classroom(props: {
           <span className="label">Trò chuyện</span>
           {chat.unread > 0 && <span className="badge">{chat.unread}</span>}
         </button>
+        {isTeacher && (
+          <button className="cb" aria-pressed={panel === 'groups'} onClick={() => setPanel(panel === 'groups' ? null : 'groups')}>
+            <span className="label">{group ? `Đang ở ${group.name}` : 'Chia nhóm'}</span>
+          </button>
+        )}
         {isTeacher && (
           <button className="cb" aria-pressed={panel === 'quiz'} onClick={() => setPanel(panel === 'quiz' ? null : 'quiz')}>
             <span className="label">Câu hỏi</span>
@@ -296,6 +335,14 @@ export function Classroom(props: {
       </footer>
 
       {toast && <div className="toast" role="status">{toast}</div>}
+      {notice && (
+        <div className="quiz-card" role="alert" style={{ bottom: 'auto', top: 72 }}>
+          <div className="row" style={{ gap: 6 }}>
+            <b style={{ flex: 1 }}>📣 {notice}</b>
+            <button className="mini" aria-label="Đóng" onClick={() => setNotice('')}>✕</button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

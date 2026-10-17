@@ -26,6 +26,9 @@ export function mockPrisma() {
     findFirst: jest.fn(),
     findMany: jest.fn().mockResolvedValue([]),
     create: jest.fn(),
+    createMany: jest.fn(),
+    deleteMany: jest.fn(),
+    count: jest.fn().mockResolvedValue(0),
     update: jest.fn(),
     updateMany: jest.fn(),
     upsert: jest.fn(),
@@ -43,6 +46,8 @@ export function mockPrisma() {
     reminder: table(),
     attendance: table(),
     user: table(),
+    breakoutGroup: table(),
+    $transaction: jest.fn((ops: unknown[]) => Promise.all(ops)),
   };
 }
 export type MockPrisma = ReturnType<typeof mockPrisma>;
@@ -52,6 +57,9 @@ export function mockLivekit() {
   return {
     broadcast: jest.fn().mockResolvedValue(undefined),
     patchMeta: jest.fn().mockResolvedValue({}),
+    ensureRoom: jest.fn().mockResolvedValue({}),
+    token: jest.fn().mockResolvedValue('jwt'),
+    rooms: { listParticipants: jest.fn().mockResolvedValue([]), deleteRoom: jest.fn() },
   };
 }
 

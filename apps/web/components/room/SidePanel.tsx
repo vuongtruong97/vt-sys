@@ -4,6 +4,8 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { Materials } from '@/components/Materials';
 import { api } from '@/lib/api';
 import type { useQuizzes, useRoomChat } from './interaction';
+import type { GroupInfo } from './shared';
+import { BreakoutPanel } from './Breakout';
 import { QuizPanel } from './Quiz';
 import { handUp, Panel, roleOf, RoomMeta } from './shared';
 
@@ -22,6 +24,8 @@ export function SidePanel(props: {
   quiz: ReturnType<typeof useQuizzes>;
   teacherId: string | undefined;
   courseId: string;
+  group: GroupInfo | null;
+  switchRoom: (group?: number) => Promise<void>;
 }) {
   const { panel, setPanel, isTeacher } = props;
   return (
@@ -35,6 +39,9 @@ export function SidePanel(props: {
           <button className="tab" aria-pressed={panel === 'quiz'} onClick={() => setPanel('quiz')}>Câu hỏi</button>
         )}
         <button className="tab" aria-pressed={panel === 'files'} onClick={() => setPanel('files')}>Tài liệu</button>
+        {isTeacher && (
+          <button className="tab" aria-pressed={panel === 'groups'} onClick={() => setPanel('groups')}>Nhóm</button>
+        )}
         <button className="tab x" aria-label="Đóng" onClick={() => setPanel(null)}>✕</button>
       </div>
       {panel === 'chat' ? (
@@ -43,6 +50,14 @@ export function SidePanel(props: {
         <div className="side-body">
           <Materials courseId={props.courseId} sessionId={props.sessionId} canEdit={isTeacher} room onMessage={props.say} />
         </div>
+      ) : panel === 'groups' && isTeacher ? (
+        <BreakoutPanel
+          sessionId={props.sessionId}
+          participants={props.participants}
+          currentGroup={props.group?.index ?? null}
+          switchRoom={props.switchRoom}
+          say={props.say}
+        />
       ) : panel === 'quiz' && isTeacher ? (
         <QuizPanel quiz={props.quiz} say={props.say} />
       ) : (

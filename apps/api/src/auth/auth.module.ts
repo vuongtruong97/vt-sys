@@ -65,6 +65,11 @@ export class AuthService {
     return { id: user.id, name: user.name, email: user.email, role: user.role };
   }
 
+  async fresh(id: string): Promise<AuthUser | null> {
+    const u = await this.prisma.user.findUnique({ where: { id } });
+    return u && { id: u.id, name: u.name, email: u.email, role: u.role };
+  }
+
   async login(dto: LoginDto): Promise<AuthUser> {
     const user = await this.prisma.user.findUnique({ where: { email: dto.email.trim().toLowerCase() } });
     if (!user || !(await bcrypt.compare(dto.password, user.passwordHash))) {
@@ -109,10 +114,20 @@ export class AuthController {
     res.clearCookie(config.cookieName, { path: '/' });
   }
 
+  /**
+   * Đọc lại tài khoản từ DB: vai trò vừa được quản trị viên đổi thì cấp lại cookie,
+   * người dùng không phải đăng nhập lại.
+   */
   @Get('me')
   @UseGuards(AuthGuard)
-  me(@CurrentUser() user: AuthUser) {
-    return user;
+  async me(@CurrentUser() user: AuthUser, @Res({ passthrough: true }) res: Response) {
+    const fresh = await this.auth.fresh(user.id);
+    if (!fresh) {
+      res.clearCookie(config.cookieName, { path: '/' });
+      throw new UnauthorizedException('Tài khoản không còn tồn tại');
+    }
+    if (fresh.role !== user.role || fresh.name !== user.name) this.setCookie(res, this.auth.sign(fresh));
+    return fresh;
   }
 }
 

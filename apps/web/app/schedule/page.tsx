@@ -22,7 +22,7 @@ export default function SchedulePage() {
   const now = Date.now();
   const upcoming = items?.filter((s) => new Date(s.endsAt).getTime() > now - 30 * 60_000) ?? [];
   const past = items?.filter((s) => new Date(s.endsAt).getTime() <= now - 30 * 60_000).reverse() ?? [];
-  const teacher = me?.role === 'TEACHER';
+  const teacher = !!me && me.role !== 'STUDENT';
 
   return (
     <>

@@ -8,6 +8,8 @@ datasource db {
 }
 
 enum Role {
+  /// Chủ trang: dạy được như giáo viên, cấp quyền giáo viên, xem toàn hệ thống.
+  ADMIN
   TEACHER
   STUDENT
 }

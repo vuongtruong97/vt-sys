@@ -3,6 +3,7 @@ import { Module, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
+import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
 import { ClassroomModule } from './classroom/classroom.module';
 import { InteractionModule } from './classroom/interaction.module';
@@ -15,7 +16,7 @@ import { CoursesModule } from './courses/courses.module';
 import { HealthController } from './health.controller';
 
 @Module({
-  imports: [PrismaModule, StorageModule, AuthModule, CoursesModule, ClassroomModule, InteractionModule, MediaModule, ReminderModule],
+  imports: [PrismaModule, StorageModule, AuthModule, CoursesModule, ClassroomModule, InteractionModule, MediaModule, ReminderModule, AdminModule],
   controllers: [HealthController],
 })
 class AppModule {}

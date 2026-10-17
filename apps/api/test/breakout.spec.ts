@@ -101,3 +101,17 @@ describe('Vào lớp khi đang chia nhóm', () => {
     expect(lk.token.mock.calls[0][0].room).toBe('bd-room-g1');
   });
 });
+
+describe('Học viên vào lớp theo giờ', () => {
+  const tomorrow = { startsAt: new Date(Date.now() + 86_400_000), endsAt: new Date(Date.now() + 90_000_000) };
+
+  it('giáo viên đã mở lớp sớm (LIVE) thì học viên vào được ngay', async () => {
+    const { classroom } = setup(session({ status: 'LIVE', ...tomorrow }));
+    await expect(classroom.join(student, 's1', {})).resolves.toMatchObject({ status: 'ok' });
+  });
+
+  it('lớp chưa mở và chưa tới giờ thì học viên bị chặn', async () => {
+    const { classroom } = setup(session({ status: 'SCHEDULED', ...tomorrow }));
+    await expect(classroom.join(student, 's1', {})).rejects.toThrow(/Lớp mở cửa lúc/);
+  });
+});

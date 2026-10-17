@@ -137,7 +137,8 @@ export class ClassroomController {
       return { status: req.status === 'DENIED' ? 'denied' : 'waiting' };
     }
 
-    if (role === 'student') {
+    // Giáo viên đã mở lớp (LIVE) thì học viên vào được ngay, kể cả khi mở sớm hơn lịch.
+    if (role === 'student' && s.status !== 'LIVE') {
       const now = Date.now();
       const opens = s.startsAt.getTime() - config.openBeforeMinutes * 60_000;
       const closes = s.endsAt.getTime() + config.closeAfterMinutes * 60_000;

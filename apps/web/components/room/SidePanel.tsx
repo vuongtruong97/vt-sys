@@ -72,7 +72,9 @@ function ChatPanel({ chat, teacherId, say }: { chat: ReturnType<typeof useRoomCh
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const end = useRef<HTMLDivElement>(null);
-  useEffect(() => end.current?.scrollIntoView({ block: 'end' }), [messages.length]);
+  useEffect(() => {
+    end.current?.scrollIntoView({ block: 'end' });
+  }, [messages.length]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();

@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Nav } from '@/components/Nav';
+import { CourseCard } from '@/components/ui';
 import { api } from '@/lib/api';
 import { fmtDay, fmtTime } from '@/lib/format';
 import { useMe } from '@/lib/useMe';
@@ -50,16 +51,15 @@ export default function Home() {
           {courses?.length === 0 && <p className="muted">Chưa có khoá học công khai.</p>}
           <div className="courses">
             {courses?.map((c) => (
-              <article key={c.id} className="card stack">
-                <h3>{c.title}</h3>
-                <p className="muted small">{c.description || 'Chưa có mô tả.'}</p>
-                <p className="small">
-                  {c.teacher} · {c.sessions} buổi · {c.students} học viên
-                </p>
-                {c.nextSession && (
-                  <p className="small"><span className="tag">Buổi tới</span>{fmtDay(c.nextSession)}, {fmtTime(c.nextSession)}</p>
-                )}
-              </article>
+              <CourseCard
+                key={c.id}
+                title={c.title}
+                description={c.description || 'Chưa có mô tả.'}
+                category="Khoá học"
+                duration={c.nextSession ? `Buổi tới ${fmtDay(c.nextSession)}, ${fmtTime(c.nextSession)}` : undefined}
+                teacher={{ name: c.teacher }}
+                footerExtra={<span className="ui-meta">{c.sessions} buổi · {c.students} học viên</span>}
+              />
             ))}
           </div>
           <p className="small muted">Muốn tham gia khoá học? Đăng ký tài khoản rồi gửi email cho giáo viên để được thêm vào lớp.</p>

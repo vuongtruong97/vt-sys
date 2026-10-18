@@ -1,0 +1,74 @@
+/*
+ * Token của bộ components, lấy từ Figma "E-Learning Site (Community)"
+ * (https://www.figma.com/design/afEnwWVWapxKrTuaFF4brt). Mọi component trong components/ui chỉ dùng các biến này.
+ */
+:root {
+  /* Màu.
+     Teal #49bbbd của Figma chỉ đạt tương phản 2,3:1 với chữ trắng (chuẩn WCAG AA cần 4,5:1).
+     Nên: #49bbbd giữ cho phần không mang chữ (thanh tiến độ, viền, nền nhạt);
+     chỗ có chữ cần đọc (nút chữ trắng, giá, liên kết) dùng --ui-primary-strong.
+     Muốn đúng Figma tuyệt đối: đặt --ui-primary-strong: #49bbbd. */
+  --ui-primary: #49bbbd;              /* thanh tiến độ, viền ô nhập, nền nhạt */
+  --ui-primary-strong: #328182;       /* nền nút chữ trắng, giá, liên kết (4,57:1) */
+  --ui-primary-hover: #2a6f70;
+  --ui-primary-soft: rgba(73, 187, 189, 0.6); /* nền thanh chuyển Login/Register */
+  --ui-primary-tint: rgba(73, 187, 189, 0.12);
+  --ui-on-primary: #ffffff;
+  --ui-navy: #252641;                 /* tiêu đề, footer, banner CTA */
+  --ui-text: #252641;
+  --ui-text-body: #696984;            /* mô tả */
+  --ui-text-muted: rgba(0, 0, 0, 0.5);
+  --ui-text-strong: #000000;
+  --ui-placeholder: #767676;          /* Figma #acacac (2,3:1) làm đậm cho đạt 4,5:1 */
+  --ui-surface: #ffffff;
+  --ui-section: rgba(157, 204, 255, 0.3); /* nền khối xanh nhạt (hộp đánh giá, dải khoá học) */
+  --ui-track: #d9d9d9;                /* nền thanh tiến độ, viền nhẹ */
+  --ui-chip: rgba(0, 0, 0, 0.1);      /* tab chưa chọn */
+  --ui-chip-text: rgba(0, 0, 0, 0.4);
+  --ui-star: #fdb022;
+  --ui-danger: #ee645b;               /* icon danh mục đỏ (không mang chữ) */
+  --ui-danger-strong: #c3524b;        /* nền nhãn giảm giá chữ trắng; Figma #ee645b chỉ 3,2:1 */
+  --ui-footer-text: #b2b3cf;
+  --ui-footer-line: #83839a;
+
+  /* Chữ. Figma dùng Poppins, nhưng Poppins không có bộ ký tự tiếng Việt
+     (ạ, ấ, ở… sẽ hiện bằng font khác). Mặc định dùng Be Vietnam Pro, dáng gần Poppins;
+     muốn đúng Figma tuyệt đối thì đổi --ui-font thành "Poppins". */
+  --ui-font: "Be Vietnam Pro", "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ui-text-xs: 12px;
+  --ui-text-sm: 14px;
+  --ui-text-md: 16px;
+  --ui-text-lg: 18px;
+  --ui-text-xl: 24px;   /* tiêu đề thẻ khoá học */
+  --ui-text-2xl: 30px;  /* tiêu đề thẻ danh mục, mục trong hộp mua */
+  --ui-text-3xl: 45px;  /* giá lớn */
+  --ui-leading-body: 1.8;
+
+  /* Bo góc */
+  --ui-radius-xs: 2px;   /* thanh tiến độ */
+  --ui-radius-sm: 12px;  /* tab, nút Buy Now */
+  --ui-radius-md: 20px;  /* thẻ, ảnh trong thẻ */
+  --ui-radius-pill: 999px; /* nút, ô nhập */
+
+  /* Bóng */
+  --ui-shadow-card: 0 18.83px 47.08px rgba(47, 50, 125, 0.1);
+  --ui-shadow-soft: 0 20px 24px rgba(0, 0, 0, 0.03);
+
+  /* Khoảng cách */
+  --ui-space-1: 4px;
+  --ui-space-2: 8px;
+  --ui-space-3: 12px;
+  --ui-space-4: 16px;
+  --ui-space-5: 20px;
+  --ui-space-6: 24px;
+  --ui-space-8: 32px;
+
+  /* Chiều cao điều khiển */
+  --ui-control-sm: 40px;
+  --ui-control-md: 49px;  /* nút Login */
+  --ui-control-lg: 60px;  /* nút Subscribe, Login/Sign Up trên thanh điều hướng */
+  --ui-input-h: 54px;
+
+  --ui-focus: 0 0 0 3px rgba(73, 187, 189, 0.45);
+  --ui-ease: 160ms ease;
+}

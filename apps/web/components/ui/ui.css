@@ -1,0 +1,285 @@
+/* Style của components/ui. Chỉ dùng biến trong tokens.css; class đều có tiền tố ui- để không đụng globals.css. */
+
+.ui-root, .ui-root * { box-sizing: border-box; }
+/* globals.css đặt font riêng cho h1–h3; tiêu đề trong bộ UI dùng font của bộ UI. */
+.ui-course__title, .ui-category__title, .ui-section-head__title, .ui-pricebox__heading, .ui-modal__title,
+.ui-empty__title, .ui-cta__title, .ui-footer__news-title, .ui-demo__title { font-family: var(--ui-font); }
+.ui-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- Button ---------- */
+.ui-btn {
+  font-family: var(--ui-font); font-weight: 500; line-height: 1; white-space: nowrap; text-decoration: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--ui-space-2);
+  border: 1px solid transparent; border-radius: var(--ui-radius-pill); cursor: pointer;
+  transition: background var(--ui-ease), color var(--ui-ease), border-color var(--ui-ease), box-shadow var(--ui-ease);
+}
+.ui-btn:focus-visible { outline: none; box-shadow: var(--ui-focus); }
+.ui-btn:disabled, .ui-btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
+.ui-btn--sm { height: var(--ui-control-sm); padding: 0 var(--ui-space-5); font-size: var(--ui-text-sm); }
+.ui-btn--md { height: var(--ui-control-md); padding: 0 var(--ui-space-8); font-size: var(--ui-text-md); }
+.ui-btn--lg { height: var(--ui-control-lg); padding: 0 40px; font-size: 20px; }
+.ui-btn--block { width: 100%; }
+.ui-btn--primary { background: var(--ui-primary-strong); color: var(--ui-on-primary); }
+.ui-btn--primary:hover:not(:disabled) { background: var(--ui-primary-hover); }
+/* Nút trắng trên nền teal (thanh điều hướng trang chủ: "Login") */
+.ui-btn--light { background: var(--ui-surface); color: #5b5b5b; box-shadow: var(--ui-shadow-soft); }
+.ui-btn--light:hover:not(:disabled) { background: #f3f6f6; }
+/* Nút trong suốt trên nền teal ("Sign Up") */
+.ui-btn--glass { background: rgba(255, 255, 255, 0.3); color: #fff; }
+.ui-btn--glass:hover:not(:disabled) { background: rgba(255, 255, 255, 0.4); }
+.ui-btn--outline { background: transparent; color: var(--ui-primary-strong); border-color: var(--ui-primary); }
+.ui-btn--outline:hover:not(:disabled) { background: var(--ui-primary-tint); }
+.ui-btn--ghost { background: transparent; color: var(--ui-text); }
+.ui-btn--ghost:hover:not(:disabled) { background: var(--ui-chip); }
+/* "Buy Now": góc 12px, chữ đậm */
+.ui-btn--square { border-radius: var(--ui-radius-sm); font-weight: 700; }
+.ui-btn__spinner { width: 1em; height: 1em; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: ui-spin .7s linear infinite; }
+@keyframes ui-spin { to { transform: rotate(360deg); } }
+
+/* ---------- IconButton (mũi tên chuyển trang của dải khoá học) ---------- */
+.ui-iconbtn {
+  width: 50px; height: 50px; display: inline-grid; place-items: center; border: 0; border-radius: 8px; cursor: pointer;
+  background: var(--ui-primary-strong); color: #fff; transition: background var(--ui-ease), box-shadow var(--ui-ease);
+}
+.ui-iconbtn--soft { background: rgba(73, 187, 189, 0.4); color: var(--ui-navy); }
+.ui-iconbtn--sm { width: 40px; height: 40px; }
+.ui-iconbtn:hover:not(:disabled) { background: var(--ui-primary-hover); color: #fff; }
+.ui-iconbtn:focus-visible { outline: none; box-shadow: var(--ui-focus); }
+.ui-iconbtn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* ---------- Field, Input, Textarea, Select ---------- */
+.ui-field { display: grid; gap: var(--ui-space-2); font-family: var(--ui-font); }
+.ui-field__label { font-size: var(--ui-text-md); color: var(--ui-text-strong); }
+.ui-field__hint { font-size: var(--ui-text-xs); color: var(--ui-text-body); }
+.ui-field__error { font-size: var(--ui-text-xs); color: var(--ui-danger-strong); }
+.ui-control { position: relative; display: flex; align-items: center; }
+.ui-input, .ui-select, .ui-textarea {
+  width: 100%; font-family: var(--ui-font); font-size: var(--ui-text-md); color: var(--ui-text-strong);
+  background: var(--ui-surface); border: 1px solid var(--ui-primary); border-radius: var(--ui-radius-pill);
+  transition: border-color var(--ui-ease), box-shadow var(--ui-ease);
+}
+.ui-input, .ui-select { height: var(--ui-input-h); padding: 0 var(--ui-space-6) 0 30px; }
+.ui-textarea { border-radius: var(--ui-radius-md); padding: var(--ui-space-4) var(--ui-space-6); min-height: 120px; resize: vertical; line-height: 1.6; }
+.ui-input::placeholder, .ui-textarea::placeholder { color: var(--ui-placeholder); font-weight: 300; }
+.ui-input:focus, .ui-select:focus, .ui-textarea:focus { outline: none; box-shadow: var(--ui-focus); }
+.ui-input:disabled, .ui-select:disabled, .ui-textarea:disabled { background: #f4f4f4; cursor: not-allowed; }
+.ui-field--invalid .ui-input, .ui-field--invalid .ui-select, .ui-field--invalid .ui-textarea { border-color: var(--ui-danger-strong); }
+.ui-input--with-action { padding-right: 56px; }
+.ui-control__action {
+  position: absolute; right: 14px; width: 32px; height: 32px; display: grid; place-items: center;
+  border: 0; background: transparent; border-radius: 50%; cursor: pointer; color: var(--ui-text-strong);
+}
+.ui-control__action:focus-visible { outline: none; box-shadow: var(--ui-focus); }
+.ui-select { appearance: none; padding-right: 52px; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23252641' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 24px center; }
+/* Ô nhập trên nền tối (footer) */
+.ui-input--dark { background: transparent; border-color: var(--ui-footer-line); color: #fff; }
+.ui-input--dark::placeholder { color: var(--ui-footer-text); }
+
+/* ---------- Checkbox ---------- */
+.ui-check { display: inline-flex; align-items: center; gap: 10px; font-family: var(--ui-font); font-size: var(--ui-text-xs); font-weight: 300; color: var(--ui-text-strong); cursor: pointer; }
+.ui-check input { appearance: none; margin: 0; width: 15px; height: 15px; border: 1px solid #000; background: #fff; display: grid; place-items: center; cursor: pointer; }
+.ui-check input:checked { background: var(--ui-primary-strong); border-color: var(--ui-primary-strong); }
+.ui-check input:checked::after { content: ""; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: translateY(-1px) rotate(45deg); }
+.ui-check input:focus-visible { outline: none; box-shadow: var(--ui-focus); }
+
+/* ---------- Tabs ---------- */
+.ui-tabs { font-family: var(--ui-font); }
+.ui-tablist { display: flex; flex-wrap: wrap; gap: var(--ui-space-4); }
+.ui-tab { font-family: inherit; border: 0; cursor: pointer; transition: background var(--ui-ease), color var(--ui-ease); }
+.ui-tab:focus-visible { outline: none; box-shadow: var(--ui-focus); }
+/* Kiểu "boxed": tab Overview ở trang chi tiết khoá học */
+.ui-tabs--boxed .ui-tab { min-width: 160px; height: 63px; padding: 0 var(--ui-space-6); border-radius: var(--ui-radius-sm); font-size: 20px; font-weight: 700; background: var(--ui-chip); color: var(--ui-chip-text); }
+.ui-tabs--boxed .ui-tab[aria-selected="true"] { background: var(--ui-primary-strong); color: #fff; }
+/* Kiểu "segmented": thanh chuyển Login / Register */
+.ui-tabs--segmented .ui-tablist { display: inline-flex; gap: 0; padding: 10px 13px; border-radius: 33px; background: var(--ui-primary-soft); }
+.ui-tabs--segmented .ui-tab { min-width: 146px; height: 40px; padding: 0 var(--ui-space-5); border-radius: 33px; font-size: var(--ui-text-md); background: transparent; color: #fff; }
+.ui-tabs--segmented .ui-tab[aria-selected="true"] { background: var(--ui-primary-strong); font-weight: 500; }
+.ui-tabpanel { margin-top: var(--ui-space-6); }
+.ui-tabpanel:focus-visible { outline: none; box-shadow: var(--ui-focus); border-radius: var(--ui-radius-sm); }
+
+/* ---------- Badge ---------- */
+.ui-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--ui-font); font-size: var(--ui-text-sm); font-weight: 500; letter-spacing: .02em; color: var(--ui-text-body); }
+.ui-badge--soft { padding: 2px 10px; border-radius: var(--ui-radius-pill); background: var(--ui-primary-tint); color: var(--ui-primary-strong); }
+/* Nhãn "50%" góc ảnh ưu đãi */
+.ui-badge--discount { padding: 10px 14px; border-radius: 8px; background: var(--ui-danger-strong); color: #fff; font-size: 20px; font-weight: 600; }
+.ui-badge__icon { color: var(--ui-track); }
+
+/* ---------- Avatar ---------- */
+.ui-avatar { position: relative; display: inline-grid; place-items: center; flex: none; overflow: hidden; border-radius: 50%; background: var(--ui-track); color: var(--ui-navy); font-family: var(--ui-font); font-weight: 600; }
+.ui-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.ui-person { display: inline-flex; align-items: center; gap: var(--ui-space-4); font-family: var(--ui-font); font-size: var(--ui-text-lg); font-weight: 500; color: var(--ui-text-strong); letter-spacing: .02em; }
+
+/* ---------- Card ---------- */
+.ui-card { background: var(--ui-surface); border-radius: var(--ui-radius-md); box-shadow: var(--ui-shadow-card); font-family: var(--ui-font); }
+.ui-card--pad { padding: var(--ui-space-5); }
+.ui-card--section { background: var(--ui-section); box-shadow: none; }
+a.ui-card, .ui-card--link { color: inherit; text-decoration: none; transition: transform var(--ui-ease), box-shadow var(--ui-ease); }
+a.ui-card:hover { transform: translateY(-2px); }
+a.ui-card:focus-visible { outline: none; box-shadow: var(--ui-shadow-card), var(--ui-focus); }
+
+/* ---------- CourseCard ---------- */
+.ui-course { display: flex; flex-direction: column; padding: var(--ui-space-5); gap: var(--ui-space-4); }
+.ui-course__media { position: relative; aspect-ratio: 334 / 239; border-radius: var(--ui-radius-md); overflow: hidden; background: var(--ui-track); }
+.ui-course__media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Lớp phủ #171b41 10% như Figma */
+.ui-course__media::after { content: ""; position: absolute; inset: 0; background: #171b41; opacity: .1; }
+.ui-course__meta { display: flex; justify-content: space-between; align-items: center; gap: var(--ui-space-2); }
+.ui-course__title { margin: 0; font-size: var(--ui-text-xl); font-weight: 500; line-height: 1.3; color: var(--ui-text); }
+.ui-course__desc { margin: 0; font-size: var(--ui-text-lg); line-height: var(--ui-leading-body); letter-spacing: .02em; color: var(--ui-text-body);
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ui-course__foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3); }
+.ui-price { display: inline-flex; align-items: baseline; gap: var(--ui-space-3); font-family: var(--ui-font); }
+.ui-price__old { font-size: var(--ui-text-lg); font-weight: 300; font-style: italic; color: var(--ui-text-muted); text-decoration: line-through; }
+.ui-price__now { font-size: var(--ui-text-xl); font-weight: 700; color: var(--ui-primary-strong); letter-spacing: .02em; }
+/* Thẻ "đang học" */
+.ui-course--progress .ui-course__media { aspect-ratio: 486 / 258; }
+.ui-course__lesson { align-self: flex-end; font-size: var(--ui-text-sm); font-weight: 600; letter-spacing: .02em; color: var(--ui-text-muted); }
+
+/* ---------- Progress ---------- */
+.ui-progress { position: relative; width: 100%; height: 8px; border-radius: var(--ui-radius-xs); background: var(--ui-track); overflow: hidden; }
+.ui-progress__bar { height: 100%; border-radius: var(--ui-radius-xs); background: var(--ui-primary); transition: width .3s ease; }
+
+/* ---------- Rating ---------- */
+.ui-rating { display: inline-flex; align-items: center; gap: var(--ui-space-2); font-family: var(--ui-font); }
+.ui-stars { position: relative; display: inline-block; flex: none; }
+.ui-stars__base { display: block; filter: grayscale(1) opacity(.35); }
+.ui-stars__fill { position: absolute; inset: 0 auto 0 0; overflow: hidden; }
+.ui-stars__fill img, .ui-stars__base { height: 100%; width: auto; max-width: none; }
+.ui-rating__value { font-size: var(--ui-text-sm); color: var(--ui-text-body); }
+/* Hộp tổng hợp đánh giá */
+.ui-ratingsum { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--ui-space-8); align-items: center; padding: var(--ui-space-8); border-radius: var(--ui-radius-md); background: var(--ui-section); font-family: var(--ui-font); }
+.ui-ratingsum__score { display: grid; justify-items: center; gap: var(--ui-space-2); padding: var(--ui-space-6) var(--ui-space-8); border-radius: var(--ui-radius-md); background: var(--ui-surface); text-align: center; }
+.ui-ratingsum__big { font-size: 26px; font-weight: 500; color: var(--ui-text-body); }
+.ui-ratingsum__caption { font-size: var(--ui-text-md); color: var(--ui-text-body); }
+.ui-ratingsum__rows { display: grid; gap: var(--ui-space-3); margin: 0; padding: 0; list-style: none; }
+.ui-ratingsum__row { display: grid; grid-template-columns: 80px minmax(0, 1fr) 40px; gap: var(--ui-space-4); align-items: center; font-size: var(--ui-text-md); color: var(--ui-text-muted); }
+.ui-ratingsum__pct { text-align: right; font-size: var(--ui-text-sm); }
+
+/* ---------- Review ---------- */
+.ui-review { display: grid; gap: var(--ui-space-3); font-family: var(--ui-font); }
+.ui-review__head { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3); }
+.ui-review__who { display: flex; align-items: center; gap: var(--ui-space-4); }
+.ui-review__name { font-size: var(--ui-text-lg); font-weight: 500; color: var(--ui-text-strong); }
+.ui-review__text { margin: 0; font-size: 20px; line-height: var(--ui-leading-body); letter-spacing: .02em; color: var(--ui-text-body); }
+.ui-meta { display: inline-flex; align-items: center; gap: 6px; font-family: var(--ui-font); font-size: var(--ui-text-sm); font-weight: 500; color: var(--ui-text-body); }
+.ui-meta svg { color: var(--ui-track); }
+
+/* ---------- CategoryCard ---------- */
+.ui-category { display: grid; justify-items: center; gap: var(--ui-space-5); padding: 30px var(--ui-space-8) 40px; text-align: center; }
+.ui-category__icon { width: 90px; height: 90px; display: grid; place-items: center; border-radius: 6px; }
+.ui-category__title { margin: 0; font-size: var(--ui-text-2xl); font-weight: 600; letter-spacing: .02em; color: var(--ui-text-strong); }
+.ui-category__desc { margin: 0; font-size: var(--ui-text-lg); line-height: 1.5; letter-spacing: .02em; color: var(--ui-text-body); }
+
+/* ---------- SectionHeader ---------- */
+.ui-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--ui-space-4); font-family: var(--ui-font); }
+.ui-section-head__title { margin: 0; font-size: 30px; font-weight: 500; color: var(--ui-text-strong); }
+.ui-link { font-family: var(--ui-font); font-size: var(--ui-text-lg); font-weight: 700; color: var(--ui-primary-strong); text-decoration: none; }
+.ui-link:hover { text-decoration: underline; }
+.ui-link:focus-visible { outline: none; box-shadow: var(--ui-focus); border-radius: 4px; }
+
+/* ---------- Pagination ---------- */
+.ui-pager { display: flex; align-items: center; gap: var(--ui-space-3); font-family: var(--ui-font); }
+.ui-pager__pages { display: flex; gap: var(--ui-space-2); margin: 0; padding: 0; list-style: none; }
+.ui-pager__page { min-width: 40px; height: 40px; padding: 0 var(--ui-space-2); border: 0; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: var(--ui-text-md); background: transparent; color: var(--ui-text); }
+.ui-pager__page:hover { background: var(--ui-primary-tint); }
+.ui-pager__page[aria-current="page"] { background: var(--ui-primary-strong); color: #fff; font-weight: 600; }
+.ui-pager__page:focus-visible { outline: none; box-shadow: var(--ui-focus); }
+.ui-pager__gap { min-width: 24px; text-align: center; color: var(--ui-text-body); }
+
+/* ---------- PriceBox (hộp mua khoá học) ---------- */
+.ui-pricebox { display: grid; gap: var(--ui-space-5); padding: 30px; }
+.ui-pricebox__media { aspect-ratio: 443 / 268; overflow: hidden; background: var(--ui-primary); }
+.ui-pricebox__media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ui-pricebox__prices { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--ui-space-3); }
+.ui-pricebox__now { font-size: var(--ui-text-3xl); font-weight: 600; letter-spacing: .02em; color: var(--ui-text-strong); line-height: 1.1; }
+.ui-pricebox__old { font-size: 28px; font-weight: 600; color: var(--ui-text-muted); text-decoration: line-through; }
+.ui-pricebox__off { font-size: 28px; font-weight: 600; color: var(--ui-text-muted); }
+.ui-pricebox__deadline { margin: 0; text-align: center; font-size: 20px; font-weight: 600; color: var(--ui-primary-strong); }
+.ui-pricebox__section { display: grid; gap: var(--ui-space-3); padding-top: var(--ui-space-6); border-top: 1px solid rgba(0, 0, 0, .3); }
+.ui-pricebox__heading { margin: 0; font-size: var(--ui-text-2xl); font-weight: 600; letter-spacing: .02em; color: var(--ui-text-strong); }
+
+/* ---------- Modal ---------- */
+.ui-modal { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: var(--ui-space-4); background: rgba(23, 27, 65, .45); }
+.ui-modal__panel { width: min(560px, 100%); max-height: calc(100dvh - 32px); overflow: auto; padding: var(--ui-space-8); border-radius: var(--ui-radius-md); background: var(--ui-surface); box-shadow: var(--ui-shadow-card); font-family: var(--ui-font); }
+.ui-modal__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--ui-space-4); margin-bottom: var(--ui-space-4); }
+.ui-modal__title { margin: 0; font-size: var(--ui-text-xl); font-weight: 600; color: var(--ui-text); }
+.ui-modal__body { font-size: var(--ui-text-md); line-height: 1.6; color: var(--ui-text-body); }
+.ui-modal__foot { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--ui-space-3); margin-top: var(--ui-space-6); }
+.ui-modal__close { flex: none; width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--ui-chip); color: var(--ui-text); cursor: pointer; font-size: 18px; line-height: 1; }
+.ui-modal__close:focus-visible { outline: none; box-shadow: var(--ui-focus); }
+
+/* ---------- EmptyState ---------- */
+.ui-empty { display: grid; justify-items: center; gap: var(--ui-space-3); padding: 48px var(--ui-space-6); text-align: center; font-family: var(--ui-font); }
+.ui-empty__icon { width: 72px; height: 72px; display: grid; place-items: center; border-radius: 50%; background: var(--ui-primary-tint); color: var(--ui-primary-strong); }
+.ui-empty__title { margin: 0; font-size: 20px; font-weight: 600; color: var(--ui-text); }
+.ui-empty__text { margin: 0; max-width: 46ch; font-size: var(--ui-text-md); line-height: 1.6; color: var(--ui-text-body); }
+
+/* ---------- CtaBanner ---------- */
+.ui-cta { display: grid; justify-items: center; gap: var(--ui-space-6); padding: 72px var(--ui-space-8); border-radius: var(--ui-radius-md); background: var(--ui-navy); color: #fff; text-align: center; font-family: var(--ui-font); }
+.ui-cta__title { margin: 0; font-size: 36px; font-weight: 600; }
+.ui-cta__text { margin: 0; max-width: 1260px; font-size: 22px; line-height: 1.8; color: #fff; }
+
+/* ---------- Logo ---------- */
+.ui-logo { position: relative; display: inline-grid; place-items: center; flex: none; font-family: var(--ui-font); font-weight: 700; letter-spacing: .04em; text-decoration: none; color: var(--ui-navy); }
+.ui-logo img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ui-logo span { position: relative; }
+.ui-logo--light { color: #fff; }
+
+/* ---------- Footer ---------- */
+.ui-footer { background: var(--ui-navy); color: #fff; font-family: var(--ui-font); }
+.ui-footer__inner { display: grid; justify-items: center; gap: 48px; max-width: 1200px; margin: 0 auto; padding: 72px var(--ui-space-4) 48px; }
+.ui-footer__brand { display: flex; align-items: center; gap: var(--ui-space-8); }
+.ui-footer__tagline { padding-left: var(--ui-space-8); border-left: 1px solid var(--ui-footer-line); font-size: 22px; font-weight: 600; line-height: 1.3; max-width: 9em; }
+.ui-footer__news { display: grid; justify-items: center; gap: var(--ui-space-5); width: 100%; }
+.ui-footer__news-title { margin: 0; font-size: 26px; font-weight: 500; letter-spacing: .04em; color: var(--ui-footer-text); text-align: center; }
+.ui-footer__form { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--ui-space-5); width: min(600px, 100%); }
+.ui-footer__form .ui-field { flex: 1 1 260px; }
+.ui-footer__links { display: flex; flex-wrap: wrap; justify-content: center; margin: 0; padding: 0; list-style: none; }
+.ui-footer__links li + li { border-left: 1px solid var(--ui-footer-line); }
+.ui-footer__links a { display: block; padding: 0 var(--ui-space-4); font-size: 20px; letter-spacing: .04em; color: var(--ui-footer-text); text-decoration: none; }
+.ui-footer__links a:hover { color: #fff; }
+.ui-footer__links a:focus-visible { outline: none; box-shadow: var(--ui-focus); border-radius: 4px; }
+.ui-footer__copy { margin: 0; font-size: 20px; letter-spacing: .04em; color: var(--ui-footer-text); }
+
+/* ---------- Trang mẫu /ui (không dùng trong app) ---------- */
+.ui-demo-page { max-width: 1240px; margin: 0 auto; padding: 32px 16px 72px; display: grid; gap: 56px; font-family: var(--ui-font); background: var(--ui-surface); }
+.ui-demo { display: grid; gap: var(--ui-space-5); }
+.ui-demo__title { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--ui-space-3); margin: 0; padding-bottom: var(--ui-space-3); border-bottom: 1px solid var(--ui-track); font-family: var(--ui-font); font-size: 22px; font-weight: 600; color: var(--ui-text); }
+.ui-demo__node { font-size: var(--ui-text-xs); font-weight: 400; color: var(--ui-text-body); }
+.ui-demo__body { display: grid; gap: var(--ui-space-6); }
+.ui-demo__row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-4); }
+.ui-demo__teal { padding: var(--ui-space-5); border-radius: var(--ui-radius-md); background: var(--ui-primary); }
+.ui-demo__grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: var(--ui-space-5); }
+.ui-demo__cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: var(--ui-space-8); }
+
+/* ---------- Màn hình nhỏ ---------- */
+@media (max-width: 640px) {
+  .ui-course__title { font-size: 20px; }
+  .ui-course__desc, .ui-category__desc { font-size: var(--ui-text-md); }
+  .ui-category__title, .ui-pricebox__heading, .ui-section-head__title { font-size: 22px; }
+  .ui-tabs--boxed .ui-tab { min-width: 0; flex: 1 1 40%; height: 52px; font-size: var(--ui-text-md); }
+  .ui-tabs--segmented .ui-tab { min-width: 110px; }
+  .ui-ratingsum { grid-template-columns: 1fr; padding: var(--ui-space-5); gap: var(--ui-space-5); }
+  .ui-pricebox { padding: var(--ui-space-5); }
+  .ui-pricebox__now { font-size: 34px; }
+  .ui-pricebox__old, .ui-pricebox__off { font-size: 20px; }
+  .ui-cta { padding: 48px var(--ui-space-5); }
+  .ui-cta__title { font-size: 26px; }
+  .ui-cta__text { font-size: var(--ui-text-md); }
+  .ui-review__text { font-size: var(--ui-text-md); }
+  .ui-footer__brand { flex-direction: column; gap: var(--ui-space-4); }
+  .ui-footer__tagline { border-left: 0; padding-left: 0; text-align: center; }
+  .ui-footer__links a, .ui-footer__copy { font-size: var(--ui-text-md); }
+  .ui-footer__news-title { font-size: 20px; }
+  /* 7 ô (‹ 1 … 4 5 6 … 12 ›) vừa 343px của màn 375px */
+  .ui-pager { gap: 6px; flex-wrap: wrap; }
+  .ui-pager__pages { gap: 4px; }
+  .ui-pager__page { min-width: 34px; height: 36px; padding: 0 4px; }
+  .ui-pager__gap { min-width: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-btn, .ui-card, .ui-progress__bar, .ui-tab { transition: none; }
+  .ui-btn__spinner { animation-duration: 2s; }
+}

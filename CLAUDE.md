@@ -30,6 +30,7 @@ docker compose exec postgres psql -U bangden               # vào DB
 - Không đưa API secret của LiveKit ra client. Quyền trong phòng chỉ cấp qua token hoặc `RoomServiceClient` phía API.
 - `identity` trong LiveKit = `users.id`; vai trò nằm trong metadata `{"role":"teacher"|"student"}`; metadata phòng là `{"board","allowStudentShare","recording"}`.
 - Tin dữ liệu do server phát (chat, quiz, breakout) đi qua API rồi `LivekitService.broadcast`; client không tự phát những chủ đề này. Tin gửi cả lớp dùng `ClassroomService.rooms(s)` để tới cả các phòng nhóm.
+- Giao diện mới dùng `apps/web/components/ui` (dựng từ Figma, xem README.md trong đó); không thêm class rời vào `globals.css`. Màu, cỡ chữ, bo góc lấy từ biến `--ui-*` trong `tokens.css`.
 - Vai trò: ADMIN ⊃ TEACHER. Kiểm tra "là giáo viên" bằng `role !== 'STUDENT'`, không so sánh `=== 'TEACHER'`.
 - Schema dùng Prisma migrate: sửa `schema.prisma` thì thêm thư mục mới trong `prisma/migrations/` (API chạy `migrate deploy` khi khởi động). Không sửa migration đã commit.
 - File lưu qua `StorageService` (S3/R2); không để bucket công khai, link tải là URL ký có hạn.

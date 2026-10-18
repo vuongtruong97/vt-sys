@@ -46,7 +46,15 @@ export const config = {
     resendKey: process.env.RESEND_API_KEY || '',
     from: process.env.EMAIL_FROM || 'Bảng Đen <noreply@example.vn>',
   },
-  /** Địa chỉ trang web, dùng cho link trong email. */
+  /**
+   * Đăng nhập bằng Google (OAuth). Bỏ trống thì ẩn nút. URI chuyển hướng cần khai báo
+   * trong Google Cloud Console: `${APP_URL}/api/auth/google/callback`.
+   */
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID || '',
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+  },
+  /** Địa chỉ trang web, dùng cho link trong email và URI chuyển hướng của Google. */
   appUrl: (process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, ''),
   /** Dung lượng tối đa một tài liệu tải lên (MB). */
   maxMaterialMb: Number(process.env.MAX_MATERIAL_MB ?? 50),

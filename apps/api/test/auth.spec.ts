@@ -106,3 +106,86 @@ describe('Khoá đăng nhập khi sai nhiều lần', () => {
     await expect(auth.login({ email: 'hv1@test', password: 'dung-mat-khau' })).resolves.toMatchObject({ id: 'hv1' });
   });
 });
+
+describe('Đăng nhập bằng Google', () => {
+  const realFetch = global.fetch;
+  afterEach(() => {
+    global.fetch = realFetch;
+  });
+
+  /** id_token giả (Google trả qua HTTPS nên API không kiểm chữ ký). */
+  const idToken = (claims: Record<string, unknown>) =>
+    `h.${Buffer.from(JSON.stringify(claims)).toString('base64url')}.s`;
+  const claims = (over: Record<string, unknown> = {}) => ({
+    iss: 'https://accounts.google.com',
+    aud: 'cid.apps.googleusercontent.com',
+    exp: Math.floor(Date.now() / 1000) + 600,
+    sub: 'g-123',
+    email: 'Lan@Gmail.com',
+    email_verified: true,
+    name: 'Lan Nguyễn',
+    ...over,
+  });
+  function googleReturns(c: Record<string, unknown>, ok = true) {
+    global.fetch = jest.fn().mockResolvedValue({ ok, json: () => Promise.resolve(ok ? { id_token: idToken(c) } : { error: 'invalid_grant' }) }) as any;
+  }
+  // config đọc biến môi trường lúc import; ghi thẳng vào config cho test.
+  beforeEach(() => {
+    const { config } = require('../src/common/config');
+    config.google.clientId = 'cid.apps.googleusercontent.com';
+    config.google.clientSecret = 'secret';
+  });
+
+  it('đọc được hồ sơ hợp lệ, email viết thường', async () => {
+    googleReturns(claims());
+    const p = await new AuthService(mockPrisma() as any).googleProfile('code');
+    expect(p).toEqual({ sub: 'g-123', email: 'lan@gmail.com', name: 'Lan Nguyễn' });
+  });
+
+  it.each([
+    ['sai người nhận (aud)', { aud: 'ung-dung-khac' }],
+    ['sai nơi cấp (iss)', { iss: 'https://evil.example' }],
+    ['đã hết hạn', { exp: Math.floor(Date.now() / 1000) - 10 }],
+    ['email chưa xác minh', { email_verified: false }],
+  ])('từ chối token %s', async (_label, over) => {
+    googleReturns(claims(over));
+    await expect(new AuthService(mockPrisma() as any).googleProfile('code')).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('Google từ chối code thì báo lỗi', async () => {
+    googleReturns({}, false);
+    await expect(new AuthService(mockPrisma() as any).googleProfile('code')).rejects.toThrow('Google không xác nhận');
+  });
+
+  it('đã liên kết thì dùng đúng tài khoản theo googleId', async () => {
+    const prisma = mockPrisma();
+    prisma.user.findUnique.mockResolvedValueOnce(row({ googleId: 'g-123' }));
+    await expect(new AuthService(prisma as any).googleSignIn({ sub: 'g-123', email: 'lan@gmail.com', name: 'Lan' })).resolves.toMatchObject({ id: 'hv1' });
+    expect(prisma.user.create).not.toHaveBeenCalled();
+  });
+
+  it('chưa liên kết nhưng trùng email thì gắn Google vào tài khoản có sẵn', async () => {
+    const prisma = mockPrisma();
+    prisma.user.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce(row());
+    prisma.user.update.mockResolvedValue(row({ googleId: 'g-123' }));
+    await new AuthService(prisma as any).googleSignIn({ sub: 'g-123', email: 'hv1@test', name: 'Lan' });
+    expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'hv1' }, data: { googleId: 'g-123' } });
+  });
+
+  it('email mới thì tạo học viên chưa có mật khẩu', async () => {
+    const prisma = mockPrisma();
+    prisma.user.findUnique.mockResolvedValue(null);
+    prisma.user.create.mockImplementation(({ data }: any) => Promise.resolve(row({ id: 'moi', ...data, passwordHash: null })));
+    await new AuthService(prisma as any).googleSignIn({ sub: 'g-9', email: 'moi@gmail.com', name: 'Mới' });
+    expect(prisma.user.create).toHaveBeenCalledWith({ data: { email: 'moi@gmail.com', name: 'Mới', googleId: 'g-9' } });
+  });
+
+  it('tài khoản Google chưa có mật khẩu: đăng nhập bằng mật khẩu báo dùng Google, đặt mật khẩu lần đầu không cần mật khẩu cũ', async () => {
+    const prisma = mockPrisma();
+    prisma.user.findUnique.mockResolvedValue(row({ passwordHash: null, googleId: 'g-1' }));
+    prisma.user.update.mockResolvedValue(row({ tokenVersion: 1 }));
+    const auth = new AuthService(prisma as any);
+    await expect(auth.login({ email: 'hv1@test', password: 'gi-cung-duoc' })).rejects.toThrow(/đăng nhập bằng Google/);
+    await expect(auth.changePassword('hv1', { newPassword: 'mat-khau-moi' })).resolves.toMatchObject({ tokenVersion: 1 });
+  });
+});

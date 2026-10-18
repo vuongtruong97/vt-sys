@@ -48,7 +48,7 @@ Nguyên tắc chính:
 
 | Module | File | Việc |
 | --- | --- | --- |
-| Auth | `src/auth/auth.module.ts`, `auth.guard.ts` | Đăng ký, đăng nhập, đổi mật khẩu, đăng xuất mọi nơi. JWT 7 ngày trong cookie `bd_session` mang `ver` = `users.tokenVersion`; mọi guard (`AuthGuard`, `TeacherGuard`, `AdminGuard`) đọc lại tài khoản trong DB qua `currentUser()`, `ver` lệch thì coi như chưa đăng nhập, vai trò luôn lấy từ DB. Sai mật khẩu 5 lần trong 15 phút thì khoá email đó 15 phút |
+| Auth | `src/auth/auth.module.ts`, `auth.guard.ts` | Đăng ký, đăng nhập (mật khẩu hoặc Google), đổi/đặt mật khẩu, đăng xuất mọi nơi. JWT 7 ngày trong cookie `bd_session` mang `ver` = `users.tokenVersion`; mọi guard (`AuthGuard`, `TeacherGuard`, `AdminGuard`) đọc lại tài khoản trong DB qua `currentUser()`, `ver` lệch thì coi như chưa đăng nhập, vai trò luôn lấy từ DB. Sai mật khẩu 5 lần trong 15 phút thì khoá email đó 15 phút |
 | Courses | `src/courses/courses.module.ts` | Khoá học, thêm/xoá học viên bằng email, tạo và huỷ buổi học, lịch học (`/schedule`) |
 | Classroom | `src/classroom/classroom.module.ts` | Vào lớp, phòng chờ, quyền giáo viên, token bảng trắng, điểm danh, webhook LiveKit |
 | LiveKit | `src/classroom/livekit.service.ts` | Ký token; gọi RoomService để tạo phòng, đổi metadata, tắt mic, mời ra, đổi quyền, phát tin dữ liệu xuống phòng (`broadcast`) |
@@ -67,8 +67,8 @@ Nguyên tắc chính:
 | Đường dẫn | File | Việc |
 | --- | --- | --- |
 | `/` | `app/page.tsx` | Trang chủ, các khoá học công khai |
-| `/login`, `/register` | `components/AuthForm.tsx` | Đăng nhập, đăng ký (tài khoản mới luôn là học viên) |
-| `/account` | `app/account/page.tsx` | Đổi mật khẩu, đăng xuất khỏi mọi thiết bị (bấm tên trên thanh điều hướng) |
+| `/login`, `/register` | `components/AuthForm.tsx` | Đăng nhập, đăng ký (tài khoản mới luôn là học viên). Nút Google hiện khi API có `GOOGLE_CLIENT_ID`; lỗi đăng nhập Google hiện qua `?error=` |
+| `/account` | `app/account/page.tsx` | Đổi mật khẩu (tài khoản tạo bằng Google: đặt mật khẩu lần đầu), đăng xuất khỏi mọi thiết bị (bấm tên trên thanh điều hướng) |
 | `/schedule` | `app/schedule/page.tsx` | Lịch học; nút "Vào lớp" mở trước giờ học 10 phút |
 | `/teach` | `app/teach/page.tsx` | Giáo viên: danh sách khoá học, tạo khoá |
 | `/teach/courses/[id]` | `app/teach/courses/[id]/page.tsx` | Buổi học, thêm học viên, công khai khoá |
@@ -157,6 +157,13 @@ Image chính thức `livekit/livekit-server`. Khoá API truyền qua biến `LIV
 
 Giáo viên bấm "Kết thúc buổi học" thì gọi `POST /sessions/:id/end`: chuyển status sang ENDED, dừng ghi hình nếu đang ghi, rồi `deleteRoom`. Mọi người bị ngắt kết nối với lý do `ROOM_DELETED`. Webhook `room_finished` đóng các dòng điểm danh còn mở.
 
+### Đăng nhập bằng Google
+
+1. Nút trên `/login` mở `/api/auth/google`: API tạo `state` ngẫu nhiên, lưu vào cookie `bd_oauth` (10 phút, chỉ gửi cho `/api/auth/google*`) cùng trang cần quay về, rồi chuyển sang Google.
+2. Google gọi lại `/api/auth/google/callback?code&state`. API so `state` với cookie, đổi `code` lấy `id_token` (phía server, có client secret), kiểm tra `aud`, `iss`, hạn và `email_verified`.
+3. Tìm tài khoản theo `users.googleId`; chưa có thì gắn vào tài khoản cùng email; chưa có tài khoản thì tạo học viên mới với `passwordHash` null. Đặt cookie `bd_session` như đăng nhập thường rồi chuyển về trang cũ (chỉ nhận đường dẫn trong trang).
+4. Lỗi ở bất kỳ bước nào: chuyển về `/login?error=<thông báo tiếng Việt>`.
+
 ### Bảng trắng
 
 Giáo viên bật bảng thì metadata phòng `board=true`. Mỗi máy lấy token `GET /sessions/:id/board-token` rồi kết nối Hocuspocus. Nét vẽ là `Y.Map {c, w, pts: Y.Array<number>}` trong `Y.Array 'strokes'`; điểm được thêm khi đang kéo, nên người khác thấy nét vẽ hiện ra ngay.
@@ -169,6 +176,9 @@ Giáo viên bật bảng thì metadata phòng `board=true`. Mỗi máy lấy tok
 | GET | `/auth/me` | đã đăng nhập |
 | POST | `/auth/password` `{currentPassword, newPassword}` | đã đăng nhập; tăng `tokenVersion`, máy khác bị đăng xuất |
 | POST | `/auth/logout-all` | đã đăng nhập; tăng `tokenVersion` |
+| GET | `/auth/methods` | đã đăng nhập (`{hasPassword, google}`) |
+| GET | `/auth/providers` | mọi người (`{google}`: có bật đăng nhập Google không) |
+| GET | `/auth/google?next=`, `/auth/google/callback` | mọi người; chuyển hướng qua Google rồi đặt cookie |
 | GET | `/courses/public` | mọi người |
 | GET, POST | `/courses` | giáo viên |
 | GET, PATCH | `/courses/:id` | giáo viên của khoá |

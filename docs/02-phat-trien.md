@@ -80,6 +80,7 @@ Tất cả nằm trong `.env` ở thư mục gốc; `docker-compose.yml` truyề
 | `SEED_TEACHER_EMAIL`, `SEED_TEACHER_PASSWORD`, `SEED_TEACHER_NAME` | api | Tài khoản giáo viên tạo lúc khởi động | xem file |
 | `SEED_DEMO` | api | `true` thì tạo dữ liệu mẫu | `true` |
 | `COOKIE_SECURE` | api | `true` khi chạy sau HTTPS | `false` |
+| `TRUST_PROXY` | api | Số lớp `X-Forwarded-For` được tin để lấy IP thật cho giới hạn số lần gọi. Giữ 1: Next.js chỉ đặt header khi chưa có, trên VPS Caddy ghi đè bằng IP thật. Chạy trên máy không có Caddy thì giả được IP, chỉ chấp nhận khi phát triển | không đặt (mặc định 1) |
 | `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` | s3, api, s3-init | Nơi lưu bản ghi và tài liệu. Bỏ trống `S3_BUCKET` thì hai tính năng này tắt | `bangden`, xem file |
 | `S3_ENDPOINT`, `S3_REGION` | api (chỉ VPS) | Địa chỉ R2/S3. Trên máy compose đặt sẵn `http://s3:9000` | trống, `auto` |
 | `RESEND_API_KEY`, `EMAIL_FROM` | api | Gửi email nhắc lịch. Bỏ trống thì chỉ ghi log | trống |

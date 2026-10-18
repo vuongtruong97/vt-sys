@@ -10,6 +10,13 @@ export const config = {
   whiteboardSecret: required('WHITEBOARD_SECRET'),
   cookieName: 'bd_session',
   cookieSecure: process.env.COOKIE_SECURE === 'true',
+  /**
+   * Số lớp X-Forwarded-For được tin, để đọc đúng IP người dùng (giới hạn số lần gọi theo IP).
+   * Next.js rewrite chỉ đặt X-Forwarded-For khi request chưa có, không nối thêm; trên VPS Caddy
+   * ghi đè header bằng IP thật nên 1 là đúng. Chạy trên máy (không có Caddy) thì người dùng
+   * tự gửi header là giả được IP: chấp nhận được khi phát triển.
+   */
+  trustProxy: Number(process.env.TRUST_PROXY ?? 1),
   livekit: {
     apiKey: required('LIVEKIT_API_KEY'),
     apiSecret: required('LIVEKIT_API_SECRET'),

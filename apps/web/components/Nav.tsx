@@ -29,7 +29,7 @@ export function Nav({ me }: { me: Me | null | undefined }) {
         )}
         {me && (
           <>
-            <span className="small muted">{me.name}</span>
+            <Link href="/account" className="link small" title="Tài khoản">{me.name}</Link>
             <button className="btn ghost sm" onClick={logout}>Đăng xuất</button>
           </>
         )}

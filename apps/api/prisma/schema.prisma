@@ -33,6 +33,8 @@ model User {
   name         String
   passwordHash String
   role         Role          @default(STUDENT)
+  /// Tăng lên để vô hiệu mọi phiên đăng nhập cũ (đổi mật khẩu, đăng xuất mọi nơi).
+  tokenVersion Int           @default(0)
   createdAt    DateTime      @default(now())
   courses      Course[]      @relation("TeacherCourses")
   enrollments  Enrollment[]

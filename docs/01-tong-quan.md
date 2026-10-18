@@ -39,7 +39,8 @@ Nguyên tắc chính:
 1. **Video không đi qua web hay API.** Trình duyệt kết nối thẳng tới LiveKit, nên tải video không làm chậm web.
 2. **API là nơi duy nhất cấp quyền.** Nó kiểm tra tài khoản, danh sách lớp và giờ học, rồi ký token LiveKit có hạn ngắn ghi rõ quyền. Trình duyệt không bao giờ giữ API secret của LiveKit.
 3. **Cùng site cho cookie.** Trình duyệt chỉ gọi `/api/*` trên tên miền web; Next.js rewrite sang API. Cookie đăng nhập `bd_session` (httpOnly) vì vậy là cookie cùng site.
-4. **Modular monolith.** API là một tiến trình, chia module theo nghiệp vụ, để sau này tách thành dịch vụ riêng nếu cần.
+4. **Giới hạn số lần gọi.** `@nestjs/throttler` toàn cục: 300 lần/phút mỗi IP; `/auth/login`, `/auth/register`, `/auth/password` chỉ 10 lần/phút. Bỏ qua `/health`, webhook LiveKit và file HLS. IP đọc từ `X-Forwarded-For` theo `TRUST_PROXY`.
+5. **Modular monolith.** API là một tiến trình, chia module theo nghiệp vụ, để sau này tách thành dịch vụ riêng nếu cần.
 
 ## Các thành phần
 
@@ -47,7 +48,7 @@ Nguyên tắc chính:
 
 | Module | File | Việc |
 | --- | --- | --- |
-| Auth | `src/auth/auth.module.ts`, `auth.guard.ts` | Đăng ký, đăng nhập, JWT 7 ngày trong cookie `bd_session`. Có `AuthGuard`, `TeacherGuard` và decorator `@CurrentUser()` |
+| Auth | `src/auth/auth.module.ts`, `auth.guard.ts` | Đăng ký, đăng nhập, đổi mật khẩu, đăng xuất mọi nơi. JWT 7 ngày trong cookie `bd_session` mang `ver` = `users.tokenVersion`; mọi guard (`AuthGuard`, `TeacherGuard`, `AdminGuard`) đọc lại tài khoản trong DB qua `currentUser()`, `ver` lệch thì coi như chưa đăng nhập, vai trò luôn lấy từ DB. Sai mật khẩu 5 lần trong 15 phút thì khoá email đó 15 phút |
 | Courses | `src/courses/courses.module.ts` | Khoá học, thêm/xoá học viên bằng email, tạo và huỷ buổi học, lịch học (`/schedule`) |
 | Classroom | `src/classroom/classroom.module.ts` | Vào lớp, phòng chờ, quyền giáo viên, token bảng trắng, điểm danh, webhook LiveKit |
 | LiveKit | `src/classroom/livekit.service.ts` | Ký token; gọi RoomService để tạo phòng, đổi metadata, tắt mic, mời ra, đổi quyền, phát tin dữ liệu xuống phòng (`broadcast`) |
@@ -67,6 +68,7 @@ Nguyên tắc chính:
 | --- | --- | --- |
 | `/` | `app/page.tsx` | Trang chủ, các khoá học công khai |
 | `/login`, `/register` | `components/AuthForm.tsx` | Đăng nhập, đăng ký (tài khoản mới luôn là học viên) |
+| `/account` | `app/account/page.tsx` | Đổi mật khẩu, đăng xuất khỏi mọi thiết bị (bấm tên trên thanh điều hướng) |
 | `/schedule` | `app/schedule/page.tsx` | Lịch học; nút "Vào lớp" mở trước giờ học 10 phút |
 | `/teach` | `app/teach/page.tsx` | Giáo viên: danh sách khoá học, tạo khoá |
 | `/teach/courses/[id]` | `app/teach/courses/[id]/page.tsx` | Buổi học, thêm học viên, công khai khoá |
@@ -139,7 +141,7 @@ Image chính thức `livekit/livekit-server`. Khoá API truyền qua biến `LIV
 | Đang ghi hình | Metadata phòng `{"recording":true}`; mọi người thấy biểu tượng ● Đang ghi hình |
 | Đang phát trực tiếp | Metadata phòng `{"live":true}` |
 | Chia nhóm | `POST /join` quyết định phòng: học viên có trong `breakout_groups` vào phòng nhóm; giáo viên gửi `{group}` để ghé. Tin `breakout` (`start`/`end`) chỉ báo trình duyệt gọi lại `/join`. Chat, câu hỏi, tắt mic, mời ra, quyền chia sẻ áp dụng cho mọi phòng của buổi (`ClassroomService.rooms`) |
-| Quản trị | `AdminGuard` đọc vai trò trong DB mỗi lần gọi. `/auth/me` cấp lại cookie khi vai trò đổi, nên người được cấp quyền giáo viên không phải đăng nhập lại |
+| Quản trị | Mọi guard đọc vai trò trong DB mỗi lần gọi, nên cấp hay thu quyền có hiệu lực ngay, không phải đăng nhập lại |
 
 ## Luồng chính
 
@@ -165,6 +167,8 @@ Giáo viên bật bảng thì metadata phòng `board=true`. Mỗi máy lấy tok
 | --- | --- | --- |
 | POST | `/auth/register`, `/auth/login`, `/auth/logout` | mọi người |
 | GET | `/auth/me` | đã đăng nhập |
+| POST | `/auth/password` `{currentPassword, newPassword}` | đã đăng nhập; tăng `tokenVersion`, máy khác bị đăng xuất |
+| POST | `/auth/logout-all` | đã đăng nhập; tăng `tokenVersion` |
 | GET | `/courses/public` | mọi người |
 | GET, POST | `/courses` | giáo viên |
 | GET, PATCH | `/courses/:id` | giáo viên của khoá |

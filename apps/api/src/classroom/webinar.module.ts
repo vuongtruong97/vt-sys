@@ -14,8 +14,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { IsBoolean, IsOptional } from 'class-validator';
+import { SkipThrottle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
-import { AuthGuard, AuthUser, CurrentUser, readUser } from '../auth/auth.guard';
+import { AuthGuard, AuthUser, CurrentUser, currentUser } from '../auth/auth.guard';
 import { PrismaService } from '../common/prisma.service';
 import { StorageService } from '../common/storage.service';
 import { ClassroomModule, ClassroomService } from './classroom.module';
@@ -83,6 +84,8 @@ export class WebinarController {
    * Chuyển tiếp playlist và đoạn video từ bucket. Header Cache-Control để CDN (Cloudflare…) cache được:
    * đoạn video không bao giờ đổi, playlist trực tiếp đổi vài giây một lần.
    */
+  // Trình phát tải playlist, đoạn video liên tục: không tính vào giới hạn.
+  @SkipThrottle()
   @Get('live/:id/:file')
   async file(@Req() req: Request, @Res() res: Response, @Param('id') id: string, @Param('file') file: string) {
     if (!HLS_FILE.test(file)) throw new NotFoundException('Không có file này');
@@ -116,7 +119,7 @@ export class WebinarController {
 
   private async canWatch(req: Request, s: Awaited<ReturnType<ClassroomService['session']>>, isPublic: boolean) {
     if (isPublic) return true;
-    const user = readUser(req);
+    const user = await currentUser(req, this.prisma);
     return !!user && (await this.room.roleOf(user, s)) !== null;
   }
 }

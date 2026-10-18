@@ -1,6 +1,7 @@
 import 'reflect-metadata';
-import { Module, ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
+import { HttpException, HttpStatus, Injectable, Module, ValidationPipe } from '@nestjs/common';
+import { APP_GUARD, NestFactory } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import { AdminModule } from './admin/admin.module';
@@ -17,9 +18,21 @@ import { PrismaModule } from './common/prisma.service';
 import { CoursesModule } from './courses/courses.module';
 import { HealthController } from './health.controller';
 
+/** Giới hạn số lần gọi API theo IP, báo lỗi bằng tiếng Việt. */
+@Injectable()
+class RateLimitGuard extends ThrottlerGuard {
+  protected async throwThrottlingException(): Promise<void> {
+    throw new HttpException('Bạn thao tác quá nhanh, thử lại sau ít phút', HttpStatus.TOO_MANY_REQUESTS);
+  }
+}
+
 @Module({
-  imports: [PrismaModule, StorageModule, AuthModule, CoursesModule, ClassroomModule, InteractionModule, MediaModule, ReminderModule, AdminModule, BreakoutModule, WebinarModule],
+  imports: [
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 300 }]),
+    PrismaModule, StorageModule, AuthModule, CoursesModule, ClassroomModule, InteractionModule, MediaModule, ReminderModule, AdminModule, BreakoutModule, WebinarModule,
+  ],
   controllers: [HealthController],
+  providers: [{ provide: APP_GUARD, useClass: RateLimitGuard }],
 })
 class AppModule {}
 
@@ -27,6 +40,8 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
   // LiveKit gửi webhook với content-type application/webhook+json.
   app.useBodyParser('json', { type: ['application/json', 'application/webhook+json'] });
+  // API đứng sau Next.js rewrite (và Caddy trên VPS): lấy IP người dùng từ X-Forwarded-For.
+  app.set('trust proxy', config.trustProxy);
   app.use(cookieParser());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.enableShutdownHooks();

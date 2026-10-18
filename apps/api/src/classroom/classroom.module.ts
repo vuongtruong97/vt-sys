@@ -20,6 +20,7 @@ import type { ClassSession, Course } from '@prisma/client';
 import { IsBoolean, IsInt, IsOptional, IsString, Min } from 'class-validator';
 import type { Request } from 'express';
 import jwt from 'jsonwebtoken';
+import { SkipThrottle } from '@nestjs/throttler';
 import { WebhookReceiver } from 'livekit-server-sdk';
 import { AuthGuard, AuthUser, CurrentUser } from '../auth/auth.guard';
 import { config } from '../common/config';
@@ -337,6 +338,7 @@ export class ClassroomController {
 }
 
 /** LiveKit gọi về đây khi có người vào/ra phòng; dùng để điểm danh. */
+@SkipThrottle()
 @Controller('webhooks')
 export class WebhookController {
   private log = new Logger('Webhook');

@@ -28,6 +28,12 @@ CSS (`tokens.css`, `ui.css`) đã nạp một lần trong `app/layout.tsx`, khô
 | Nhãn giảm giá `#EE645B` | `#C3524B` | 3,2:1 → 4,5:1 | `--ui-danger-strong` |
 | Icon Font Awesome (đồng hồ, ô vuông) | SVG vẽ lại trong `internal.tsx` | không nạp cả bộ font icon | |
 | Chữ "Lorem ipsum", tiếng Anh | tiếng Việt | quy ước dự án | |
+| Logo "TOTC" | "BĐ" + "Bảng Đen" | TOTC là thương hiệu mẫu của file Figma | `Logo text`, `name` |
+| Nền hero teal `#49BBBD`, chữ "Studying" cam | nền `--ui-primary-strong`, gạch chân cam hạ thấp | chữ trắng trên teal gốc 2,3:1; chữ cam trên teal không đọc được; gạch chân sát chữ đè dấu nặng tiếng Việt | |
+| Lớp phủ ảnh trang Login ("Rectangle 78") | chuyển màu tối bằng CSS | Figma xuất ra SVG rỗng | |
+| "Remember me", "Forgot Password?" | không có | app chưa có hai tính năng này | |
+
+Không có chế độ tối: Figma chỉ có giao diện sáng, nên `globals.css` đã bỏ khối `prefers-color-scheme: dark` cho các trang. Phòng học vẫn tối (nhóm biến `--room*`).
 
 Figma chỉ có 6 component gốc (icon mạng xã hội); các component dưới đây được tách từ phần lặp lại trên 18 màn hình.
 
@@ -67,6 +73,16 @@ Màu `--ui-primary`, `--ui-primary-strong`, `--ui-navy` (`#252641`, tiêu đề 
 | `Modal` `open`, `onClose`, `title`, `footer` | (không có trong Figma) | hộp thoại: Esc, bấm ra ngoài, giữ focus, trả focus |
 | `Pagination` `page`, `total`, `onChange` | (mũi tên theo 47:339) | phân trang có số |
 | `EmptyState` | (không có trong Figma) | danh sách trống |
+| `Navbar` `links`, `user`, `onLogout`, `guestActions` | 47:248 (thanh trên trang Course) | thanh điều hướng; màn hẹp gom vào nút menu. Trong app dùng qua `components/Nav.tsx` |
+| `Page` `narrow`, `PageHeader` `title`, `description`, `back`, `actions`, `Section` | | khung trang, tiêu đề trang, khối có tiêu đề |
+| `Alert` `tone: error · success · info` | | thông báo trong trang (lỗi đọc ngay bằng `role="alert"`) |
+| `Muted` | | chữ phụ màu xám |
+| `Table` `caption` | (không có trong Figma) | bảng bo góc, cuộn ngang trong khung trên màn hẹp |
+| `Switch` | | công tắc bật/tắt (`role="switch"`) |
+| `Stat` | Landing "15K+ Students" | số liệu lớn kèm nhãn; nhiều cái đặt trong `div.ui-stats` |
+| `List`, `ListRow` `lead`, `title`, `meta`, `actions`, `highlight` | (từ thẻ Figma) | dòng danh sách dạng thẻ: lịch học, buổi học, bản ghi, tài liệu |
+
+Class bố cục dùng trực tiếp: `ui-cols` (2 cột, tự xuống 1 cột), `ui-grid-cards` (lưới thẻ), `ui-stats`, `ui-actions` (hàng nút), `ui-form` / `ui-form-row` (form và hàng ô nhập), `ui-hero` (phần mở đầu trang chủ), `ui-auth` (trang đăng nhập/đăng ký theo Figma Login 28:131).
 
 ## Ví dụ
 

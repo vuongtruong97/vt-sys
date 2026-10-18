@@ -40,7 +40,7 @@ export function Footer({
     <footer className="ui-footer">
       <div className="ui-footer__inner">
         <div className="ui-footer__brand">
-          <Logo tone="light" />
+          <Logo tone="light" size={64} name="Bảng Đen" />
           <span className="ui-footer__tagline">{tagline}</span>
         </div>
         {onSubscribe && (

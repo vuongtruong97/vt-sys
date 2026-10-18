@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { fmtTime } from '@/lib/format';
 import { fmtSize, openSigned } from './Materials';
+import { Alert, Badge, Button, ListRow, Muted } from '@/components/ui';
 
 type Recording = {
   id: string;
@@ -59,28 +60,31 @@ export function Recordings({ sessionId, canEdit }: { sessionId: string; canEdit:
   };
 
   return (
-    <div className="stack" style={{ gap: 8 }}>
-      {error && <p className="error" role="alert">{error}</p>}
-      {items === null && !error && <p className="muted small">Đang tải…</p>}
-      {items?.length === 0 && <p className="muted small">Buổi này chưa có bản ghi hình.</p>}
+    <div className="ui-list">
+      {error && <Alert tone="error">{error}</Alert>}
+      {items === null && !error && <Muted small>Đang tải…</Muted>}
+      {items?.length === 0 && <Muted small>Buổi này chưa có bản ghi hình.</Muted>}
       {items?.map((r, i) => (
-        <div key={r.id} className="item">
-          <div className="info">
-            <span className="t">🎬 Bản ghi {i + 1} · bắt đầu {fmtTime(r.startedAt)}</span>
-            <span className="small muted">
-              <span className={`tag${r.status === 'READY' ? '' : ' off'}`}>{label[r.status]}</span>
+        <ListRow
+          key={r.id}
+          title={`🎬 Bản ghi ${i + 1} · bắt đầu ${fmtTime(r.startedAt)}`}
+          meta={
+            <>
+              <Badge variant={r.status === 'READY' ? 'soft' : 'neutral'}>{label[r.status]}</Badge>
               {r.durationSec != null && fmtDuration(r.durationSec)}
               {r.sizeBytes != null && ` · ${fmtSize(r.sizeBytes)}`}
               {r.status === 'FAILED' && r.error && ` · ${r.error}`}
-            </span>
-          </div>
-          <div className="row" style={{ gap: 6 }}>
-            {r.status === 'READY' && <button className="btn sm" onClick={() => openSigned(`/recordings/${r.id}/url`, setError)}>Xem lại</button>}
-            {canEdit && r.status !== 'STARTING' && r.status !== 'RECORDING' && (
-              <button className="btn ghost sm" onClick={() => remove(r)}>Xoá</button>
-            )}
-          </div>
-        </div>
+            </>
+          }
+          actions={
+            <>
+              {r.status === 'READY' && <Button size="sm" onClick={() => openSigned(`/recordings/${r.id}/url`, setError)}>Xem lại</Button>}
+              {canEdit && r.status !== 'STARTING' && r.status !== 'RECORDING' && (
+                <Button variant="ghost" size="sm" onClick={() => remove(r)}>Xoá</Button>
+              )}
+            </>
+          }
+        />
       ))}
     </div>
   );

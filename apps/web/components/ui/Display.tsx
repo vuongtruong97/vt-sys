@@ -19,8 +19,11 @@ export function Card({ padded, tone = 'surface', className, ...rest }: CardProps
 // ---------- Badge ----------
 
 export type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
-  /** "category": nhãn danh mục có icon ô vuông. "soft": viên thuốc teal nhạt. "discount": ô đỏ "50%" trên ảnh ưu đãi. */
-  variant?: 'category' | 'soft' | 'discount';
+  /**
+   * "category": nhãn danh mục có icon ô vuông. "soft": viên thuốc teal nhạt (trạng thái tốt: đang diễn ra, có mặt).
+   * "neutral": viên thuốc xám (đã huỷ, vắng, đã ẩn). "discount": ô đỏ "50%" trên ảnh ưu đãi.
+   */
+  variant?: 'category' | 'soft' | 'neutral' | 'discount';
 };
 
 export function Badge({ variant = 'soft', className, children, ...rest }: BadgeProps) {
@@ -44,10 +47,17 @@ export function Meta({ children, className }: { children: ReactNode; className?:
 
 // ---------- Avatar ----------
 
-export type AvatarProps = { name: string; src?: string | null; size?: number; className?: string };
+export type AvatarProps = {
+  name: string;
+  src?: string | null;
+  size?: number;
+  /** Tên đã hiện ngay cạnh avatar: ẩn avatar khỏi trình đọc màn hình để không đọc tên hai lần. */
+  decorative?: boolean;
+  className?: string;
+};
 
 /** Ảnh tròn; không có ảnh thì hiện chữ cái đầu của tên. */
-export function Avatar({ name, src, size = 44, className }: AvatarProps) {
+export function Avatar({ name, src, size = 44, decorative, className }: AvatarProps) {
   const initials = name
     .trim()
     .split(/\s+/)
@@ -55,9 +65,9 @@ export function Avatar({ name, src, size = 44, className }: AvatarProps) {
     .map((w) => w[0]?.toUpperCase())
     .join('');
   return (
-    <span className={cx('ui-avatar', className)} style={{ width: size, height: size, fontSize: Math.round(size * 0.38) }}>
+    <span className={cx('ui-avatar', className)} style={{ width: size, height: size, fontSize: Math.round(size * 0.38) }} aria-hidden={decorative || undefined}>
       {src ? <img src={src} alt="" /> : <span aria-hidden>{initials}</span>}
-      <span className="ui-sr-only">{name}</span>
+      {!decorative && <span className="ui-sr-only">{name}</span>}
     </span>
   );
 }
@@ -169,7 +179,7 @@ export function Review({ author, avatar, rating, time, children, className }: Re
     <article className={cx('ui-review', className)}>
       <div className="ui-review__head">
         <div className="ui-review__who">
-          <Avatar name={author} src={avatar} size={70} />
+          <Avatar name={author} src={avatar} size={70} decorative />
           <div>
             <div className="ui-review__name">{author}</div>
             {rating != null && <Stars value={rating} height={18} />}
@@ -232,22 +242,37 @@ export function CtaBanner({ title, children, action, className }: { title: strin
 
 // ---------- Logo ----------
 
-/** Logo TOTC: khung thoi viền teal tải từ Figma (/ui/logo-mark.svg) và chữ. */
-export function Logo({ text = 'TOTC', size = 83, tone = 'dark', href, className }: { text?: string; size?: number; tone?: 'dark' | 'light'; href?: string; className?: string }) {
-  const inner = (
-    <>
+export type LogoProps = {
+  /** Chữ trong khung thoi (ngắn, 2–4 ký tự). Figma dùng "TOTC" là tên thương hiệu mẫu. */
+  text?: string;
+  /** Tên sản phẩm hiện bên phải khung; đồng thời là tên của liên kết. */
+  name?: string;
+  size?: number;
+  tone?: 'dark' | 'light';
+  href?: string;
+  className?: string;
+};
+
+/** Logo: khung thoi viền teal tải từ Figma (/ui/logo-mark.svg), chữ viết tắt, và tên sản phẩm (tuỳ chọn). */
+export function Logo({ text = 'BĐ', name, size = 83, tone = 'dark', href, className }: LogoProps) {
+  const mark = (
+    <span className="ui-logo__mark" style={{ width: size, height: size }}>
       <img src="/ui/logo-mark.svg" width={size} height={size} alt="" />
-      <span style={{ fontSize: Math.round(size * 0.385) }}>{text}</span>
+      <span style={{ fontSize: Math.round(size * 0.36) }}>{text}</span>
+    </span>
+  );
+  const body = (
+    <>
+      {mark}
+      {name && <span className="ui-logo__name" style={{ fontSize: Math.max(16, Math.round(size * 0.36)) }}>{name}</span>}
     </>
   );
   const cls = cx('ui-logo', tone === 'light' && 'ui-logo--light', className);
   return href ? (
-    <Link href={href} className={cls} style={{ width: size, height: size }} aria-label={`${text}, về trang chủ`}>
-      {inner}
+    <Link href={href} className={cls} aria-label={`${name ?? text}, về trang chủ`}>
+      {body}
     </Link>
   ) : (
-    <span className={cls} style={{ width: size, height: size }}>
-      {inner}
-    </span>
+    <span className={cls}>{body}</span>
   );
 }

@@ -1,5 +1,5 @@
 'use client';
-import Link from 'next/link';
+import { ButtonLink, Navbar, NavLink } from '@/components/ui';
 import { api, Me } from '@/lib/api';
 
 export function Nav({ me }: { me: Me | null | undefined }) {
@@ -7,33 +7,23 @@ export function Nav({ me }: { me: Me | null | undefined }) {
     await api('/auth/logout', { method: 'POST' });
     window.location.href = '/';
   };
+  const links: NavLink[] = [{ href: '/', label: 'Trang chủ' }];
+  if (me) {
+    links.push({ href: '/schedule', label: 'Lịch học' });
+    if (me.role !== 'STUDENT') links.push({ href: '/teach', label: 'Quản lý lớp' });
+    if (me.role === 'ADMIN') links.push({ href: '/admin', label: 'Quản trị' });
+  }
   return (
-    <header className="nav">
-      <div className="container">
-        <Link href="/" className="brand">
-          <span className="mark">B</span>Bảng Đen
-        </Link>
-        {me && (
-          <>
-            <Link href="/schedule" className="link">Lịch học</Link>
-            {me.role !== 'STUDENT' && <Link href="/teach" className="link">Quản lý lớp</Link>}
-            {me.role === 'ADMIN' && <Link href="/admin" className="link">Quản trị</Link>}
-          </>
-        )}
-        <span className="grow" />
-        {me === null && (
-          <>
-            <Link href="/login" className="link">Đăng nhập</Link>
-            <Link href="/register" className="btn sm">Đăng ký</Link>
-          </>
-        )}
-        {me && (
-          <>
-            <Link href="/account" className="link small" title="Tài khoản">{me.name}</Link>
-            <button className="btn ghost sm" onClick={logout}>Đăng xuất</button>
-          </>
-        )}
-      </div>
-    </header>
+    <Navbar
+      links={links}
+      user={me ? { name: me.name, href: '/account' } : me}
+      onLogout={logout}
+      guestActions={
+        <>
+          <ButtonLink href="/login" variant="ghost" size="sm">Đăng nhập</ButtonLink>
+          <ButtonLink href="/register" size="sm">Đăng ký</ButtonLink>
+        </>
+      }
+    />
   );
 }

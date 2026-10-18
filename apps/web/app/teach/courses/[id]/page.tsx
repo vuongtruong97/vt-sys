@@ -1,8 +1,24 @@
 'use client';
-import Link from 'next/link';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { Materials } from '@/components/Materials';
 import { Nav } from '@/components/Nav';
+import {
+  Alert,
+  Badge,
+  Button,
+  ButtonLink,
+  Card,
+  Input,
+  List,
+  ListRow,
+  Muted,
+  Page,
+  PageHeader,
+  Section,
+  Select,
+  Switch,
+  Table,
+} from '@/components/ui';
 import { api } from '@/lib/api';
 import { fmtDay, fmtTime, toLocalInput } from '@/lib/format';
 import { useMe } from '@/lib/useMe';
@@ -64,99 +80,146 @@ export default function CoursePage({ params }: { params: { id: string } }) {
   return (
     <>
       <Nav me={me} />
-      <main className="container page">
-        <p className="small"><Link href="/teach">← Quản lý lớp</Link></p>
-        {!course && !error && <p className="muted">Đang tải…</p>}
-        {error && <p className="error" role="alert">{error}</p>}
-        {msg && <p className="small" role="status" style={{ color: 'var(--good)' }}>{msg}</p>}
+      <Page>
+        {!course && !error && <Muted>Đang tải…</Muted>}
+        {course && (
+          <PageHeader
+            back={{ href: '/teach', label: 'Quản lý lớp' }}
+            title={course.title}
+            description={course.description}
+            actions={
+              <Switch
+                checked={course.published}
+                onChange={(v) => run(() => api(`/courses/${course.id}`, { method: 'PATCH', json: { published: v } }), v ? 'Khoá học đã hiện trên trang chủ' : 'Đã ẩn khoá học khỏi trang chủ')}
+                label="Hiện trên trang chủ"
+              />
+            }
+          />
+        )}
+        {error && <Alert tone="error">{error}</Alert>}
+        {msg && <Alert tone="success">{msg}</Alert>}
+
         {course && (
           <>
-            <div className="row spread">
-              <div className="stack" style={{ gap: 4 }}>
-                <h1>{course.title}</h1>
-                <p className="muted">{course.description}</p>
-              </div>
-              <label className="switch" htmlFor="pub">
-                <input id="pub" type="checkbox" checked={course.published}
-                  onChange={(e) => run(() => api(`/courses/${course.id}`, { method: 'PATCH', json: { published: e.target.checked } }))} />
-                Hiện trên trang chủ
-              </label>
-            </div>
-
-            <div className="grid2">
-              <section className="stack">
-                <h2>Buổi học</h2>
-                {course.sessions.length === 0 && <p className="muted">Chưa có buổi nào.</p>}
-                <div className="list">
+            <div className="ui-cols">
+              <Section title={`Buổi học (${course.sessions.length})`}>
+                {course.sessions.length === 0 && <Muted>Chưa có buổi nào. Thêm buổi đầu tiên bên dưới.</Muted>}
+                <List>
                   {course.sessions.map((s) => (
-                    <div key={s.id} className="item">
-                      <div className="when"><b>{fmtTime(s.startsAt)}</b><span>{fmtDay(s.startsAt)}</span></div>
-                      <div className="info">
-                        <span className="t">{s.title}</span>
-                        <span className="small muted">{statusLabel[s.status]} · đến {fmtTime(s.endsAt)}</span>
-                      </div>
-                      <div className="row">
-                        {s.status !== 'CANCELLED' && <Link className="btn sm" href={`/room/${s.id}`}>Mở lớp</Link>}
-                        <Link className="btn ghost sm" href={`/teach/sessions/${s.id}`}>Điểm danh</Link>
-                        <Link className="btn ghost sm" href={`/sessions/${s.id}`}>Ghi hình, tài liệu</Link>
-                        {s.status === 'SCHEDULED' && (
-                          <button className="btn ghost sm" onClick={() => run(() => api(`/sessions/${s.id}`, { method: 'PATCH', json: { cancelled: true } }), 'Đã huỷ buổi học')}>Huỷ</button>
-                        )}
-                      </div>
-                    </div>
+                    <ListRow
+                      key={s.id}
+                      highlight={s.status === 'LIVE'}
+                      lead={{ top: fmtTime(s.startsAt), bottom: fmtDay(s.startsAt) }}
+                      title={s.title}
+                      meta={
+                        <>
+                          <Badge variant={s.status === 'CANCELLED' || s.status === 'ENDED' ? 'neutral' : 'soft'}>{statusLabel[s.status]}</Badge>
+                          đến {fmtTime(s.endsAt)}
+                        </>
+                      }
+                      actions={
+                        <>
+                          {s.status !== 'CANCELLED' && <ButtonLink href={`/room/${s.id}`} size="sm">Mở lớp</ButtonLink>}
+                          <ButtonLink href={`/teach/sessions/${s.id}`} variant="outline" size="sm">Điểm danh</ButtonLink>
+                          <ButtonLink href={`/sessions/${s.id}`} variant="outline" size="sm">Ghi hình, tài liệu</ButtonLink>
+                          {s.status === 'SCHEDULED' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                if (window.confirm(`Huỷ buổi "${s.title}"? Học viên sẽ không vào được buổi này.`)) {
+                                  run(() => api(`/sessions/${s.id}`, { method: 'PATCH', json: { cancelled: true } }), 'Đã huỷ buổi học');
+                                }
+                              }}
+                            >
+                              Huỷ
+                            </Button>
+                          )}
+                        </>
+                      }
+                    />
                   ))}
-                </div>
-                <form className="card stack" onSubmit={addSession}>
-                  <h3>Thêm buổi học</h3>
-                  <label className="field" htmlFor="s-title">Tên buổi<input id="s-title" name="title" required placeholder={`Buổi ${course.sessions.length + 1}: …`} /></label>
-                  <div className="row">
-                    <label className="field" htmlFor="s-start" style={{ flex: 2, minWidth: 200 }}>Bắt đầu
-                      <input id="s-start" name="startsAt" type="datetime-local" required defaultValue={toLocalInput(defaultStart)} />
-                    </label>
-                    <label className="field" htmlFor="s-min" style={{ flex: 1, minWidth: 120 }}>Thời lượng
-                      <select id="s-min" name="minutes" defaultValue="90">
-                        <option value="45">45 phút</option><option value="60">60 phút</option><option value="90">90 phút</option><option value="120">120 phút</option>
-                      </select>
-                    </label>
-                  </div>
-                  <button className="btn">Thêm buổi học</button>
-                </form>
-              </section>
+                </List>
+                <Card padded>
+                  <form className="ui-form" onSubmit={addSession}>
+                    <h3 className="ui-sec__title" style={{ fontSize: 20 }}>Thêm buổi học</h3>
+                    <Input label="Tên buổi" name="title" required placeholder={`Buổi ${course.sessions.length + 1}: …`} />
+                    <div className="ui-form-row">
+                      <Input label="Bắt đầu" name="startsAt" type="datetime-local" required defaultValue={toLocalInput(defaultStart)} />
+                      <Select
+                        label="Thời lượng"
+                        name="minutes"
+                        defaultValue="90"
+                        options={[45, 60, 90, 120].map((m) => ({ value: String(m), label: `${m} phút` }))}
+                      />
+                    </div>
+                    <div className="ui-actions">
+                      <Button type="submit">Thêm buổi học</Button>
+                    </div>
+                  </form>
+                </Card>
+              </Section>
 
-              <section className="stack">
-                <h2>Học viên ({course.enrollments.length})</h2>
-                <form className="row" onSubmit={enroll}>
-                  <label className="field" htmlFor="e-email" style={{ flex: 1, minWidth: 200 }}>Thêm bằng email
-                    <input id="e-email" name="email" type="email" required placeholder="hocvien@gmail.com" />
-                  </label>
-                  <button className="btn" style={{ alignSelf: 'end' }}>Thêm</button>
+              <Section title={`Học viên (${course.enrollments.length})`}>
+                <form className="ui-form-row" style={{ alignItems: 'end' }} onSubmit={enroll}>
+                  <Input
+                    label="Thêm bằng email"
+                    name="email"
+                    type="email"
+                    required
+                    placeholder="hocvien@gmail.com"
+                    hint="Học viên cần tạo tài khoản trước. Người chưa có trong danh sách vẫn xin vào được qua phòng chờ."
+                  />
+                  <div className="ui-actions" style={{ alignSelf: 'start', marginTop: 32 }}>
+                    <Button type="submit">Thêm</Button>
+                  </div>
                 </form>
-                <p className="small muted">Học viên cần tạo tài khoản trước. Người chưa có trong danh sách vẫn xin vào được qua phòng chờ.</p>
-                <div className="tbl">
-                  <table>
-                    <thead><tr><th>Họ tên</th><th>Email</th><th /></tr></thead>
+                {course.enrollments.length > 0 && (
+                  <Table caption="Học viên của khoá">
+                    <thead>
+                      <tr>
+                        <th>Họ tên</th>
+                        <th>Email</th>
+                        <th>
+                          <span className="ui-sr-only">Thao tác</span>
+                        </th>
+                      </tr>
+                    </thead>
                     <tbody>
                       {course.enrollments.map((e) => (
                         <tr key={e.id}>
                           <td>{e.user.name}</td>
                           <td>{e.user.email}</td>
-                          <td><button className="btn ghost sm" onClick={() => run(() => api(`/courses/${course.id}/enrollments/${e.user.id}`, { method: 'DELETE' }), `Đã xoá ${e.user.name} khỏi lớp`)}>Xoá</button></td>
+                          <td style={{ textAlign: 'right' }}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                if (window.confirm(`Xoá ${e.user.name} khỏi khoá học?`)) {
+                                  run(() => api(`/courses/${course.id}/enrollments/${e.user.id}`, { method: 'DELETE' }), `Đã xoá ${e.user.name} khỏi lớp`);
+                                }
+                              }}
+                            >
+                              Xoá
+                            </Button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
-                  </table>
-                </div>
-              </section>
+                  </Table>
+                )}
+              </Section>
             </div>
 
-            <section className="stack">
-              <h2>Tài liệu của khoá</h2>
-              <p className="small muted">Tài liệu tải lên ở đây dùng chung cho mọi buổi. Tài liệu riêng từng buổi tải trong trang "Ghi hình, tài liệu" của buổi đó hoặc ngay trong phòng học.</p>
+            <Section title="Tài liệu của khoá">
+              <Muted small>
+                Tài liệu tải lên ở đây dùng chung cho mọi buổi. Tài liệu riêng từng buổi tải trong trang &quot;Ghi hình, tài liệu&quot; của buổi đó hoặc ngay trong phòng học.
+              </Muted>
               <Materials courseId={course.id} canEdit />
-            </section>
+            </Section>
           </>
         )}
-      </main>
+      </Page>
     </>
   );
 }

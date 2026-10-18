@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import '@/components/ui/tokens.css';
+import '@/components/ui/ui.css';
 
 export const metadata: Metadata = {
   title: 'Bảng Đen · Lớp học trực tuyến',
@@ -17,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Lexend:wght@500;600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&family=Lexend:wght@500;600&display=swap"
         />
       </head>
       <body>{children}</body>

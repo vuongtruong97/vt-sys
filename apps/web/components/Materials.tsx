@@ -2,6 +2,7 @@
 import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { fmtDay } from '@/lib/format';
+import { Alert, Button, ListRow, Muted } from '@/components/ui';
 
 export type Material = { id: string; name: string; contentType: string; sizeBytes: number; sessionId: string | null; createdAt: string };
 
@@ -89,7 +90,40 @@ export function Materials(props: {
     }
   };
 
-  const btn = room ? 'mini' : 'btn ghost sm';
+  if (!room) {
+    // Trang thường: dùng components/ui. Trong phòng học (nền tối) giữ kiểu riêng ở phía dưới.
+    return (
+      <div className="ui-list">
+        {canEdit && storage && (
+          <div className="ui-actions">
+            <input ref={input} type="file" multiple hidden onChange={upload} />
+            <Button size="sm" loading={busy} onClick={() => input.current?.click()}>
+              {busy ? 'Đang tải lên…' : sessionId ? 'Tải tài liệu cho buổi này' : 'Tải tài liệu lên'}
+            </Button>
+          </div>
+        )}
+        {canEdit && !storage && <Alert tone="info">Chưa cấu hình nơi lưu trữ nên chưa tải tài liệu lên được.</Alert>}
+        {error && <Alert tone="error">{error}</Alert>}
+        {items === null && <Muted small>Đang tải…</Muted>}
+        {items?.length === 0 && <Muted small>Chưa có tài liệu.</Muted>}
+        {items?.map((m) => (
+          <ListRow
+            key={m.id}
+            title={`📄 ${m.name}`}
+            meta={`${fmtSize(m.sizeBytes)} · ${fmtDay(m.createdAt)} · ${m.sessionId ? 'theo buổi' : 'tài liệu chung'}`}
+            actions={
+              <>
+                <Button variant="outline" size="sm" onClick={() => openSigned(`/materials/${m.id}/url`, say)}>Mở</Button>
+                {canEdit && <Button variant="ghost" size="sm" onClick={() => remove(m)}>Xoá</Button>}
+              </>
+            }
+          />
+        ))}
+      </div>
+    );
+  }
+
+  const btn = 'mini';
 
   return (
     <div className="stack" style={{ gap: 8 }}>

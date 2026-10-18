@@ -1,9 +1,9 @@
 'use client';
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Materials } from '@/components/Materials';
 import { Nav } from '@/components/Nav';
 import { Recordings } from '@/components/Recordings';
+import { Alert, ButtonLink, Muted, Page, PageHeader, Section } from '@/components/ui';
 import { api } from '@/lib/api';
 import { fmtDay, fmtTime } from '@/lib/format';
 import { useMe } from '@/lib/useMe';
@@ -33,32 +33,29 @@ export default function SessionReviewPage({ params }: { params: { id: string } }
   return (
     <>
       <Nav me={me} />
-      <main className="container page">
-        <p className="small"><Link href="/schedule">← Lịch học</Link></p>
-        {error && <p className="error" role="alert">{error}</p>}
-        {info && !info.role && <p className="error">Bạn chưa được vào khoá học này.</p>}
+      <Page>
+        {error && <Alert tone="error">{error}</Alert>}
+        {!info && !error && <Muted>Đang tải…</Muted>}
+        {info && !info.role && <Alert tone="error">Bạn chưa được vào khoá học này.</Alert>}
         {info?.role && (
           <>
-            <div className="row spread">
-              <div className="stack" style={{ gap: 4 }}>
-                <h1>{info.course.title} · {info.title}</h1>
-                <p className="muted">{fmtDay(info.startsAt)}, {fmtTime(info.startsAt)} – {fmtTime(info.endsAt)}</p>
-              </div>
-              {teacher && <Link className="btn ghost" href={`/teach/sessions/${info.id}`}>Điểm danh</Link>}
-            </div>
-            <div className="grid2">
-              <section className="stack">
-                <h2>Bản ghi hình</h2>
+            <PageHeader
+              back={{ href: '/schedule', label: 'Lịch học' }}
+              title={`${info.course.title} · ${info.title}`}
+              description={`${fmtDay(info.startsAt)}, ${fmtTime(info.startsAt)} – ${fmtTime(info.endsAt)}`}
+              actions={teacher && <ButtonLink href={`/teach/sessions/${info.id}`} variant="outline">Điểm danh</ButtonLink>}
+            />
+            <div className="ui-cols">
+              <Section title="Bản ghi hình">
                 <Recordings sessionId={info.id} canEdit={teacher} />
-              </section>
-              <section className="stack">
-                <h2>Tài liệu</h2>
+              </Section>
+              <Section title="Tài liệu">
                 <Materials courseId={info.course.id} sessionId={info.id} canEdit={teacher} />
-              </section>
+              </Section>
             </div>
           </>
         )}
-      </main>
+      </Page>
     </>
   );
 }

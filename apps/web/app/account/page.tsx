@@ -1,6 +1,7 @@
 'use client';
 import { FormEvent, useEffect, useState } from 'react';
 import { Nav } from '@/components/Nav';
+import { Alert, Button, Card, Input, Muted, Page, PageHeader, Section } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useMe } from '@/lib/useMe';
 
@@ -55,47 +56,56 @@ export default function AccountPage() {
   return (
     <>
       <Nav me={me} />
-      <main className="container page">
-        <div>
-          <h1>Tài khoản</h1>
-          {me && <p className="muted small">{me.name} · {me.email}</p>}
-          {methods && (
-            <p className="muted small">
-              Đăng nhập bằng: {[methods.hasPassword && 'email và mật khẩu', methods.google && 'Google'].filter(Boolean).join(', ')}
-            </p>
-          )}
-        </div>
+      <Page narrow>
+        <PageHeader
+          title="Tài khoản"
+          description={
+            me && (
+              <>
+                {me.name} · {me.email}
+                {methods && (
+                  <>
+                    <br />
+                    Đăng nhập bằng: {[methods.hasPassword && 'email và mật khẩu', methods.google && 'Google'].filter(Boolean).join(', ')}
+                  </>
+                )}
+              </>
+            )
+          }
+        />
 
-        <form className="card stack" style={{ maxWidth: 440 }} onSubmit={changePassword}>
-          <h2>{firstPassword ? 'Đặt mật khẩu' : 'Đổi mật khẩu'}</h2>
-          {firstPassword ? (
-            <p className="muted small">Tài khoản này tạo bằng Google. Đặt mật khẩu nếu muốn đăng nhập thêm bằng email.</p>
-          ) : (
-            <label className="field" htmlFor="currentPassword">Mật khẩu hiện tại
-              <input id="currentPassword" name="currentPassword" type="password" required autoComplete="current-password" />
-            </label>
-          )}
-          <label className="field" htmlFor="newPassword">Mật khẩu mới (ít nhất 8 ký tự)
-            <input id="newPassword" name="newPassword" type="password" required minLength={8} autoComplete="new-password" />
-          </label>
-          <label className="field" htmlFor="confirm">Nhập lại mật khẩu mới
-            <input id="confirm" name="confirm" type="password" required minLength={8} autoComplete="new-password" />
-          </label>
-          {error && <p className="error" role="alert">{error}</p>}
-          {done && <p className="small" role="status" style={{ color: 'var(--good)' }}>{done}</p>}
-          <div className="row">
-            <button className="btn" disabled={busy} aria-busy={busy}>{busy ? 'Đang lưu…' : firstPassword ? 'Đặt mật khẩu' : 'Đổi mật khẩu'}</button>
-          </div>
-        </form>
+        <Section title={firstPassword ? 'Đặt mật khẩu' : 'Đổi mật khẩu'}>
+          <Card padded>
+            <form className="ui-form" onSubmit={changePassword}>
+              {firstPassword ? (
+                <Muted small>Tài khoản này tạo bằng Google. Đặt mật khẩu nếu muốn đăng nhập thêm bằng email.</Muted>
+              ) : (
+                <Input label="Mật khẩu hiện tại" name="currentPassword" type="password" required autoComplete="current-password" />
+              )}
+              <Input label="Mật khẩu mới" hint="Ít nhất 8 ký tự" name="newPassword" type="password" required minLength={8} autoComplete="new-password" />
+              <Input label="Nhập lại mật khẩu mới" name="confirm" type="password" required minLength={8} autoComplete="new-password" />
+              {error && <Alert tone="error">{error}</Alert>}
+              {done && <Alert tone="success">{done}</Alert>}
+              <div className="ui-actions">
+                <Button type="submit" loading={busy}>
+                  {firstPassword ? 'Đặt mật khẩu' : 'Đổi mật khẩu'}
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </Section>
 
-        <div className="card stack" style={{ maxWidth: 440 }}>
-          <h2>Phiên đăng nhập</h2>
-          <p className="muted small">Quên đăng xuất ở máy khác, hoặc nghi lộ tài khoản? Đăng xuất khỏi mọi thiết bị rồi đăng nhập lại.</p>
-          <div className="row">
-            <button className="btn ghost" type="button" onClick={logoutAll}>Đăng xuất khỏi mọi thiết bị</button>
-          </div>
-        </div>
-      </main>
+        <Section title="Phiên đăng nhập">
+          <Card padded className="ui-form">
+            <Muted small>Quên đăng xuất ở máy khác, hoặc nghi lộ tài khoản? Đăng xuất khỏi mọi thiết bị rồi đăng nhập lại.</Muted>
+            <div className="ui-actions">
+              <Button variant="outline" onClick={logoutAll}>
+                Đăng xuất khỏi mọi thiết bị
+              </Button>
+            </div>
+          </Card>
+        </Section>
+      </Page>
     </>
   );
 }

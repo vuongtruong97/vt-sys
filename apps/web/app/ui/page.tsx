@@ -266,7 +266,7 @@ export default function UiPage() {
           </CtaBanner>
           <div className="ui-demo__row">
             <Logo />
-            <Logo size={56} />
+            <Logo size={48} name="Bảng Đen" />
           </div>
         </Demo>
       </main>

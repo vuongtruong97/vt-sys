@@ -1,7 +1,7 @@
 'use client';
-import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 import { Nav } from '@/components/Nav';
+import { Alert, Badge, Button, Card, CourseCard, EmptyState, Input, Muted, Page, PageHeader, Section, Switch, Textarea } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useMe } from '@/lib/useMe';
 
@@ -11,6 +11,8 @@ export default function TeachPage() {
   const me = useMe({ redirect: true });
   const [courses, setCourses] = useState<Course[] | null>(null);
   const [error, setError] = useState('');
+  const [published, setPublished] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   const load = () => api<Course[]>('/courses').then(setCourses).catch((e) => setError(e.message));
   useEffect(() => {
@@ -22,53 +24,76 @@ export default function TeachPage() {
     const form = e.currentTarget;
     const f = new FormData(form);
     setError('');
+    setBusy(true);
     try {
-      await api('/courses', { json: { title: f.get('title'), description: f.get('description'), published: f.get('published') === 'on' } });
+      await api('/courses', { json: { title: f.get('title'), description: f.get('description'), published } });
       form.reset();
+      setPublished(false);
       load();
     } catch (err) {
       setError((err as Error).message);
+    } finally {
+      setBusy(false);
     }
   };
 
   if (me && me.role === 'STUDENT') {
-    return (<><Nav me={me} /><main className="container page"><p>Trang này chỉ dành cho giáo viên.</p></main></>);
+    return (
+      <>
+        <Nav me={me} />
+        <Page>
+          <Alert tone="info">Trang này chỉ dành cho giáo viên.</Alert>
+        </Page>
+      </>
+    );
   }
 
   return (
     <>
       <Nav me={me} />
-      <main className="container page">
-        <h1>Quản lý lớp</h1>
-        <div className="grid2">
-          <section className="stack">
-            <h2>Khoá học của bạn</h2>
-            {courses === null && <p className="muted">Đang tải…</p>}
-            {courses?.length === 0 && <p className="muted">Chưa có khoá học. Tạo khoá đầu tiên ở bên cạnh.</p>}
-            <div className="list">
+      <Page>
+        <PageHeader title="Quản lý lớp" description="Tạo khoá học, lên lịch buổi học và thêm học viên." />
+        <div className="ui-cols">
+          <Section title="Khoá học của bạn">
+            {courses === null && !error && <Muted>Đang tải…</Muted>}
+            {courses?.length === 0 && <EmptyState title="Chưa có khoá học" icon="📚">Tạo khoá đầu tiên ở khung bên cạnh.</EmptyState>}
+            <div className="ui-list">
               {courses?.map((c) => (
-                <Link key={c.id} href={`/teach/courses/${c.id}`} className="card" style={{ textDecoration: 'none', color: 'inherit' }}>
-                  <div className="row spread">
-                    <h3>{c.title}</h3>
-                    <span className={`tag${c.published ? '' : ' off'}`}>{c.published ? 'Công khai' : 'Nháp'}</span>
-                  </div>
-                  <p className="small muted">{c._count.sessions} buổi · {c._count.enrollments} học viên</p>
-                </Link>
+                <CourseCard
+                  key={c.id}
+                  href={`/teach/courses/${c.id}`}
+                  title={c.title}
+                  description={c.description || undefined}
+                  footerExtra={
+                    <span className="ui-actions">
+                      <span className="ui-meta">
+                        {c._count.sessions} buổi · {c._count.enrollments} học viên
+                      </span>
+                      <Badge variant={c.published ? 'soft' : 'neutral'}>{c.published ? 'Công khai' : 'Nháp'}</Badge>
+                    </span>
+                  }
+                />
               ))}
             </div>
-          </section>
-          <section className="card">
-            <form className="stack" onSubmit={create}>
-              <h2>Tạo khoá học</h2>
-              <label className="field" htmlFor="c-title">Tên khoá học<input id="c-title" name="title" required minLength={3} placeholder="Python cơ bản" /></label>
-              <label className="field" htmlFor="c-desc">Mô tả<textarea id="c-desc" name="description" rows={3} /></label>
-              <label className="switch" htmlFor="c-pub"><input id="c-pub" name="published" type="checkbox" />Hiện trên trang chủ</label>
-              {error && <p className="error">{error}</p>}
-              <button className="btn">Tạo khoá học</button>
-            </form>
-          </section>
+          </Section>
+
+          <Section title="Tạo khoá học">
+            <Card padded>
+              <form className="ui-form" onSubmit={create}>
+                <Input label="Tên khoá học" name="title" required minLength={3} placeholder="Ví dụ: Python cơ bản" />
+                <Textarea label="Mô tả" name="description" rows={3} placeholder="Khoá học dành cho ai, học xong làm được gì" />
+                <Switch checked={published} onChange={setPublished} label="Hiện trên trang chủ" />
+                {error && <Alert tone="error">{error}</Alert>}
+                <div className="ui-actions">
+                  <Button type="submit" loading={busy}>
+                    Tạo khoá học
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          </Section>
         </div>
-      </main>
+      </Page>
     </>
   );
 }

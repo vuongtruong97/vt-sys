@@ -2,6 +2,7 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { fmtSize } from '@/components/Materials';
 import { Nav } from '@/components/Nav';
+import { Alert, Badge, Button, Input, Muted, Page, PageHeader, Section, Select, Stat, Table } from '@/components/ui';
 import { api, Me } from '@/lib/api';
 import { fmtDay, fmtTime } from '@/lib/format';
 import { useMe } from '@/lib/useMe';
@@ -86,7 +87,9 @@ export default function AdminPage() {
     return (
       <>
         <Nav me={me} />
-        <main className="container page"><p className="error">Trang này chỉ dành cho quản trị viên.</p></main>
+        <Page>
+          <Alert tone="error">Trang này chỉ dành cho quản trị viên.</Alert>
+        </Page>
       </>
     );
   }
@@ -94,109 +97,136 @@ export default function AdminPage() {
   return (
     <>
       <Nav me={me} />
-      <main className="container page">
-        <h1>Quản trị</h1>
-        {error && <p className="error" role="alert">{error}</p>}
-        {msg && <p className="small" role="status" style={{ color: 'var(--good)' }}>{msg}</p>}
+      <Page>
+        <PageHeader title="Quản trị" description="Thống kê toàn hệ thống, cấp quyền giáo viên và chuyển khoá học." />
+        {error && <Alert tone="error">{error}</Alert>}
+        {msg && <Alert tone="success">{msg}</Alert>}
 
         {stats && (
-          <div className="stats">
-            <div className="card stat"><b>{stats.users.TEACHER + stats.users.ADMIN}</b><span>giáo viên</span></div>
-            <div className="card stat"><b>{stats.users.STUDENT}</b><span>học viên</span></div>
-            <div className="card stat"><b>{stats.courses}</b><span>khoá học</span></div>
-            <div className="card stat"><b>{stats.upcomingSessions}</b><span>buổi sắp tới</span></div>
-            <div className="card stat"><b>{stats.liveSessions}</b><span>đang diễn ra</span></div>
-            <div className="card stat"><b>{stats.recordings.count}</b><span>bản ghi · {fmtSize(stats.recordings.bytes)}</span></div>
+          <div className="ui-stats">
+            <Stat value={stats.users.TEACHER + stats.users.ADMIN} label="giáo viên" />
+            <Stat value={stats.users.STUDENT} label="học viên" />
+            <Stat value={stats.courses} label="khoá học" />
+            <Stat value={stats.upcomingSessions} label="buổi sắp tới" />
+            <Stat value={stats.liveSessions} label="đang diễn ra" />
+            <Stat value={stats.recordings.count} label={`bản ghi · ${fmtSize(stats.recordings.bytes)}`} />
           </div>
         )}
 
-        <section className="stack">
-          <h2>Tài khoản</h2>
-          <form className="row" onSubmit={search}>
-            <label className="field" htmlFor="u-q" style={{ flex: 1, minWidth: 200 }}>Tìm theo tên hoặc email
-              <input id="u-q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="hocvien@gmail.com" />
-            </label>
-            <label className="field" htmlFor="u-role" style={{ minWidth: 140 }}>Vai trò
-              <select id="u-role" value={roleFilter} onChange={(e) => { setRoleFilter(e.target.value); loadUsers(q, e.target.value).catch((err) => setError(err.message)); }}>
-                <option value="">Tất cả</option>
-                <option value="ADMIN">Quản trị</option>
-                <option value="TEACHER">Giáo viên</option>
-                <option value="STUDENT">Học viên</option>
-              </select>
-            </label>
-            <button className="btn" style={{ alignSelf: 'end' }}>Tìm</button>
+        <Section title="Tài khoản">
+          <form className="ui-form-row" style={{ alignItems: 'end' }} onSubmit={search}>
+            <Input label="Tìm theo tên hoặc email" value={q} onChange={(e) => setQ(e.target.value)} placeholder="hocvien@gmail.com" />
+            <Select
+              label="Vai trò"
+              value={roleFilter}
+              onChange={(e) => {
+                setRoleFilter(e.target.value);
+                loadUsers(q, e.target.value).catch((err) => setError(err.message));
+              }}
+              options={[
+                { value: '', label: 'Tất cả' },
+                { value: 'ADMIN', label: 'Quản trị' },
+                { value: 'TEACHER', label: 'Giáo viên' },
+                { value: 'STUDENT', label: 'Học viên' },
+              ]}
+            />
+            <div className="ui-actions">
+              <Button type="submit">Tìm</Button>
+            </div>
           </form>
-          <p className="small muted">Người được cấp quyền giáo viên thấy mục "Quản lý lớp" ngay lần tải trang tiếp theo, không cần đăng nhập lại. Hiện tối đa 100 tài khoản mới nhất.</p>
-          <div className="tbl">
-            <table>
-              <thead><tr><th>Họ tên</th><th>Email</th><th>Vai trò</th><th>Dạy / học</th><th>Tạo lúc</th></tr></thead>
-              <tbody>
-                {users?.map((u) => (
-                  <tr key={u.id}>
-                    <td>{u.name}{u.id === me?.id && <span className="small muted"> (bạn)</span>}</td>
-                    <td>{u.email}</td>
-                    <td>
-                      {u.id === me?.id ? (
-                        <span className="tag">{roleLabel[u.role]}</span>
-                      ) : (
-                        <select
-                          aria-label={`Vai trò của ${u.name}`}
-                          value={u.role}
-                          onChange={(e) => {
-                            const role = e.target.value as Role;
-                            if (role === 'ADMIN' && !window.confirm(`Cấp quyền quản trị cho ${u.name}? Người này sẽ đổi được vai trò của mọi tài khoản.`)) return;
-                            run(() => api(`/admin/users/${u.id}`, { method: 'PATCH', json: { role } }), `${u.name} giờ là ${roleLabel[role].toLowerCase()}`);
-                          }}
-                        >
-                          <option value="STUDENT">Học viên</option>
-                          <option value="TEACHER">Giáo viên</option>
-                          <option value="ADMIN">Quản trị</option>
-                        </select>
-                      )}
-                    </td>
-                    <td className="num">{u._count.courses} khoá / {u._count.enrollments} khoá</td>
-                    <td className="num">{fmtDay(u.createdAt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {users?.length === 0 && <p className="muted small">Không có tài khoản nào khớp.</p>}
-        </section>
-
-        <section className="stack">
-          <h2>Khoá học</h2>
-          <div className="tbl">
-            <table>
-              <thead><tr><th>Khoá học</th><th>Giáo viên</th><th>Học viên</th><th>Buổi tiếp theo</th></tr></thead>
-              <tbody>
-                {courses?.map((c) => (
-                  <tr key={c.id}>
-                    <td>{c.title}{!c.published && <span className="tag off" style={{ marginLeft: 6 }}>Ẩn</span>}<br /><span className="small muted">{c.sessions} buổi</span></td>
-                    <td>
+          <Muted small>Người được cấp quyền giáo viên thấy mục &quot;Quản lý lớp&quot; ngay lần tải trang tiếp theo, không cần đăng nhập lại. Hiện tối đa 100 tài khoản mới nhất.</Muted>
+          <Table caption="Tài khoản">
+            <thead>
+              <tr>
+                <th>Họ tên</th>
+                <th>Email</th>
+                <th>Vai trò</th>
+                <th>Dạy / học</th>
+                <th>Tạo lúc</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users?.map((u) => (
+                <tr key={u.id}>
+                  <td>
+                    {u.name}
+                    {u.id === me?.id && <span className="ui-sub">(bạn)</span>}
+                  </td>
+                  <td>{u.email}</td>
+                  <td>
+                    {u.id === me?.id ? (
+                      <Badge>{roleLabel[u.role]}</Badge>
+                    ) : (
                       <select
-                        aria-label={`Giáo viên của ${c.title}`}
-                        value={c.teacher.id}
+                        aria-label={`Vai trò của ${u.name}`}
+                        value={u.role}
                         onChange={(e) => {
-                          const t = teachers.find((x) => x.id === e.target.value);
-                          if (!t || !window.confirm(`Chuyển khoá "${c.title}" sang ${t.name}? ${c.teacher.name} sẽ không quản lý khoá này nữa.`)) return;
-                          run(() => api(`/admin/courses/${c.id}/teacher`, { method: 'PATCH', json: { teacherId: t.id } }), `Đã chuyển "${c.title}" sang ${t.name}`);
+                          const role = e.target.value as Role;
+                          if (role === 'ADMIN' && !window.confirm(`Cấp quyền quản trị cho ${u.name}? Người này sẽ đổi được vai trò của mọi tài khoản.`)) return;
+                          run(() => api(`/admin/users/${u.id}`, { method: 'PATCH', json: { role } }), `${u.name} giờ là ${roleLabel[role].toLowerCase()}`);
                         }}
                       >
-                        {!teachers.some((t) => t.id === c.teacher.id) && <option value={c.teacher.id}>{c.teacher.name}</option>}
-                        {teachers.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        <option value="STUDENT">Học viên</option>
+                        <option value="TEACHER">Giáo viên</option>
+                        <option value="ADMIN">Quản trị</option>
                       </select>
-                    </td>
-                    <td className="num">{c.students}</td>
-                    <td className="num">{c.nextSession ? `${fmtDay(c.nextSession)} ${fmtTime(c.nextSession)}` : '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="small muted">Chọn giáo viên khác để chuyển khoá, kèm toàn bộ buổi học, học viên, tài liệu và bản ghi.</p>
-        </section>
-      </main>
+                    )}
+                  </td>
+                  <td className="ui-num">
+                    {u._count.courses} khoá / {u._count.enrollments} khoá
+                  </td>
+                  <td className="ui-num">{fmtDay(u.createdAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+          {users?.length === 0 && <Muted small>Không có tài khoản nào khớp.</Muted>}
+        </Section>
+
+        <Section title="Khoá học">
+          <Table caption="Khoá học">
+            <thead>
+              <tr>
+                <th>Khoá học</th>
+                <th>Giáo viên</th>
+                <th>Học viên</th>
+                <th>Buổi tiếp theo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {courses?.map((c) => (
+                <tr key={c.id}>
+                  <td>
+                    {c.title} {!c.published && <Badge variant="neutral">Ẩn</Badge>}
+                    <span className="ui-sub">{c.sessions} buổi</span>
+                  </td>
+                  <td>
+                    <select
+                      aria-label={`Giáo viên của ${c.title}`}
+                      value={c.teacher.id}
+                      onChange={(e) => {
+                        const t = teachers.find((x) => x.id === e.target.value);
+                        if (!t || !window.confirm(`Chuyển khoá "${c.title}" sang ${t.name}? ${c.teacher.name} sẽ không quản lý khoá này nữa.`)) return;
+                        run(() => api(`/admin/courses/${c.id}/teacher`, { method: 'PATCH', json: { teacherId: t.id } }), `Đã chuyển "${c.title}" sang ${t.name}`);
+                      }}
+                    >
+                      {!teachers.some((t) => t.id === c.teacher.id) && <option value={c.teacher.id}>{c.teacher.name}</option>}
+                      {teachers.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="ui-num">{c.students}</td>
+                  <td className="ui-num">{c.nextSession ? `${fmtDay(c.nextSession)} ${fmtTime(c.nextSession)}` : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+          <Muted small>Chọn giáo viên khác để chuyển khoá, kèm toàn bộ buổi học, học viên, tài liệu và bản ghi.</Muted>
+        </Section>
+      </Page>
     </>
   );
 }

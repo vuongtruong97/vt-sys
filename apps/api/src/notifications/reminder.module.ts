@@ -53,15 +53,18 @@ export class ReminderService implements OnModuleInit, OnApplicationShutdown {
     this.running = true;
     try {
       const sessions = await this.prisma.classSession.findMany({
-        where: { status: 'SCHEDULED', startsAt: { gt: now, lte: new Date(now.getTime() + 60 * 60_000) } },
+        // Meeting (không có khoá học) không có danh sách để nhắc.
+        where: { status: 'SCHEDULED', courseId: { not: null }, startsAt: { gt: now, lte: new Date(now.getTime() + 60 * 60_000) } },
         include: {
           course: { include: { enrollments: { include: { user: { select: { id: true, email: true, name: true } } } } } },
         },
       });
       for (const s of sessions) {
+        const course = s.course;
+        if (!course) continue;
         const minutes = (s.startsAt.getTime() - now.getTime()) / 60_000;
         const kind = minutes <= 10 ? '10' : '60';
-        for (const { user } of s.course.enrollments) {
+        for (const { user } of course.enrollments) {
           // Ghi trước rồi mới gửi: trùng khoá nghĩa là đã nhắc, bỏ qua.
           const claimed = await this.prisma.reminder
             .create({ data: { sessionId: s.id, userId: user.id, kind, startsAt: s.startsAt } })
@@ -70,9 +73,9 @@ export class ReminderService implements OnModuleInit, OnApplicationShutdown {
           if (!claimed) continue;
           const link = `${config.appUrl}/room/${s.id}`;
           const subject =
-            kind === '10' ? `Sắp vào lớp: ${s.course.title} · ${s.title}` : `Nhắc lịch: ${s.course.title} · ${s.title} lúc ${fmt(s.startsAt)}`;
+            kind === '10' ? `Sắp vào lớp: ${course.title} · ${s.title}` : `Nhắc lịch: ${course.title} · ${s.title} lúc ${fmt(s.startsAt)}`;
           const html = `<p>Chào ${esc(user.name)},</p>
-<p>Buổi <b>${esc(s.title)}</b> của khoá <b>${esc(s.course.title)}</b> bắt đầu lúc <b>${fmt(s.startsAt)}</b>.</p>
+<p>Buổi <b>${esc(s.title)}</b> của khoá <b>${esc(course.title)}</b> bắt đầu lúc <b>${fmt(s.startsAt)}</b>.</p>
 <p>${kind === '10' ? 'Lớp đã mở cửa, bạn vào được ngay:' : 'Lớp mở cửa trước giờ học 10 phút:'} <a href="${link}">${link}</a></p>
 <p>Bảng Đen</p>`;
           try {

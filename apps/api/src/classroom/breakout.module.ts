@@ -15,7 +15,7 @@ import {
 } from 'class-validator';
 import { AuthGuard, AuthUser, CurrentUser } from '../auth/auth.guard';
 import { PrismaService } from '../common/prisma.service';
-import { ClassroomModule, ClassroomService, groupRoom } from './classroom.module';
+import { ClassroomModule, ClassroomService, groupRoom, hostIdOf } from './classroom.module';
 import { LivekitService } from './livekit.service';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
@@ -83,7 +83,7 @@ export class BreakoutController {
     const seen = new Set<string>();
     for (const g of dto.groups) {
       for (const m of g.members) {
-        if (m === s.course.teacherId) throw new BadRequestException('Giáo viên không cần xếp vào nhóm, ghé nhóm nào cũng được');
+        if (m === hostIdOf(s)) throw new BadRequestException('Giáo viên không cần xếp vào nhóm, ghé nhóm nào cũng được');
         if (seen.has(m)) throw new BadRequestException('Một học viên đang nằm trong hai nhóm');
         seen.add(m);
       }

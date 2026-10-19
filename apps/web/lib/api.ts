@@ -31,6 +31,8 @@ export type ScheduleItem = {
   startsAt: string;
   endsAt: string;
   status: 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED';
-  course: { id: string; title: string };
+  kind: 'class' | 'meeting';
+  /** null: meeting độc lập (chỉ hiện trong lịch của người tạo). */
+  course: { id: string; title: string } | null;
   students: number;
 };

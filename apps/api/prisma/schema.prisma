@@ -28,24 +28,25 @@ enum JoinStatus {
 }
 
 model User {
-  id           String        @id @default(cuid())
-  email        String        @unique
-  name         String
+  id             String         @id @default(cuid())
+  email          String         @unique
+  name           String
   /// null: tài khoản tạo bằng Google, chưa đặt mật khẩu.
-  passwordHash String?
+  passwordHash   String?
   /// `sub` của Google khi đã liên kết đăng nhập Google.
-  googleId     String?       @unique
-  role         Role          @default(STUDENT)
+  googleId       String?        @unique
+  role           Role           @default(STUDENT)
   /// Tăng lên để vô hiệu mọi phiên đăng nhập cũ (đổi mật khẩu, đăng xuất mọi nơi).
-  tokenVersion Int           @default(0)
-  createdAt    DateTime      @default(now())
-  courses      Course[]      @relation("TeacherCourses")
-  enrollments  Enrollment[]
-  attendance   Attendance[]
-  joinRequests JoinRequest[]
-  chatMessages ChatMessage[]
-  quizAnswers  QuizAnswer[]
-  reminders    Reminder[]
+  tokenVersion   Int            @default(0)
+  createdAt      DateTime       @default(now())
+  courses        Course[]       @relation("TeacherCourses")
+  enrollments    Enrollment[]
+  attendance     Attendance[]
+  joinRequests   JoinRequest[]
+  chatMessages   ChatMessage[]
+  quizAnswers    QuizAnswer[]
+  reminders      Reminder[]
+  hostedMeetings ClassSession[] @relation("HostedMeetings")
 
   @@map("users")
 }
@@ -79,8 +80,12 @@ model Enrollment {
 
 model ClassSession {
   id                String          @id @default(cuid())
-  courseId          String
-  course            Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  /// null: meeting độc lập (không thuộc khoá học), chủ phòng là hostId.
+  courseId          String?
+  course            Course?         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  /// Chủ meeting; buổi học thì null (chủ phòng là giáo viên của khoá học).
+  hostId            String?
+  host              User?           @relation("HostedMeetings", fields: [hostId], references: [id], onDelete: Cascade)
   title             String
   startsAt          DateTime
   endsAt            DateTime
@@ -104,6 +109,7 @@ model ClassSession {
   reminders         Reminder[]
 
   @@index([startsAt])
+  @@index([hostId, startsAt])
   @@map("sessions")
 }
 

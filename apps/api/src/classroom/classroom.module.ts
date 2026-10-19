@@ -46,7 +46,12 @@ class JoinDto {
   @IsOptional() @IsInt() @Min(0) group?: number;
 }
 
-type SessionWithCourse = ClassSession & { course: Course };
+/** Buổi học (có khoá học) hoặc meeting độc lập (course = null, chủ phòng là hostId). */
+export type SessionWithCourse = ClassSession & { course: Course | null };
+
+/** Chủ phòng: giáo viên của khoá học, hoặc người tạo meeting. */
+export const hostIdOf = (s: SessionWithCourse): string => s.course?.teacherId ?? s.hostId ?? '';
+export const isMeeting = (s: ClassSession) => !s.courseId;
 
 const fmtTime = (d: Date) =>
   d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', timeZone: process.env.TZ || 'Asia/Ho_Chi_Minh' });
@@ -63,11 +68,13 @@ export class ClassroomService {
 
   /** Vai trò của người dùng trong buổi học, hoặc null nếu chưa có quyền vào. */
   async roleOf(user: AuthUser, s: SessionWithCourse): Promise<RoomRole | null> {
-    if (s.course.teacherId === user.id) return 'teacher';
-    const enrolled = await this.prisma.enrollment.findUnique({
-      where: { userId_courseId: { userId: user.id, courseId: s.courseId } },
-    });
-    if (enrolled) return 'student';
+    if (hostIdOf(s) === user.id) return 'teacher';
+    if (s.courseId) {
+      const enrolled = await this.prisma.enrollment.findUnique({
+        where: { userId_courseId: { userId: user.id, courseId: s.courseId } },
+      });
+      if (enrolled) return 'student';
+    }
     const req = await this.prisma.joinRequest.findUnique({
       where: { sessionId_userId: { sessionId: s.id, userId: user.id } },
     });
@@ -76,7 +83,9 @@ export class ClassroomService {
 
   async requireTeacher(user: AuthUser, id: string) {
     const s = await this.session(id);
-    if (s.course.teacherId !== user.id) throw new ForbiddenException('Chỉ giáo viên của lớp làm được thao tác này');
+    if (hostIdOf(s) !== user.id) {
+      throw new ForbiddenException(isMeeting(s) ? 'Chỉ chủ phòng làm được thao tác này' : 'Chỉ giáo viên của lớp làm được thao tác này');
+    }
     return s;
   }
 
@@ -113,7 +122,8 @@ export class ClassroomController {
       startsAt: s.startsAt,
       endsAt: s.endsAt,
       status: s.status,
-      course: { id: s.course.id, title: s.course.title },
+      kind: isMeeting(s) ? 'meeting' : 'class',
+      course: s.course ? { id: s.course.id, title: s.course.title } : null,
       role,
     };
   }
@@ -126,7 +136,7 @@ export class ClassroomController {
   @HttpCode(200)
   async join(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: JoinDto = {}) {
     const s = await this.svc.session(id);
-    if (s.status === 'CANCELLED') throw new BadRequestException('Buổi học này đã bị huỷ');
+    if (s.status === 'CANCELLED') throw new BadRequestException(isMeeting(s) ? 'Meeting này đã bị huỷ' : 'Buổi học này đã bị huỷ');
 
     const role = await this.svc.roleOf(user, s);
     if (!role) {
@@ -301,10 +311,13 @@ export class ClassroomController {
         orderBy: { joinedAt: 'asc' },
         include: { user: { select: { id: true, name: true, email: true } } },
       }),
-      this.prisma.enrollment.findMany({
-        where: { courseId: s.courseId },
-        include: { user: { select: { id: true, name: true, email: true } } },
-      }),
+      // Meeting không có danh sách lớp: chỉ liệt kê người đã vào.
+      s.courseId
+        ? this.prisma.enrollment.findMany({
+            where: { courseId: s.courseId },
+            include: { user: { select: { id: true, name: true, email: true } } },
+          })
+        : Promise.resolve([]),
     ]);
     type Row = {
       user: { id: string; name: string; email: string };
@@ -324,7 +337,7 @@ export class ClassroomController {
       if (r.leftAt && (!cur.lastLeave || r.leftAt > cur.lastLeave)) cur.lastLeave = r.leftAt;
       byUser.set(r.userId, cur);
     }
-    const teacherId = s.course.teacherId;
+    const teacherId = hostIdOf(s);
     const result: Row[] = [...byUser.values()]
       .filter((v) => v.user.id !== teacherId)
       .map((v) => ({ ...v, minutes: Math.round(v.minutes) }));

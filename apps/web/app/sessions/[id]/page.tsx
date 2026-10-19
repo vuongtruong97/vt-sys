@@ -14,7 +14,7 @@ type Info = {
   startsAt: string;
   endsAt: string;
   status: string;
-  course: { id: string; title: string };
+  course: { id: string; title: string } | null;
   role: 'teacher' | 'student' | null;
 };
 
@@ -48,7 +48,7 @@ export default function SessionReviewPage({ params }: { params: { id: string } }
           <>
             <PageHeader
               back={{ href: '/schedule', label: 'Lịch học' }}
-              title={`${info.course.title} · ${info.title}`}
+              title={info.course ? `${info.course.title} · ${info.title}` : `Meeting · ${info.title}`}
               description={`${fmtDay(info.startsAt)}, ${fmtTime(info.startsAt)} – ${fmtTime(info.endsAt)}`}
               actions={teacher && <ButtonLink href={`/teach/sessions/${info.id}`} variant="outline">Điểm danh</ButtonLink>}
             />
@@ -58,9 +58,11 @@ export default function SessionReviewPage({ params }: { params: { id: string } }
                   <Recordings sessionId={info.id} canEdit={teacher} />
                 </Section>
               )}
-              <Section title="Tài liệu">
-                <Materials courseId={info.course.id} sessionId={info.id} canEdit={teacher} />
-              </Section>
+              {info.course && (
+                <Section title="Tài liệu">
+                  <Materials courseId={info.course.id} sessionId={info.id} canEdit={teacher} />
+                </Section>
+              )}
             </div>
           </>
         )}

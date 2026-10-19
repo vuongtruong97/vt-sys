@@ -120,7 +120,8 @@ export function FocusStage({ main, cameras }: { main: ReactNode; cameras: TrackR
   return (
     <div className="mt-speaker">
       {main}
-      <div className="mt-strip" style={{ gridTemplateRows: `repeat(${count + (extra ? 1 : 0)}, minmax(0, 1fr))` }}>
+      {/* Số hàng qua biến CSS (không đặt grid-template-rows thẳng) để màn hẹp đổi được thành một hàng ngang. */}
+      <div className="mt-strip" style={{ '--rows': count + (extra ? 1 : 0) } as CSSProperties}>
         {list.slice(0, count).map((t) => (
           <RoomTile key={`${t.participant.identity}-${t.source}`} trackRef={t} />
         ))}

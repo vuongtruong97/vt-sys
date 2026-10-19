@@ -1,6 +1,9 @@
 # components/ui
 
-Bộ components tái sử dụng, dựng từ Figma **E-Learning Site (Community)**:
+Bộ components tái sử dụng. Giao diện theo **Material 3** (Figma "Material 3 Design Kit", bảng màu baseline tím, sáng và tối):
+https://www.figma.com/design/inOn631rp3bNlntpNZYgQS/Material-3-Design-Kit--Community-
+
+Bố cục các khối (thẻ khoá học, hộp giá, đánh giá…) ban đầu tách từ Figma **E-Learning Site (Community)**:
 https://www.figma.com/design/afEnwWVWapxKrTuaFF4brt/E-Learning-Site--Community-
 
 Xem mọi component tại `/ui` (chạy `npm run dev`; trên production chỉ quản trị viên mở được).
@@ -18,24 +21,43 @@ CSS (`tokens.css`, `ui.css`) đã nạp một lần trong `app/layout.tsx`, khô
 - Style chỉ dùng biến `--ui-*` trong `tokens.css`. Class đều có tiền tố `ui-` nên không đụng `globals.css`.
 - Component nhận `className` và thuộc tính HTML gốc; phần tử form dùng `forwardRef`.
 - Chữ hiển thị mặc định bằng tiếng Việt. Thông báo lỗi nói rõ chuyện gì xảy ra.
-- Không dùng cho phòng học (`components/room/*`, giao diện tối riêng).
+- Phòng học (`components/room/*`) dùng `components/meet/meet.css`, cùng token `--md-*`.
 
-## Khác với Figma (có chủ ý)
+## Material 3
 
-| Figma | Ở đây | Lý do | Muốn đúng Figma |
-| --- | --- | --- | --- |
-| Font Poppins | Be Vietnam Pro | Poppins không có bộ chữ tiếng Việt (ạ, ấ, ở… hiện bằng font khác) | đổi `--ui-font` |
-| Teal `#49BBBD` cho nút chữ trắng, giá, liên kết | `#328182` (`--ui-primary-strong`) | `#49BBBD` với chữ trắng chỉ đạt 2,3:1, WCAG AA cần 4,5:1. Teal gốc vẫn dùng cho thanh tiến độ, viền, nền nhạt | `--ui-primary-strong: #49bbbd` |
-| Placeholder `#ACACAC` | `#767676` | 2,3:1 → 4,5:1 | `--ui-placeholder` |
-| Nhãn giảm giá `#EE645B` | `#C3524B` | 3,2:1 → 4,5:1 | `--ui-danger-strong` |
-| Icon Font Awesome (đồng hồ, ô vuông) | SVG vẽ lại trong `internal.tsx` | không nạp cả bộ font icon | |
-| Chữ "Lorem ipsum", tiếng Anh | tiếng Việt | quy ước dự án | |
-| Logo "TOTC" | "BĐ" + "Bảng Đen" | TOTC là thương hiệu mẫu của file Figma | `Logo text`, `name` |
-| Nền hero teal `#49BBBD`, chữ "Studying" cam | nền `--ui-primary-strong`, gạch chân cam hạ thấp | chữ trắng trên teal gốc 2,3:1; chữ cam trên teal không đọc được; gạch chân sát chữ đè dấu nặng tiếng Việt | |
-| Lớp phủ ảnh trang Login ("Rectangle 78") | chuyển màu tối bằng CSS | Figma xuất ra SVG rỗng | |
-| "Remember me", "Forgot Password?" | không có | app chưa có hai tính năng này | |
+`tokens.css` có hai lớp biến:
 
-Không có chế độ tối: Figma chỉ có giao diện sáng, nên `globals.css` đã bỏ khối `prefers-color-scheme: dark` cho các trang. Phòng học vẫn tối (nhóm biến `--room*`).
+- `--md-*`: vai trò màu M3 (`--md-primary`, `--md-surface-container-low`, `--md-on-secondary-container`…). Đổi theo `prefers-color-scheme`; ép một chế độ bằng `<html data-theme="light">` hoặc `"dark"`.
+- `--ui-*`: tên mà components dùng, trỏ vào `--md-*` (ví dụ `--ui-primary` → primary, `--ui-text-body` → on-surface-variant, `--ui-surface-low` → surface-container-low). Component chỉ dùng `--ui-*`.
+
+Đổi bảng màu (ví dụ sinh từ Material Theme Builder) chỉ cần sửa giá trị `--md-*` ở hai khối sáng và tối.
+
+| Thành phần | Theo M3 |
+| --- | --- |
+| Chữ | Roboto (có đủ dấu tiếng Việt), thang body/title/headline/display, tiêu đề nét 400 |
+| Nút | cao 40, bo tròn hẳn; `primary` = filled, `outline` = outlined, `ghost` = text, `light` = elevated, `glass` = outlined theo màu nền |
+| Lớp trạng thái | hover 8%, nhấn 10% màu chữ phủ lên nền; disabled 38% chữ, 12% nền |
+| Ô nhập | outlined: cao 56, góc 4, viền 2px màu primary khi focus |
+| Thẻ | elevated card: surface-container-low, độ nổi level 1, góc 12 |
+| Tabs | `boxed` = primary tabs (chỉ báo 3px), `segmented` = segmented button |
+| Hộp thoại | surface-container-high, góc 28, level 3, nền mờ 32% |
+| Switch, checkbox, thanh tiến độ | kích thước M3 (52×32, ô 18px, cao 4) |
+| Thanh điều hướng | top app bar cao 64, mục đang mở là chip secondary-container |
+
+M3 không có màu "thành công"; `--md-success*` là màu xanh lá thêm vào, cùng độ sáng với primary.
+
+Phòng học (`components/meet/meet.css`): khu video luôn dùng bảng màu tối của M3 (như Meet); bảng bên, phòng chờ, hộp thoại dùng `--md-*` nên đổi theo chế độ của trang. Màu bảng phấn giữ nguyên vì là nội dung.
+
+## Khác với Figma E-Learning (có chủ ý)
+
+| Figma | Ở đây | Lý do |
+| --- | --- | --- |
+| Font Poppins, màu teal | Roboto, bảng màu M3 | chuyển sang Material 3 |
+| Icon Font Awesome (đồng hồ, ô vuông) | SVG vẽ lại trong `internal.tsx` | không nạp cả bộ font icon |
+| Chữ "Lorem ipsum", tiếng Anh | tiếng Việt | quy ước dự án |
+| Logo "TOTC" | "BĐ" + "Bảng Đen", khung thoi vẽ bằng CSS | TOTC là thương hiệu mẫu; khung đổi màu theo chế độ |
+| Lớp phủ ảnh trang Login ("Rectangle 78") | chuyển màu tối bằng CSS | Figma xuất ra SVG rỗng |
+| "Remember me", "Forgot Password?" | không có | app chưa có hai tính năng này |
 
 Figma chỉ có 6 component gốc (icon mạng xã hội); các component dưới đây được tách từ phần lặp lại trên 18 màn hình.
 

@@ -19,8 +19,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&family=Lexend:wght@500;600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap"
         />
+        <meta name="theme-color" content="#fef7ff" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#141218" media="(prefers-color-scheme: dark)" />
       </head>
       <body>{children}</body>
     </html>

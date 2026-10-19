@@ -253,11 +253,10 @@ export type LogoProps = {
   className?: string;
 };
 
-/** Logo: khung thoi viền teal tải từ Figma (/ui/logo-mark.svg), chữ viết tắt, và tên sản phẩm (tuỳ chọn). */
+/** Logo: khung thoi viền màu primary (vẽ bằng CSS để đổi theo chế độ sáng/tối), chữ viết tắt, và tên sản phẩm (tuỳ chọn). */
 export function Logo({ text = 'BĐ', name, size = 83, tone = 'dark', href, className }: LogoProps) {
   const mark = (
     <span className="ui-logo__mark" style={{ width: size, height: size }}>
-      <img src="/ui/logo-mark.svg" width={size} height={size} alt="" />
       <span style={{ fontSize: Math.round(size * 0.36) }}>{text}</span>
     </span>
   );

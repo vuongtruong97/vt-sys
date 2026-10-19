@@ -25,7 +25,7 @@ function DeviceSelect({ kind, label }: { kind: MediaDeviceKind; label: string })
           </option>
         ))}
       </select>
-      {error && <span style={{ color: '#c5221f' }}>{error}</span>}
+      {error && <span style={{ color: 'var(--md-error)' }}>{error}</span>}
     </label>
   );
 }

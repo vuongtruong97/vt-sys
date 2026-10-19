@@ -195,13 +195,13 @@ function PeoplePanel(props: Props) {
           <div className="mt-group__head"><span>Phòng chờ · {waiting.length}</span></div>
           {waiting.map((w) => (
             <div key={w.id} className="mt-person">
-              <span className="mt-person__av" style={{ background: '#7b8590' }} aria-hidden>{w.user.name.trim()[0]?.toUpperCase()}</span>
+              <span className="mt-person__av" style={{ background: 'var(--md-outline)' }} aria-hidden>{w.user.name.trim()[0]?.toUpperCase()}</span>
               <div className="mt-person__name"><b>{w.user.name}</b><small>{w.user.email} · chưa có trong lớp</small></div>
               <div className="mt-person__acts">
                 <button type="button" aria-label={`Từ chối ${w.user.name}`} title="Từ chối" onClick={() => mod(`join-requests/${w.id}`, { approve: false }, `Đã từ chối ${w.user.name}`).then(loadWaiting)}>
                   <Icon name="x" size={18} />
                 </button>
-                <button type="button" aria-label={`Cho ${w.user.name} vào lớp`} title="Cho vào" style={{ color: '#1e7a3e' }} onClick={() => mod(`join-requests/${w.id}`, { approve: true }, `Đã cho ${w.user.name} vào lớp`).then(loadWaiting)}>
+                <button type="button" aria-label={`Cho ${w.user.name} vào lớp`} title="Cho vào" style={{ color: 'var(--md-success)' }} onClick={() => mod(`join-requests/${w.id}`, { approve: true }, `Đã cho ${w.user.name} vào lớp`).then(loadWaiting)}>
                   <Icon name="check" size={18} />
                 </button>
               </div>
@@ -318,15 +318,15 @@ function Activity({ icon, color, title, text, onClick, disabled, on }: { icon: I
 function ActivitiesPanel({ setPanel, activities, quiz, group }: Props) {
   return (
     <>
-      <Activity icon="poll" color={['#a15c00', '#fff1d6']} title="Câu hỏi nhanh" text={quiz.open ? 'Đang có câu hỏi mở, xem kết quả trực tiếp.' : 'Trắc nghiệm hoặc thăm dò, xem kết quả tức thì.'} onClick={() => setPanel('quiz')} />
-      <Activity icon="groups" color={['#8a3f9b', '#f4e6f7']} title="Chia nhóm nhỏ" text={group ? `Bạn đang ở ${group.name}. Ghé nhóm khác hoặc gọi các nhóm về.` : 'Chia lớp thành các phòng thảo luận có đếm giờ.'} onClick={() => setPanel('groups')} />
+      <Activity icon="poll" color={['var(--md-on-tertiary-container)', 'var(--md-tertiary-container)']} title="Câu hỏi nhanh" text={quiz.open ? 'Đang có câu hỏi mở, xem kết quả trực tiếp.' : 'Trắc nghiệm hoặc thăm dò, xem kết quả tức thì.'} onClick={() => setPanel('quiz')} />
+      <Activity icon="groups" color={['var(--md-on-primary-container)', 'var(--md-primary-container)']} title="Chia nhóm nhỏ" text={group ? `Bạn đang ở ${group.name}. Ghé nhóm khác hoặc gọi các nhóm về.` : 'Chia lớp thành các phòng thảo luận có đếm giờ.'} onClick={() => setPanel('groups')} />
       {activities && (
         <>
-          <Activity icon="board" color={['#23733b', '#e3f3e8']} title={activities.board ? 'Đóng bảng trắng' : 'Bảng trắng'} text="Bảng phấn chung, cả lớp cùng viết. Lưu lại cho buổi sau." onClick={activities.toggleBoard} on={activities.board} />
+          <Activity icon="board" color={['var(--md-on-success-container)', 'var(--md-success-container)']} title={activities.board ? 'Đóng bảng trắng' : 'Bảng trắng'} text="Bảng phấn chung, cả lớp cùng viết. Lưu lại cho buổi sau." onClick={activities.toggleBoard} on={activities.board} />
           {activities.canRecord && (
             <>
-              <Activity icon="record" color={['#b3261e', '#fde8e7']} title={activities.recording ? 'Dừng ghi hình' : 'Ghi hình'} text="Ghi lại buổi học để học viên xem lại. Mọi người thấy biểu tượng đang ghi." onClick={activities.toggleRecording} disabled={activities.busy} on={activities.recording} />
-              <Activity icon="live" color={['#1d5fb4', '#e3effc']} title={activities.live ? 'Dừng phát trực tiếp' : 'Phát trực tiếp'} text="Phát buổi học cho người xem qua liên kết, không cần vào lớp." onClick={activities.toggleLive} disabled={activities.busy} on={activities.live} />
+              <Activity icon="record" color={['var(--md-on-error-container)', 'var(--md-error-container)']} title={activities.recording ? 'Dừng ghi hình' : 'Ghi hình'} text="Ghi lại buổi học để học viên xem lại. Mọi người thấy biểu tượng đang ghi." onClick={activities.toggleRecording} disabled={activities.busy} on={activities.recording} />
+              <Activity icon="live" color={['var(--md-on-secondary-container)', 'var(--md-secondary-container)']} title={activities.live ? 'Dừng phát trực tiếp' : 'Phát trực tiếp'} text="Phát buổi học cho người xem qua liên kết, không cần vào lớp." onClick={activities.toggleLive} disabled={activities.busy} on={activities.live} />
             </>
           )}
         </>

@@ -1,16 +1,16 @@
 /* Bảng Đen: nền xanh bảng đen cho phòng học, điểm nhấn màu phấn vàng. */
+/* Biến cũ của các trang trước khi có components/ui; trỏ vào token Material 3 (components/ui/tokens.css).
+   Màu bảng phấn giữ nguyên vì là nội dung bảng, không phải màu giao diện. */
 :root {
-  --bg: #f2f5f2; --surface: #ffffff; --ink: #16211c; --muted: #56675e; --line: #d3dcd6; --line-strong: #9fb0a6;
-  --accent: #1d6b57; --accent-soft: #e1efe9; --on-accent: #ffffff;
-  --chalk: #d9a514; --danger: #c2412d; --good: #2f8a4f;
-  --room: #1a2823; --room-2: #22332c; --tile: #2c3f37; --on-room: #e8efe9; --on-room-muted: #a3b6ab; --room-line: #364a41;
+  --bg: var(--md-surface); --surface: var(--md-surface-container-low); --ink: var(--md-on-surface); --muted: var(--md-on-surface-variant);
+  --line: var(--md-outline-variant); --line-strong: var(--md-outline);
+  --accent: var(--md-primary); --accent-soft: var(--md-primary-container); --on-accent: var(--md-on-primary);
+  --chalk: #d9a514; --danger: var(--md-error); --good: var(--md-success);
+  --room: #141218; --room-2: #1d1b20; --tile: #2b2930; --on-room: #e6e0e9; --on-room-muted: #cac4d0; --room-line: #49454f;
   --board: #23392f; --chalk-white: #eef2e6; --chalk-yellow: #f2d266; --chalk-pink: #f1a5a0; --chalk-blue: #a8d4f0;
-  --f-display: "Lexend", "Be Vietnam Pro", system-ui, sans-serif;
-  --f-body: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
-  color-scheme: light;
+  --f-display: var(--ui-font);
+  --f-body: var(--ui-font);
 }
-/* Không có chế độ tối cho các trang: thiết kế Figma (components/ui) chỉ có giao diện sáng.
-   Phòng học vẫn tối vì dùng nhóm biến --room* riêng. */
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
@@ -22,7 +22,7 @@ h2 { font-size: 22px; font-weight: 600; }
 h3 { font-size: 16px; font-weight: 600; }
 p { margin: 0; }
 button { font: inherit; cursor: pointer; }
-:focus-visible { outline: 2px solid var(--chalk); outline-offset: 2px; }
+:focus-visible { outline: 3px solid var(--md-secondary); outline-offset: 2px; }
 
 .muted { color: var(--muted); }
 .small { font-size: 13px; }
@@ -31,10 +31,10 @@ button { font: inherit; cursor: pointer; }
 
 
 /* buttons, inputs */
-.btn { border: 0; background: var(--accent); color: var(--on-accent); border-radius: 10px; padding: 9px 16px; font-weight: 600; font-size: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.btn { border: 0; background: var(--accent); color: var(--on-accent); border-radius: 999px; padding: 9px 16px; font-weight: 600; font-size: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .btn:disabled { background: var(--line); color: var(--muted); cursor: not-allowed; }
 .btn.ghost { background: transparent; border: 1px solid var(--line-strong); color: var(--ink); }
-.btn.danger { background: var(--danger); color: #fff; }
+.btn.danger { background: var(--danger); color: var(--md-on-error); }
 .btn.sm { padding: 5px 10px; font-size: 13px; border-radius: 8px; }
 .error { color: var(--danger); font-size: 14px; }
 

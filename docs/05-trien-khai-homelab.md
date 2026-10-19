@@ -55,15 +55,17 @@ Chụp snapshot VM trong Proxmox trước khi làm tiếp.
 
 ## 2. Cloudflare
 
-**DNS** (Cloudflare → `chapter97.xyz` → DNS → Records): 3 bản ghi loại A trỏ về IP nhà (kết quả `curl` ở trên):
+**DNS** (Cloudflare → `chapter97.xyz` → DNS → Records). Bản ghi A của tên miền gốc `chapter97.xyz` đã trỏ về IP nhà (DNS only). Thêm 3 bản ghi **CNAME trỏ về `chapter97.xyz`**: khi IP nhà đổi, chỉ cần cập nhật bản ghi gốc, các tên con tự theo.
 
-| Tên | Proxy |
-| --- | --- |
-| `hoc` | DNS only hoặc Proxied đều được |
-| `live` | **bắt buộc DNS only (mây xám)**: TURN/UDP 3478 không đi qua proxy Cloudflare |
-| `board` | DNS only hoặc Proxied đều được |
+| Type | Name | Target | Proxy status |
+| --- | --- | --- | --- |
+| CNAME | `hoc` | `chapter97.xyz` | DNS only |
+| CNAME | `live` | `chapter97.xyz` | **bắt buộc DNS only (mây xám)**: TURN/UDP 3478 không đi qua proxy Cloudflare |
+| CNAME | `board` | `chapter97.xyz` | DNS only |
 
-Nếu đang có bản ghi `*` (wildcard) bật proxy, bản ghi riêng `live` được ưu tiên hơn `*`, nên chỉ cần tạo `live` (DNS only) là đủ. Dịch vụ `ddns` (bước 5) quản lý cả ba bản ghi và để chúng DNS only.
+- Đang có bản ghi `*` (wildcard) bật proxy: phải tạo `live` riêng, nếu không `live.chapter97.xyz` rơi vào `*` và đi qua proxy.
+- Cloudflare cảnh báo "This record exposes the IP address…" với bản ghi DNS only: chỉ là nhắc nhở. IP nhà vốn đã lộ qua bản ghi gốc DNS only, thêm CNAME không làm lộ thêm.
+- Dịch vụ `ddns` (bước 5) chỉ cập nhật bản ghi A của tên miền gốc (`DDNS_DOMAINS=chapter97.xyz`). Đừng đưa `hoc`, `live`, `board` (đang là CNAME) vào `DDNS_DOMAINS`. Nếu đã có công cụ khác tự cập nhật IP cho `chapter97.xyz` (router, container khác), không cần bật `ddns`.
 
 **API token** (dùng cho chứng chỉ SSL và tự cập nhật IP): Cloudflare → My Profile → API Tokens → Create Token → mẫu **Edit zone DNS**, Zone Resources: `chapter97.xyz`. Lưu token, chỉ hiện một lần.
 
@@ -106,6 +108,7 @@ LIVEKIT_API_SECRET=<từ lệnh trên>
 APP_DOMAIN=hoc.chapter97.xyz
 LIVE_DOMAIN=live.chapter97.xyz
 BOARD_DOMAIN=board.chapter97.xyz
+DDNS_DOMAINS=chapter97.xyz
 SEED_TEACHER_EMAIL=<email thật của giáo viên>
 SEED_TEACHER_PASSWORD=<mật khẩu mạnh>
 SEED_TEACHER_NAME=<tên giáo viên>
@@ -246,6 +249,7 @@ Nếu NPM có Proxy Host trỏ vào chính trang quản trị của nó (ví d�
 | --- | --- |
 | NPM báo 502 Bad Gateway | Container chưa chạy (`dc ps`), hoặc cổng trong NPM sai so với `WEB_PORT`/`LIVEKIT_HTTP_PORT`/`BOARD_PORT` |
 | `port is already allocated` khi `up` | Cổng 5100–5102 đã có ứng dụng khác; đổi cổng trong `.env` và trong NPM |
+| Log `ddns` báo lỗi CNAME / record conflict | `DDNS_DOMAINS` chứa tên đang là CNAME; chỉ để tên miền gốc |
 | Không vào được lớp ("không kết nối được") | Proxy Host `live.` chưa bật Websockets Support |
 | Vào lớp được nhưng không thấy video ai | Router chưa mở 7882/udp, 7881/tcp; hoặc `live` đang bật proxy Cloudflare |
 | Video chạy trong nhà, ngoài 4G thì không | Port forward hoặc CGNAT (bước 1) |

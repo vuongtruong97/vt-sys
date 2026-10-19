@@ -123,8 +123,10 @@ services:
     ports:
       - "${WEB_PORT:-5100}:3000"   # NPM: ${APP_DOMAIN} → 192.168.168.103:5100
 
-  # Tự cập nhật bản ghi DNS trên Cloudflare khi IP nhà đổi. Chỉ chạy khi bật profile "ddns":
+  # Tự cập nhật bản ghi A trên Cloudflare khi IP nhà đổi. Chỉ chạy khi bật profile "ddns":
   #   docker compose -f deploy/docker-compose.homelab.yml --env-file .env --profile ddns up -d
+  # Cách khuyên dùng: hoc., live., board. là CNAME trỏ về tên miền gốc; ddns chỉ cập nhật bản ghi A
+  # của tên miền gốc (DDNS_DOMAINS), các CNAME tự theo. Đừng đưa tên đang là CNAME vào DDNS_DOMAINS.
   ddns:
     image: favonia/cloudflare-ddns:1.17.1
     profiles: ["ddns"]
@@ -136,8 +138,8 @@ services:
     security_opt: [no-new-privileges:true]
     environment:
       CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
-      DOMAINS: ${APP_DOMAIN},${LIVE_DOMAIN},${BOARD_DOMAIN}
-      # LIVE_DOMAIN bắt buộc DNS only (TURN/UDP không qua proxy Cloudflare được). Để cả ba DNS only cho đơn giản.
+      DOMAINS: ${DDNS_DOMAINS:-}   # bắt buộc khi bật profile ddns, ví dụ chapter97.xyz
+      # Tên miền gốc đang DNS only; giữ nguyên. live. (CNAME) phải DNS only vì TURN/UDP không qua proxy Cloudflare.
       PROXIED: "false"
       IP6_PROVIDER: none
 

@@ -31,7 +31,7 @@ docker compose exec postgres psql -U bangden               # vào DB
 - `identity` trong LiveKit = `users.id`; vai trò nằm trong metadata `{"role":"teacher"|"student"}`; metadata phòng là `{"board","allowStudentShare","recording"}`.
 - Ghi hình và phát trực tiếp mặc định tắt (`RECORDING_ENABLED`, compose profile `recording`). Code mới dùng egress phải gọi `requireRecording()`; web đọc cờ `recording` từ `GET /features`.
 - Tin dữ liệu do server phát (chat, quiz, breakout) đi qua API rồi `LivekitService.broadcast`; client không tự phát những chủ đề này. Tin gửi cả lớp dùng `ClassroomService.rooms(s)` để tới cả các phòng nhóm.
-- Giao diện mới dùng `apps/web/components/ui` (dựng từ Figma, xem README.md trong đó); không thêm class rời vào `globals.css`. Màu, cỡ chữ, bo góc lấy từ biến `--ui-*` trong `tokens.css`.
+- Giao diện mới dùng `apps/web/components/ui` (Material 3, xem README.md trong đó); không thêm class rời vào `globals.css`. Màu, cỡ chữ, bo góc lấy từ biến `--ui-*` trong `tokens.css` (trỏ vào vai trò màu M3 `--md-*`, có chế độ tối).
 - Vai trò: ADMIN ⊃ TEACHER. Kiểm tra "là giáo viên" bằng `role !== 'STUDENT'`, không so sánh `=== 'TEACHER'`.
 - Schema dùng Prisma migrate: sửa `schema.prisma` thì thêm thư mục mới trong `prisma/migrations/` (API chạy `migrate deploy` khi khởi động). Không sửa migration đã commit.
 - File lưu qua `StorageService` (S3/R2); không để bucket công khai, link tải là URL ký có hạn.

@@ -1,60 +1,200 @@
 /*
- * Token của bộ components, lấy từ Figma "E-Learning Site (Community)"
- * (https://www.figma.com/design/afEnwWVWapxKrTuaFF4brt). Mọi component trong components/ui chỉ dùng các biến này.
+ * Token của bộ components theo Material 3 (Figma "Material 3 Design Kit", bảng màu mặc định baseline tím).
+ * Hai lớp biến:
+ *   --md-*  : vai trò màu M3 (primary, surface-container…), đổi theo chế độ sáng/tối.
+ *   --ui-*  : tên cũ mà components dùng, trỏ vào --md-*. Component chỉ dùng --ui-*.
+ * Chế độ tối theo hệ điều hành; ép bằng <html data-theme="light|dark">.
  */
 :root {
-  /* Màu.
-     Teal #49bbbd của Figma chỉ đạt tương phản 2,3:1 với chữ trắng (chuẩn WCAG AA cần 4,5:1).
-     Nên: #49bbbd giữ cho phần không mang chữ (thanh tiến độ, viền, nền nhạt);
-     chỗ có chữ cần đọc (nút chữ trắng, giá, liên kết) dùng --ui-primary-strong.
-     Muốn đúng Figma tuyệt đối: đặt --ui-primary-strong: #49bbbd. */
-  --ui-primary: #49bbbd;              /* thanh tiến độ, viền ô nhập, nền nhạt */
-  --ui-primary-strong: #328182;       /* nền nút chữ trắng, giá, liên kết (4,57:1) */
-  --ui-primary-hover: #2a6f70;
-  --ui-primary-soft: rgba(73, 187, 189, 0.6); /* nền thanh chuyển Login/Register */
-  --ui-primary-tint: rgba(73, 187, 189, 0.12);
-  --ui-on-primary: #ffffff;
-  --ui-navy: #252641;                 /* tiêu đề, footer, banner CTA */
-  --ui-text: #252641;
-  --ui-text-body: #696984;            /* mô tả */
-  --ui-text-muted: rgba(0, 0, 0, 0.5);
-  --ui-text-strong: #000000;
-  --ui-placeholder: #767676;          /* Figma #acacac (2,3:1) làm đậm cho đạt 4,5:1 */
-  --ui-surface: #ffffff;
-  --ui-section: rgba(157, 204, 255, 0.3); /* nền khối xanh nhạt (hộp đánh giá, dải khoá học) */
-  --ui-track: #d9d9d9;                /* nền thanh tiến độ, viền nhẹ */
-  --ui-chip: rgba(0, 0, 0, 0.1);      /* tab chưa chọn */
-  --ui-chip-text: rgba(0, 0, 0, 0.4);
-  --ui-star: #fdb022;
-  --ui-danger: #ee645b;               /* icon danh mục đỏ (không mang chữ) */
-  --ui-danger-strong: #c3524b;        /* nền nhãn giảm giá chữ trắng; Figma #ee645b chỉ 3,2:1 */
-  --ui-footer-text: #b2b3cf;
-  --ui-footer-line: #83839a;
+  color-scheme: light;
+  --md-primary: #6750a4;
+  --md-on-primary: #ffffff;
+  --md-primary-container: #eaddff;
+  --md-on-primary-container: #4f378a;
+  --md-secondary: #625b71;
+  --md-on-secondary: #ffffff;
+  --md-secondary-container: #e8def8;
+  --md-on-secondary-container: #4a4458;
+  --md-tertiary: #7d5260;
+  --md-on-tertiary: #ffffff;
+  --md-tertiary-container: #ffd8e4;
+  --md-on-tertiary-container: #633b48;
+  --md-error: #b3261e;
+  --md-on-error: #ffffff;
+  --md-error-container: #f9dedc;
+  --md-on-error-container: #8c1d18;
+  --md-success: #146c2e;            /* M3 không có vai trò "thành công"; màu xanh lá cùng độ sáng với primary */
+  --md-success-container: #c4eed0;
+  --md-on-success-container: #0a3818;
+  --md-surface: #fef7ff;
+  --md-on-surface: #1d1b20;
+  --md-surface-variant: #e7e0ec;
+  --md-on-surface-variant: #49454f;
+  --md-surface-container-lowest: #ffffff;
+  --md-surface-container-low: #f7f2fa;
+  --md-surface-container: #f3edf7;
+  --md-surface-container-high: #ece6f0;
+  --md-surface-container-highest: #e6e0e9;
+  --md-outline: #79747e;
+  --md-outline-variant: #cac4d0;
+  --md-inverse-surface: #322f35;
+  --md-inverse-on-surface: #f5eff7;
+  --md-inverse-primary: #d0bcff;
+  --md-scrim: #000000;
+  --md-shadow: #000000;
+  --md-star: #b26c00;               /* sao đánh giá */
+}
 
-  /* Chữ. Figma dùng Poppins, nhưng Poppins không có bộ ký tự tiếng Việt
-     (ạ, ấ, ở… sẽ hiện bằng font khác). Mặc định dùng Be Vietnam Pro, dáng gần Poppins;
-     muốn đúng Figma tuyệt đối thì đổi --ui-font thành "Poppins". */
-  --ui-font: "Be Vietnam Pro", "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --ui-text-xs: 12px;
-  --ui-text-sm: 14px;
-  --ui-text-md: 16px;
-  --ui-text-lg: 18px;
-  --ui-text-xl: 24px;   /* tiêu đề thẻ khoá học */
-  --ui-text-2xl: 30px;  /* tiêu đề thẻ danh mục, mục trong hộp mua */
-  --ui-text-3xl: 45px;  /* giá lớn */
-  --ui-leading-body: 1.8;
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --md-primary: #d0bcff;
+    --md-on-primary: #381e72;
+    --md-primary-container: #4f378b;
+    --md-on-primary-container: #eaddff;
+    --md-secondary: #ccc2dc;
+    --md-on-secondary: #332d41;
+    --md-secondary-container: #4a4458;
+    --md-on-secondary-container: #e8def8;
+    --md-tertiary: #efb8c8;
+    --md-on-tertiary: #492532;
+    --md-tertiary-container: #633b48;
+    --md-on-tertiary-container: #ffd8e4;
+    --md-error: #f2b8b5;
+    --md-on-error: #601410;
+    --md-error-container: #8c1d18;
+    --md-on-error-container: #f9dedc;
+    --md-success: #8ad79f;
+    --md-success-container: #0f5223;
+    --md-on-success-container: #c4eed0;
+    --md-surface: #141218;
+    --md-on-surface: #e6e0e9;
+    --md-surface-variant: #49454f;
+    --md-on-surface-variant: #cac4d0;
+    --md-surface-container-lowest: #0f0d13;
+    --md-surface-container-low: #1d1b20;
+    --md-surface-container: #211f26;
+    --md-surface-container-high: #2b2930;
+    --md-surface-container-highest: #36343b;
+    --md-outline: #938f99;
+    --md-outline-variant: #49454f;
+    --md-inverse-surface: #e6e0e9;
+    --md-inverse-on-surface: #322f35;
+    --md-inverse-primary: #6750a4;
+    --md-star: #ffb95c;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --md-primary: #d0bcff;
+  --md-on-primary: #381e72;
+  --md-primary-container: #4f378b;
+  --md-on-primary-container: #eaddff;
+  --md-secondary: #ccc2dc;
+  --md-on-secondary: #332d41;
+  --md-secondary-container: #4a4458;
+  --md-on-secondary-container: #e8def8;
+  --md-tertiary: #efb8c8;
+  --md-on-tertiary: #492532;
+  --md-tertiary-container: #633b48;
+  --md-on-tertiary-container: #ffd8e4;
+  --md-error: #f2b8b5;
+  --md-on-error: #601410;
+  --md-error-container: #8c1d18;
+  --md-on-error-container: #f9dedc;
+  --md-success: #8ad79f;
+  --md-success-container: #0f5223;
+  --md-on-success-container: #c4eed0;
+  --md-surface: #141218;
+  --md-on-surface: #e6e0e9;
+  --md-surface-variant: #49454f;
+  --md-on-surface-variant: #cac4d0;
+  --md-surface-container-lowest: #0f0d13;
+  --md-surface-container-low: #1d1b20;
+  --md-surface-container: #211f26;
+  --md-surface-container-high: #2b2930;
+  --md-surface-container-highest: #36343b;
+  --md-outline: #938f99;
+  --md-outline-variant: #49454f;
+  --md-inverse-surface: #e6e0e9;
+  --md-inverse-on-surface: #322f35;
+  --md-inverse-primary: #6750a4;
+  --md-star: #ffb95c;
+}
 
-  /* Bo góc */
-  --ui-radius-xs: 2px;   /* thanh tiến độ */
-  --ui-radius-sm: 12px;  /* tab, nút Buy Now */
-  --ui-radius-md: 20px;  /* thẻ, ảnh trong thẻ */
-  --ui-radius-pill: 999px; /* nút, ô nhập */
+:root {
+  /* Màu theo tên cũ */
+  --ui-primary: var(--md-primary);
+  --ui-primary-strong: var(--md-primary);
+  --ui-primary-hover: color-mix(in srgb, var(--md-primary), var(--md-on-primary) 8%);
+  --ui-primary-soft: var(--md-secondary-container);
+  --ui-primary-tint: color-mix(in srgb, var(--md-primary) 10%, transparent);
+  --ui-on-primary: var(--md-on-primary);
+  --ui-primary-container: var(--md-primary-container);
+  --ui-on-primary-container: var(--md-on-primary-container);
+  --ui-secondary-container: var(--md-secondary-container);
+  --ui-on-secondary-container: var(--md-on-secondary-container);
+  --ui-tertiary-container: var(--md-tertiary-container);
+  --ui-on-tertiary-container: var(--md-on-tertiary-container);
+  --ui-navy: var(--md-on-surface);
+  --ui-text: var(--md-on-surface);
+  --ui-text-body: var(--md-on-surface-variant);
+  --ui-text-muted: var(--md-on-surface-variant);
+  --ui-text-strong: var(--md-on-surface);
+  --ui-placeholder: var(--md-on-surface-variant);
+  --ui-surface: var(--md-surface);
+  --ui-surface-low: var(--md-surface-container-low);
+  --ui-surface-container: var(--md-surface-container);
+  --ui-surface-high: var(--md-surface-container-high);
+  --ui-surface-highest: var(--md-surface-container-highest);
+  --ui-section: var(--md-surface-container);
+  --ui-outline: var(--md-outline);
+  --ui-outline-variant: var(--md-outline-variant);
+  --ui-track: var(--md-surface-container-highest);
+  --ui-chip: var(--md-surface-container-high);
+  --ui-chip-text: var(--md-on-surface-variant);
+  --ui-star: var(--md-star);
+  --ui-danger: var(--md-error);
+  --ui-danger-strong: var(--md-error);
+  --ui-on-danger: var(--md-on-error);
+  --ui-inverse: var(--md-inverse-surface);
+  --ui-on-inverse: var(--md-inverse-on-surface);
+  --ui-inverse-primary: var(--md-inverse-primary);
+  --ui-footer-text: color-mix(in srgb, var(--md-inverse-on-surface) 78%, transparent);
+  --ui-footer-line: color-mix(in srgb, var(--md-inverse-on-surface) 30%, transparent);
+  --ui-scrim: color-mix(in srgb, var(--md-scrim) 32%, transparent);
 
-  /* Bóng */
-  --ui-shadow-card: 0 18.83px 47.08px rgba(47, 50, 125, 0.1);
-  --ui-shadow-soft: 0 20px 24px rgba(0, 0, 0, 0.03);
+  /* Lớp trạng thái M3: phủ màu nội dung lên nền */
+  --ui-state-hover: 8%;
+  --ui-state-press: 10%;
 
-  /* Khoảng cách */
+  /* Chữ: Roboto có đủ dấu tiếng Việt. Thang chữ M3 (body/title/headline/display). */
+  --ui-font: "Roboto", "Roboto Flex", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ui-text-xs: 12px;   /* body-small, label-medium */
+  --ui-text-sm: 14px;   /* body-medium, label-large */
+  --ui-text-md: 16px;   /* body-large, title-medium */
+  --ui-text-lg: 16px;
+  --ui-text-xl: 22px;   /* title-large */
+  --ui-text-2xl: 28px;  /* headline-medium */
+  --ui-text-3xl: 45px;  /* display-medium */
+  --ui-leading-body: 1.5;
+
+  /* Thang bo góc M3 */
+  --ui-radius-xs: 4px;    /* extra-small: ô nhập, thanh tiến độ */
+  --ui-radius-sm: 8px;    /* small: chip, menu */
+  --ui-radius-md: 12px;   /* medium: thẻ */
+  --ui-radius-lg: 16px;   /* large: FAB, khung lớn */
+  --ui-radius-xl: 28px;   /* extra-large: hộp thoại */
+  --ui-radius-pill: 999px; /* full: nút */
+
+  /* Độ nổi M3 (level 1–3) */
+  --ui-elev-1: 0 1px 2px rgba(0, 0, 0, .3), 0 1px 3px 1px rgba(0, 0, 0, .15);
+  --ui-elev-2: 0 1px 2px rgba(0, 0, 0, .3), 0 2px 6px 2px rgba(0, 0, 0, .15);
+  --ui-elev-3: 0 1px 3px rgba(0, 0, 0, .3), 0 4px 8px 3px rgba(0, 0, 0, .15);
+  --ui-shadow-card: var(--ui-elev-1);
+  --ui-shadow-soft: var(--ui-elev-1);
+
+  /* Khoảng cách (lưới 4px) */
   --ui-space-1: 4px;
   --ui-space-2: 8px;
   --ui-space-3: 12px;
@@ -63,12 +203,12 @@
   --ui-space-6: 24px;
   --ui-space-8: 32px;
 
-  /* Chiều cao điều khiển */
-  --ui-control-sm: 40px;
-  --ui-control-md: 49px;  /* nút Login */
-  --ui-control-lg: 60px;  /* nút Subscribe, Login/Sign Up trên thanh điều hướng */
-  --ui-input-h: 54px;
+  /* Chiều cao điều khiển M3 */
+  --ui-control-sm: 32px;
+  --ui-control-md: 40px;  /* nút chuẩn */
+  --ui-control-lg: 56px;
+  --ui-input-h: 56px;     /* ô nhập outlined */
 
-  --ui-focus: 0 0 0 3px rgba(73, 187, 189, 0.45);
-  --ui-ease: 160ms ease;
+  --ui-focus: 0 0 0 2px var(--md-surface), 0 0 0 5px var(--md-secondary);
+  --ui-ease: 200ms cubic-bezier(.2, 0, 0, 1); /* standard easing */
 }

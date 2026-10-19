@@ -50,8 +50,8 @@ function Demo({ title, node, children }: { title: string; node?: string; childre
 }
 
 /**
- * Trang xem mẫu bộ components (components/ui). Dùng để đối chiếu với Figma
- * "E-Learning Site (Community)". Chỉ mở khi chạy dev hoặc với tài khoản quản trị.
+ * Trang xem mẫu bộ components (components/ui), giao diện Material 3. Bố cục gốc lấy từ Figma
+ * "E-Learning Site (Community)" (số node bên cạnh tiêu đề). Chỉ mở khi chạy dev hoặc với tài khoản quản trị.
  */
 export default function UiPage() {
   const me = useMe();
@@ -78,7 +78,7 @@ export default function UiPage() {
         <header className="ui-demo">
           <h1 className="ui-section-head__title" style={{ fontSize: 36 }}>Bộ components</h1>
           <p className="ui-course__desc" style={{ WebkitLineClamp: 'unset' }}>
-            Dựng từ Figma &quot;E-Learning Site (Community)&quot;. Mã nguồn ở <code>apps/web/components/ui</code>, hướng dẫn trong README.md cùng thư mục.
+            Giao diện Material 3 (bảng màu baseline, sáng và tối theo hệ điều hành). Mã nguồn ở <code>apps/web/components/ui</code>, hướng dẫn trong README.md cùng thư mục.
           </p>
           <ButtonLink href="/ui/meeting" variant="outline" size="sm">Mockup phòng học kiểu Google Meet →</ButtonLink>
         </header>
@@ -129,7 +129,7 @@ export default function UiPage() {
           <Textarea label="Ghi chú cho giáo viên" placeholder="Bạn muốn học gì trong buổi tới?" />
           <div className="ui-demo__row" style={{ justifyContent: 'space-between' }}>
             <Checkbox label="Ghi nhớ đăng nhập" defaultChecked />
-            <a className="ui-link" href="#" style={{ fontSize: 12, fontWeight: 300, color: '#000' }}>Quên mật khẩu?</a>
+            <a className="ui-link" href="#" style={{ fontSize: 12 }}>Quên mật khẩu?</a>
           </div>
         </Demo>
 
@@ -208,9 +208,9 @@ export default function UiPage() {
 
         <Demo title="Thẻ danh mục" node="54:297">
           <div className="ui-demo__cards">
-            <CategoryCard title="Thiết kế" description={desc} icon={<span style={{ fontSize: 32 }}>✎</span>} color={{ fg: '#49bbbd', bg: 'rgba(73,187,189,.2)' }} />
-            <CategoryCard title="Nhiếp ảnh" description={desc} icon={<span style={{ fontSize: 32 }}>📷</span>} color={{ fg: '#ee645b', bg: '#fbd0cd' }} />
-            <CategoryCard title="Kinh doanh" description={desc} icon={<span style={{ fontSize: 32 }}>💼</span>} color={{ fg: '#5b72ee', bg: '#d8deff' }} />
+            <CategoryCard title="Thiết kế" description={desc} icon={<span style={{ fontSize: 32 }}>✎</span>} color={{ fg: 'var(--md-on-primary-container)', bg: 'var(--md-primary-container)' }} />
+            <CategoryCard title="Nhiếp ảnh" description={desc} icon={<span style={{ fontSize: 32 }}>📷</span>} color={{ fg: 'var(--md-on-tertiary-container)', bg: 'var(--md-tertiary-container)' }} />
+            <CategoryCard title="Kinh doanh" description={desc} icon={<span style={{ fontSize: 32 }}>💼</span>} color={{ fg: 'var(--md-on-secondary-container)', bg: 'var(--md-secondary-container)' }} />
           </div>
         </Demo>
 

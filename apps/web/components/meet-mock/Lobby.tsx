@@ -127,7 +127,7 @@ export function Ended() {
     <LobbyShell>
       <div className="mt-center">
         <div className="mt-endcard">
-          <span className="mt-act__ic" style={{ color: '#12595a', background: '#e3f3f3', width: 64, height: 64, borderRadius: 20 }}><Icon name="check" size={32} /></span>
+          <span className="mt-act__ic" style={{ color: 'var(--md-on-secondary-container)', background: 'var(--md-secondary-container)', width: 64, height: 64, borderRadius: 20 }}><Icon name="check" size={32} /></span>
           <h1>Buổi học đã kết thúc</h1>
           <p>Cô Linh đã kết thúc <b>{session.title}</b>. Bản ghi hình và tài liệu sẽ có trong mục Xem lại sau vài phút.</p>
           <div className="mt-row" style={{ justifyContent: 'center' }}>

@@ -117,7 +117,7 @@ export type CategoryCardProps = {
   title: string;
   description?: string;
   icon: ReactNode;
-  /** Màu icon và nền ô icon, ví dụ { fg: '#ee645b', bg: '#fbd0cd' } cho Photography trong Figma. */
+  /** Màu icon và nền ô icon, ví dụ { fg: 'var(--md-on-tertiary-container)', bg: 'var(--md-tertiary-container)' } (cặp vai trò container của M3). */
   color?: { fg: string; bg: string };
   href?: string;
   className?: string;

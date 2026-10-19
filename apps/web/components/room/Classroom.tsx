@@ -280,7 +280,7 @@ export function Classroom(props: {
         {meta.recording && <span className="mt-pill mt-pill--rec" role="status"><i /> Đang ghi</span>}
         {meta.live && <span className="mt-pill mt-pill--rec" role="status"><Icon name="live" size={14} /> Đang phát</span>}
         {hands.length > 0 && (
-          <button type="button" className="mt-pill" style={{ border: 0, color: '#f6b026' }} onClick={() => setPanel('people')}>
+          <button type="button" className="mt-pill" style={{ border: 0, color: '#ffb95c' }} onClick={() => setPanel('people')}>
             <Icon name="hand" size={14} /> {hands.length} giơ tay
           </button>
         )}
@@ -442,7 +442,7 @@ export function Classroom(props: {
               {isTeacher && (
                 <>
                   <hr />
-                  <button type="button" role="menuitem" style={{ color: '#ff8d84' }} onClick={pick(endClass)}>
+                  <button type="button" role="menuitem" style={{ color: '#f2b8b5' }} onClick={pick(endClass)}>
                     <Icon name="close" /> Kết thúc buổi học cho mọi người
                   </button>
                 </>

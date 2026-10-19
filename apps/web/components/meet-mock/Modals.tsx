@@ -117,7 +117,7 @@ export function RecordDialog({ onClose, onStart }: { onClose: () => void; onStar
       }
     >
       <div className="mt-info">
-        <p>Mọi người trong lớp sẽ thấy biểu tượng <b style={{ color: '#c5221f' }}>● Đang ghi</b>. Bản ghi lưu cùng buổi học, học viên xem lại được sau vài phút khi buổi kết thúc.</p>
+        <p>Mọi người trong lớp sẽ thấy biểu tượng <b style={{ color: 'var(--md-error)' }}>● Đang ghi</b>. Bản ghi lưu cùng buổi học, học viên xem lại được sau vài phút khi buổi kết thúc.</p>
         <Switch label="Ghi cả bảng trắng và màn hình chia sẻ" on />
         <Switch label="Ghi kèm phụ đề tự động" />
         <p className="mt-muted">Phòng nhóm nhỏ không được ghi lại.</p>

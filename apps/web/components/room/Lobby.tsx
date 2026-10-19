@@ -28,7 +28,7 @@ export function LobbyMessage(props: { icon?: IconName; spinner?: boolean; title:
             <div className="mt-spinner" role="status" aria-label="Đang chờ" />
           ) : (
             props.icon && (
-              <span className="mt-act__ic" style={{ color: '#12595a', background: '#e3f3f3', width: 64, height: 64, borderRadius: 20 }}>
+              <span className="mt-act__ic" style={{ color: 'var(--md-on-secondary-container)', background: 'var(--md-secondary-container)', width: 64, height: 64, borderRadius: 20 }}>
                 <Icon name={props.icon} size={32} />
               </span>
             )

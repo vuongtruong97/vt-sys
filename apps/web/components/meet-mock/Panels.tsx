@@ -51,11 +51,11 @@ function People() {
           </div>
           {queue.map((w) => (
             <div key={w.id} className="mt-person">
-              <Av p={{ name: w.name, tint: '#7b8590' }} />
+              <Av p={{ name: w.name, tint: 'var(--md-outline)' }} />
               <div className="mt-person__name"><b>{w.name}</b><small>{w.email} · chưa có trong lớp</small></div>
               <div className="mt-person__acts">
                 <button type="button" aria-label={`Từ chối ${w.name}`} onClick={() => setAdmitted((a) => [...a, w.id])}><Icon name="x" size={18} /></button>
-                <button type="button" aria-label={`Cho ${w.name} vào lớp`} onClick={() => setAdmitted((a) => [...a, w.id])} style={{ color: '#1e7a3e' }}><Icon name="check" size={18} /></button>
+                <button type="button" aria-label={`Cho ${w.name} vào lớp`} onClick={() => setAdmitted((a) => [...a, w.id])} style={{ color: 'var(--md-success)' }}><Icon name="check" size={18} /></button>
               </div>
             </div>
           ))}
@@ -253,11 +253,11 @@ function Activity({ icon, color, title, text, onClick }: { icon: IconName; color
 function Activities({ open }: { open: (p: PanelId | 'record') => void }) {
   return (
     <>
-      <Activity icon="record" color={['#b3261e', '#fde8e7']} title="Ghi hình" text="Ghi lại buổi học để học viên xem lại. Mọi người thấy biểu tượng đang ghi." onClick={() => open('record')} />
-      <Activity icon="live" color={['#1d5fb4', '#e3effc']} title="Phát trực tiếp" text="Phát buổi học cho người xem qua liên kết, không cần vào lớp." />
-      <Activity icon="poll" color={['#a15c00', '#fff1d6']} title="Câu hỏi nhanh" text="Trắc nghiệm hoặc thăm dò, xem kết quả tức thì." onClick={() => open('quiz')} />
-      <Activity icon="groups" color={['#8a3f9b', '#f4e6f7']} title="Chia nhóm nhỏ" text="Chia lớp thành các phòng thảo luận có đếm giờ." onClick={() => open('breakout')} />
-      <Activity icon="board" color={['#23733b', '#e3f3e8']} title="Bảng trắng" text="Mở bảng phấn chung cho cả lớp cùng viết." />
+      <Activity icon="record" color={['var(--md-on-error-container)', 'var(--md-error-container)']} title="Ghi hình" text="Ghi lại buổi học để học viên xem lại. Mọi người thấy biểu tượng đang ghi." onClick={() => open('record')} />
+      <Activity icon="live" color={['var(--md-on-secondary-container)', 'var(--md-secondary-container)']} title="Phát trực tiếp" text="Phát buổi học cho người xem qua liên kết, không cần vào lớp." />
+      <Activity icon="poll" color={['var(--md-on-tertiary-container)', 'var(--md-tertiary-container)']} title="Câu hỏi nhanh" text="Trắc nghiệm hoặc thăm dò, xem kết quả tức thì." onClick={() => open('quiz')} />
+      <Activity icon="groups" color={['var(--md-on-primary-container)', 'var(--md-primary-container)']} title="Chia nhóm nhỏ" text="Chia lớp thành các phòng thảo luận có đếm giờ." onClick={() => open('breakout')} />
+      <Activity icon="board" color={['var(--md-on-success-container)', 'var(--md-success-container)']} title="Bảng trắng" text="Mở bảng phấn chung cho cả lớp cùng viết." />
     </>
   );
 }

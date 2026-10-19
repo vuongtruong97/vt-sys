@@ -34,12 +34,12 @@ type PublicCourse = {
 };
 
 const FEATURES: { icon: FeatureIconName; title: string; text: string; color: { fg: string; bg: string } }[] = [
-  { icon: 'video', title: 'Video nhiều người', text: 'Cả lớp bật camera cùng lúc, tối đa 30 người. Âm thanh rõ, tự giảm tiếng ồn.', color: { fg: '#328182', bg: 'rgba(73,187,189,.14)' } },
-  { icon: 'screen', title: 'Chia sẻ màn hình', text: 'Giáo viên trình chiếu slide và code. Học viên được chia sẻ khi giáo viên cho phép.', color: { fg: '#3d5ca8', bg: 'rgba(91,114,238,.12)' } },
-  { icon: 'board', title: 'Bảng trắng chung', text: 'Viết, vẽ cùng nhau theo thời gian thực. Bảng được lưu lại cho buổi sau.', color: { fg: '#2f7a46', bg: 'rgba(47,138,79,.12)' } },
-  { icon: 'quiz', title: 'Câu hỏi nhanh', text: 'Trắc nghiệm ngay trong giờ học, giáo viên xem kết quả của cả lớp tức thì.', color: { fg: '#a15c00', bg: 'rgba(244,140,6,.14)' } },
-  { icon: 'groups', title: 'Chia nhóm nhỏ', text: 'Chia lớp thành các phòng nhóm để thảo luận, giáo viên ghé từng nhóm và gọi về.', color: { fg: '#8a3f9b', bg: 'rgba(176,96,196,.13)' } },
-  { icon: 'record', title: 'Điểm danh và xem lại', text: 'Tự ghi điểm danh mỗi buổi. Bản ghi hình và tài liệu luôn sẵn để xem lại.', color: { fg: '#b0473f', bg: 'rgba(238,100,91,.13)' } },
+  { icon: 'video', title: 'Video nhiều người', text: 'Cả lớp bật camera cùng lúc, tối đa 30 người. Âm thanh rõ, tự giảm tiếng ồn.', color: { fg: 'var(--md-on-primary-container)', bg: 'var(--md-primary-container)' } },
+  { icon: 'screen', title: 'Chia sẻ màn hình', text: 'Giáo viên trình chiếu slide và code. Học viên được chia sẻ khi giáo viên cho phép.', color: { fg: 'var(--md-on-secondary-container)', bg: 'var(--md-secondary-container)' } },
+  { icon: 'board', title: 'Bảng trắng chung', text: 'Viết, vẽ cùng nhau theo thời gian thực. Bảng được lưu lại cho buổi sau.', color: { fg: 'var(--md-on-success-container)', bg: 'var(--md-success-container)' } },
+  { icon: 'quiz', title: 'Câu hỏi nhanh', text: 'Trắc nghiệm ngay trong giờ học, giáo viên xem kết quả của cả lớp tức thì.', color: { fg: 'var(--md-on-tertiary-container)', bg: 'var(--md-tertiary-container)' } },
+  { icon: 'groups', title: 'Chia nhóm nhỏ', text: 'Chia lớp thành các phòng nhóm để thảo luận, giáo viên ghé từng nhóm và gọi về.', color: { fg: 'var(--md-on-primary-container)', bg: 'var(--md-primary-container)' } },
+  { icon: 'record', title: 'Điểm danh và xem lại', text: 'Tự ghi điểm danh mỗi buổi. Bản ghi hình và tài liệu luôn sẵn để xem lại.', color: { fg: 'var(--md-on-error-container)', bg: 'var(--md-error-container)' } },
 ];
 
 const STEPS = [

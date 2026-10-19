@@ -11,6 +11,8 @@ export type GeoGebraBoardProps = {
   appName?: 'classic' | 'graphing' | 'geometry' | '3d' | 'notes';
   /** Chỉ xem: ẩn thanh công cụ, ô nhập lệnh, menu chuột phải; kéo chuột là di chuyển khung nhìn. */
   readOnly?: boolean;
+  /** Chỉ hiện vùng hình vẽ (ẩn danh sách đối tượng bên trái). Nạp bài khác (setXML) thì gọi lại setPerspective('G'). */
+  graphicsOnly?: boolean;
   saveDelay?: number;
   className?: string;
 };
@@ -30,7 +32,7 @@ const MODE_MOVE_VIEW = 40;
  * nạp script một lần, gỡ applet khi unmount để không rò bộ nhớ.
  */
 export const GeoGebraBoard = forwardRef<GeoGebraBoardHandle, GeoGebraBoardProps>(function GeoGebraBoard(
-  { initialBase64, onChange, onReady, appName = 'classic', readOnly = false, saveDelay = 1500, className },
+  { initialBase64, onChange, onReady, appName = 'classic', readOnly = false, graphicsOnly = false, saveDelay = 1500, className },
   ref,
 ) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
@@ -86,12 +88,14 @@ export const GeoGebraBoard = forwardRef<GeoGebraBoardHandle, GeoGebraBoardProps>
           preventFocus: true,
           showKeyboardOnFocus: false,
           borderColor: 'transparent',
+          ...(graphicsOnly ? { perspective: 'G' } : {}),
           ...(initial.current ? { ggbBase64: initial.current } : {}),
           appletOnLoad: (a: GgbApi) => {
             if (cancelled) return;
             api = a;
             apiRef.current = a;
             setStatus('ready');
+            if (graphicsOnly) a.setPerspective('G');
             if (readOnly) a.setMode(MODE_MOVE_VIEW);
             else {
               a.registerAddListener(emit);
@@ -133,7 +137,7 @@ export const GeoGebraBoard = forwardRef<GeoGebraBoardHandle, GeoGebraBoardProps>
       const el = document.getElementById(containerId);
       if (el) el.innerHTML = '';
     };
-  }, [containerId, uid, appName, readOnly, saveDelay]);
+  }, [containerId, uid, appName, readOnly, graphicsOnly, saveDelay]);
 
   return (
     <div ref={wrap} className={`ggb-wrap${className ? ` ${className}` : ''}`}>

@@ -34,6 +34,11 @@ export interface GgbApi {
   getPNGBase64(exportScale: number, transparent: boolean, dpi?: number): string;
   setSize(width: number, height: number): void;
   setMode(mode: number): void;
+  getMode(): number;
+  /** Bố cục: 'G' chỉ vùng hình vẽ, 'AG' danh sách đối tượng + hình vẽ… */
+  setPerspective(perspective: string): void;
+  /** JSON: xMin, yMin, invXscale, invYscale, width, height của vùng hình vẽ đang hoạt động. */
+  getViewProperties(): string;
   registerAddListener(fn: (name: string) => void): void;
   registerRemoveListener(fn: (name: string) => void): void;
   registerUpdateListener(fn: (name: string) => void): void;

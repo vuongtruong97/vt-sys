@@ -69,7 +69,12 @@ function encode(api: GgbApi, name: string): Live {
 }
 
 /** Gắn applet vào Y.Doc. `canWrite` đọc lại mỗi lần nên đổi người cầm bút không cần gắn lại. */
-export function bindGgbToYDoc(api: GgbApi, ydoc: Y.Doc, canWrite: () => boolean) {
+export type BindOptions = {
+  /** Gọi sau mỗi lần nạp snapshot (setXML), ví dụ để ẩn lại danh sách đối tượng ở máy học viên. */
+  afterLoad?: () => void;
+};
+
+export function bindGgbToYDoc(api: GgbApi, ydoc: Y.Doc, canWrite: () => boolean, opts: BindOptions = {}) {
   const snapshot = ydoc.getMap<string>(SNAPSHOT);
   const live = ydoc.getMap<string>(LIVE);
   let applying = false;
@@ -103,6 +108,14 @@ export function bindGgbToYDoc(api: GgbApi, ydoc: Y.Doc, canWrite: () => boolean)
   const onStructure = () => {
     if (local()) structure();
   };
+  /** Nét bút vừa vẽ xong: gửi ngay để nét thật thay nét tạm ở máy học viên, không chờ gom 400 ms. */
+  const onAdd = (name: string) => {
+    if (!local()) return;
+    if (api.getObjectType(name) === 'penstroke') {
+      structure.cancel();
+      writeSnapshot();
+    } else structure();
+  };
   const onRename = () => onStructure();
   // Kéo điểm cũng làm các đối tượng phụ thuộc phát sự kiện update: chỉ coi là sửa định nghĩa
   // khi quanh đó không có đối tượng tự do nào vừa đổi.
@@ -120,7 +133,7 @@ export function bindGgbToYDoc(api: GgbApi, ydoc: Y.Doc, canWrite: () => boolean)
       }, 0);
     }
   };
-  api.registerAddListener(onStructure);
+  api.registerAddListener(onAdd);
   api.registerRemoveListener(onStructure);
   api.registerRenameListener(onRename);
   api.registerUpdateListener(onUpdate);
@@ -136,7 +149,9 @@ export function bindGgbToYDoc(api: GgbApi, ydoc: Y.Doc, canWrite: () => boolean)
   };
   const loadSnapshot = () => {
     const xml = snapshot.get('xml');
-    if (xml) apply(() => api.setXML(xml));
+    if (!xml) return;
+    apply(() => api.setXML(xml));
+    opts.afterLoad?.();
   };
   const onSnapshot = (e: Y.YMapEvent<string>) => {
     if (e.transaction.origin !== LOCAL && e.keysChanged.has('xml')) loadSnapshot();
@@ -185,7 +200,7 @@ export function bindGgbToYDoc(api: GgbApi, ydoc: Y.Doc, canWrite: () => boolean)
       flushLive.cancel();
       snapshot.unobserve(onSnapshot);
       live.unobserve(onLive);
-      api.unregisterAddListener(onStructure);
+      api.unregisterAddListener(onAdd);
       api.unregisterRemoveListener(onStructure);
       api.unregisterRenameListener(onRename);
       api.unregisterUpdateListener(onUpdate);

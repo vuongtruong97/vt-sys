@@ -472,4 +472,15 @@
 .mt-ggb__board { flex: 1; border: 0; border-radius: var(--mt-radius); }
 .mt-ggb__status, .mt-ggb__badge { position: absolute; left: 12px; bottom: 12px; z-index: 2; padding: 6px 10px; border-radius: 8px; background: rgba(20, 18, 24, .82); color: #e6e0e9; font-size: 12.5px; pointer-events: none; }
 .mt-ggb__status { left: 50%; top: 50%; bottom: auto; translate: -50% -50%; }
-.mt-ggb__save { position: absolute; right: 12px; bottom: 12px; z-index: 2; box-shadow: var(--ui-elev-2); }
+.mt-ggb__tools { position: absolute; right: 12px; bottom: 12px; z-index: 2; display: flex; gap: 8px; }
+.mt-ggb__tools .mt-pbtn { box-shadow: var(--ui-elev-2); }
+/* Nút laser khi tắt: nền sáng để đọc được trên bảng trắng của GeoGebra */
+.mt-ggb__tools .mt-pbtn--ghost { background-color: var(--md-surface-container-low); }
+.mt-ggb__laser-btn[aria-pressed="true"] { background-color: #b3261e; color: #fff !important; }
+/* Đang bật laser: con trỏ hình chấm đỏ trên vùng vẽ */
+.mt-ggb--laser .mt-ggb__board canvas { cursor: url("data:image/svg+xml,%3Csvg xmlns=http://www.w3.org/2000/svg width=20 height=20%3E%3Ccircle cx=10 cy=10 r=6 fill=%23e53935 stroke=white stroke-width=2/%3E%3C/svg%3E") 10 10, crosshair !important; }
+/* Lớp laser và nét bút của giáo viên ở máy học viên */
+.mt-ggb-pointer { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; pointer-events: none; overflow: hidden; }
+.mt-ggb-laser { fill: #e53935; stroke: #fff; stroke-width: 2; }
+.mt-ggb-laser__glow { fill: rgba(229, 57, 53, .25); }
+.mt-ggb-ink { fill: none; stroke: #1d1b20; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }

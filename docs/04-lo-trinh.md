@@ -88,6 +88,7 @@ DB mới tạo (volume trống) thì không cần bước này.
 | Webinar HLS | **Xong** (code) | Egress HLS → S3 → API chuyển tiếp (có header cho CDN), trang `/live/[id]`. Chưa chạy thử thật |
 | Meeting độc lập (kiểu Google Meet) | **Xong** | `/meet`: họp ngay hoặc hẹn giờ, khách vào qua phòng chờ. `meetings.module.ts`, migration `8_meetings`. Đã chạy thử tạo, duyệt, vào, huỷ qua API; chưa thử có video thật. Chưa có tài liệu, ghi hình, phát trực tiếp trong meeting |
 | Phông nền camera | **Xong** | Làm mờ, ảnh có sẵn, ảnh tự tải; chọn trước khi vào và trong phòng. `components/room/BackgroundPicker.tsx`, `lib/videoEffect.ts`. Đã thử bằng luồng video giả (canvas); chưa thử với camera thật và trên điện thoại |
+| Cửa sổ thu nhỏ (máy tính) | **Xong** | Document PiP, `components/room/MiniWindow.tsx`. Đã thử portal và chép CSS sang document khác; chưa thử mở cửa sổ thật có video (trình duyệt trong app không mở được cửa sổ) |
 | Thanh toán (VietQR + SePay/Casso) | Chưa | Cần tài khoản SePay/Casso và tài khoản ngân hàng thật |
 | Gói học (theo khoá, số buổi, tháng; 1-1) | Chưa | Phụ thuộc thanh toán |
 | Chép lời, tóm tắt bằng AI | Chưa | Cần dịch vụ nhận dạng giọng nói tiếng Việt (chạy trên bản ghi MP4) và một mô hình ngôn ngữ để tóm tắt |

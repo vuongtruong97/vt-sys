@@ -15,6 +15,7 @@ import { Icon } from '@/components/meet/icons';
 import { api } from '@/lib/api';
 import { applyEffect, useVideoEffect } from '@/lib/videoEffect';
 import { BackgroundPicker, useBackgroundsSupported } from './BackgroundPicker';
+import { MiniWindow, useMiniWindow } from './MiniWindow';
 import type { GroupInfo } from './shared';
 import { useQuizzes, useRoomChat } from './interaction';
 import { QuizCard } from './Quiz';
@@ -270,6 +271,9 @@ export function Classroom(props: {
     say(myHand ? 'Đã hạ tay' : 'Đã giơ tay, giáo viên sẽ thấy bạn trong danh sách');
   };
   const togglePanel = (p: Exclude<Panel, null>) => setPanel((cur) => (cur === p ? null : p));
+  // Cửa sổ nổi (Document PiP, chỉ trình duyệt máy tính): xem lớp khi đang dùng ứng dụng khác.
+  const mini = useMiniWindow(props.title);
+  const toggleMini = () => (mini.win ? mini.close() : mini.open().catch(() => say('Trình duyệt không mở được cửa sổ thu nhỏ')));
   const closeSettings = useCallback(() => setSettings(false), []);
 
   // Esc đóng menu "Thêm".
@@ -462,6 +466,11 @@ export function Classroom(props: {
                 </>
               )}
               <hr />
+              {mini.supported && (
+                <button type="button" role="menuitem" className="mt-hide-sm" onClick={pick(toggleMini)}>
+                  <Icon name="monitor" /> {mini.win ? 'Đóng cửa sổ thu nhỏ' : 'Thu nhỏ cửa sổ'}
+                </button>
+              )}
               <button type="button" role="menuitem" onClick={pick(copyInvite)}>
                 <Icon name="copy" /> Sao chép link mời
               </button>
@@ -486,6 +495,11 @@ export function Classroom(props: {
         </div>
 
         <div className="mt-controls__right">
+          {mini.supported && (
+            <button type="button" className="mt-ibtn" aria-pressed={!!mini.win} aria-label={mini.win ? 'Đóng cửa sổ thu nhỏ' : 'Thu nhỏ cửa sổ'} title={mini.win ? 'Đóng cửa sổ thu nhỏ' : 'Thu nhỏ cửa sổ: xem lớp khi dùng ứng dụng khác'} onClick={toggleMini}>
+              <Icon name="monitor" />
+            </button>
+          )}
           <button type="button" className="mt-ibtn" aria-pressed={panel === 'people'} aria-label="Người tham gia" title="Người tham gia" onClick={() => togglePanel('people')}>
             <Icon name="people" />
             {hands.length > 0 && <span className="mt-cbtn__badge">{hands.length}</span>}
@@ -522,6 +536,24 @@ export function Classroom(props: {
         />
       )}
       {picking && <BackgroundPicker track={camTrack} onClose={() => setPicking(false)} />}
+      {mini.win && (
+        <MiniWindow
+          win={mini.win}
+          screen={screen}
+          sharerName={sharer?.name || 'Ai đó'}
+          cameras={cameras}
+          mic={{ enabled: mic.enabled, pending: mic.pending, toggle: () => mic.toggle() }}
+          cam={{ enabled: cam.enabled, pending: cam.pending, toggle: () => cam.toggle() }}
+          myHand={myHand}
+          toggleHand={toggleHand}
+          hands={hands.length}
+          isTeacher={isTeacher}
+          onLeave={() => {
+            mini.close();
+            room.disconnect();
+          }}
+        />
+      )}
     </div>
   );
 }

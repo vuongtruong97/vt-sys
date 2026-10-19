@@ -455,3 +455,14 @@
 .mt-bg__blur::before { content: ""; position: absolute; inset: 0; backdrop-filter: blur(2px); }
 .mt-bg__blur--strong::before { backdrop-filter: blur(5px); }
 .mt-bg__blur::after { content: ""; position: absolute; left: 50%; top: 42%; width: 26%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; background: var(--md-on-surface-variant); }
+
+/* ---------- Cửa sổ thu nhỏ (Document Picture-in-Picture, máy tính) ---------- */
+.mt-pip { height: 100vh; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 8px; padding: 8px; min-height: 0; }
+.mt-pip__stage { position: relative; display: flex; min-height: 0; }
+.mt-pip__stage > * { flex: 1; min-width: 0; }
+.mt-pip__stage .mt-share { padding: 0; }
+.mt-pip__stage .mt-share__label { font-size: 11.5px; }
+.mt-pip__hands { position: absolute; top: 8px; right: 8px; flex: none; color: #ffb95c; }
+.mt-pip__ctrls { display: flex; justify-content: center; gap: 8px; }
+.mt-pip__ctrls .mt-cbtn { width: 40px; height: 40px; }
+.mt-pip__ctrls .mt-cbtn--leave { width: 56px; }

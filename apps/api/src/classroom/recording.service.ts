@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import type { ClassSession, RecordingStatus } from '@prisma/client';
 import {
   EgressClient,
@@ -12,6 +12,13 @@ import { config } from '../common/config';
 import { PrismaService } from '../common/prisma.service';
 import { StorageService } from '../common/storage.service';
 import { LivekitService } from './livekit.service';
+
+/** Chặn ghi hình / phát trực tiếp khi máy chủ tắt tính năng này (RECORDING_ENABLED khác "true"). */
+export function requireRecording() {
+  if (!config.recordingEnabled) {
+    throw new ServiceUnavailableException('Ghi hình và phát trực tiếp đang tắt trên máy chủ này');
+  }
+}
 
 /** Trạng thái egress của LiveKit → trạng thái lưu trong DB (dùng chung cho ghi hình và phát trực tiếp). */
 export function egressStatus(info: EgressInfo, current: RecordingStatus): RecordingStatus {
@@ -49,6 +56,7 @@ export class RecordingService {
   }
 
   async start(s: ClassSession) {
+    requireRecording();
     this.storage.require();
     if (await this.active(s.id)) throw new BadRequestException('Buổi học đang được ghi hình rồi');
     const st = config.storage;

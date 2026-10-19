@@ -25,6 +25,8 @@ services:
 
   # Ghi hình. Egress dùng nhiều CPU (khoảng 2–4 nhân cho một bản ghi 720p).
   egress:
+    # Chỉ chạy khi bật ghi hình: docker compose --profile recording up -d (và RECORDING_ENABLED=true).
+    profiles: ["recording"]
     image: livekit/egress:v1.8.6
     restart: unless-stopped
     depends_on:
@@ -81,6 +83,7 @@ services:
       S3_ACCESS_KEY: ${S3_ACCESS_KEY}
       S3_SECRET_KEY: ${S3_SECRET_KEY}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RECORDING_ENABLED: ${RECORDING_ENABLED:-false}
       EMAIL_FROM: ${EMAIL_FROM:-}
       APP_URL: https://${DOMAIN}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}

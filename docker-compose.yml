@@ -40,6 +40,8 @@ services:
 
   # Ghi hình: mở phòng bằng Chrome không giao diện, ghép video, tải MP4 lên S3.
   egress:
+    # Chỉ chạy khi bật ghi hình: docker compose --profile recording up -d (và RECORDING_ENABLED=true).
+    profiles: ["recording"]
     restart: unless-stopped
     image: livekit/egress:v1.8.6
     depends_on:
@@ -120,6 +122,7 @@ services:
       S3_SECRET_KEY: ${S3_SECRET_KEY}
       S3_FORCE_PATH_STYLE: "true"
       RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RECORDING_ENABLED: ${RECORDING_ENABLED:-false}
       EMAIL_FROM: ${EMAIL_FROM:-}
       APP_URL: http://localhost:3000
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}

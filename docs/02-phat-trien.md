@@ -58,6 +58,8 @@ Seed chỉ chạy dữ liệu mẫu khi giáo viên chưa có khoá học nào. 
 
 ### Thử ghi hình trên máy
 
+Ghi hình mặc định tắt. Bật: đặt `RECORDING_ENABLED=true` trong `.env` rồi chạy `docker compose --profile recording up -d` (thêm dịch vụ `egress`).
+
 Egress chạy trong container và kết nối media tới `rtc.node_ip`. Mặc định `127.0.0.1` thì egress không nhận được video. Đổi `node_ip` trong `livekit.yaml` thành IP LAN (ví dụ `192.168.1.10`), rồi `docker compose up -d livekit`. Bản ghi xong nằm trong bucket `bangden` của dịch vụ `s3` (RustFS, cổng 9000).
 
 ### Nhắc lịch
@@ -97,7 +99,7 @@ Chạy app ngoài Docker cần **Node 22.12 trở lên**: `livekit-server-sdk` c
 Cách này cho hot reload nhanh hơn. Hạ tầng vẫn chạy bằng Docker:
 
 ```bash
-docker compose up postgres redis livekit egress s3 s3-init
+docker compose up postgres redis livekit s3 s3-init          # thêm egress (--profile recording) nếu cần ghi hình
 ```
 
 **API** (terminal 1):

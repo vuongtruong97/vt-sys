@@ -1,7 +1,9 @@
 import { ServiceUnavailableException } from '@nestjs/common';
 import { FileInfo } from '@livekit/protocol';
 import { EgressInfo, EgressStatus } from 'livekit-server-sdk';
+import { LiveStreamService } from '../src/classroom/live.service';
 import { RecordingService } from '../src/classroom/recording.service';
+import { config } from '../src/common/config';
 import { mockLivekit, mockPrisma, session } from './helpers';
 
 function setup(storageEnabled = true) {
@@ -19,6 +21,30 @@ function setup(storageEnabled = true) {
 }
 
 const info = (status: EgressStatus, extra: Partial<EgressInfo> = {}) => new EgressInfo({ egressId: 'EG_1', status, ...extra });
+
+describe('Tắt ghi hình và phát trực tiếp (RECORDING_ENABLED)', () => {
+  afterEach(() => {
+    config.recordingEnabled = true;
+  });
+
+  it('ghi hình bị từ chối với thông báo rõ ràng, không đụng tới lưu trữ hay DB', async () => {
+    config.recordingEnabled = false;
+    const { svc, prisma } = setup();
+    await expect(svc.start(session() as any)).rejects.toThrow('đang tắt');
+    expect(prisma.recording.create).not.toHaveBeenCalled();
+  });
+
+  it('phát trực tiếp cũng bị từ chối', async () => {
+    config.recordingEnabled = false;
+    const prisma = mockPrisma() as any;
+    prisma.liveStream = { findUnique: jest.fn(), upsert: jest.fn() };
+    const storage = { require: jest.fn() };
+    const live = new LiveStreamService(prisma, storage as any, mockLivekit() as any);
+    await expect(live.start(session() as any, true)).rejects.toBeInstanceOf(ServiceUnavailableException);
+    expect(storage.require).not.toHaveBeenCalled();
+    expect(prisma.liveStream.upsert).not.toHaveBeenCalled();
+  });
+});
 
 describe('Ghi hình', () => {
   it('chưa cấu hình lưu trữ thì báo lỗi rõ ràng, không gọi egress', async () => {

@@ -29,6 +29,7 @@ docker compose exec postgres psql -U bangden               # vào DB
 - DTO luôn có decorator `class-validator` (ValidationPipe bật `whitelist`, thuộc tính không khai báo sẽ bị bỏ).
 - Không đưa API secret của LiveKit ra client. Quyền trong phòng chỉ cấp qua token hoặc `RoomServiceClient` phía API.
 - `identity` trong LiveKit = `users.id`; vai trò nằm trong metadata `{"role":"teacher"|"student"}`; metadata phòng là `{"board","allowStudentShare","recording"}`.
+- Ghi hình và phát trực tiếp mặc định tắt (`RECORDING_ENABLED`, compose profile `recording`). Code mới dùng egress phải gọi `requireRecording()`; web đọc cờ `recording` từ `GET /features`.
 - Tin dữ liệu do server phát (chat, quiz, breakout) đi qua API rồi `LivekitService.broadcast`; client không tự phát những chủ đề này. Tin gửi cả lớp dùng `ClassroomService.rooms(s)` để tới cả các phòng nhóm.
 - Giao diện mới dùng `apps/web/components/ui` (dựng từ Figma, xem README.md trong đó); không thêm class rời vào `globals.css`. Màu, cỡ chữ, bo góc lấy từ biến `--ui-*` trong `tokens.css`.
 - Vai trò: ADMIN ⊃ TEACHER. Kiểm tra "là giáo viên" bằng `role !== 'STUDENT'`, không so sánh `=== 'TEACHER'`.

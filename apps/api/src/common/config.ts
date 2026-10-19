@@ -58,6 +58,11 @@ export const config = {
   appUrl: (process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, ''),
   /** Dung lượng tối đa một tài liệu tải lên (MB). */
   maxMaterialMb: Number(process.env.MAX_MATERIAL_MB ?? 50),
+  /**
+   * Ghi hình và phát trực tiếp (cần dịch vụ egress: ~1,5–2 GB RAM, 2–4 nhân CPU mỗi bản ghi 720p).
+   * Mặc định tắt; bật bằng RECORDING_ENABLED=true và chạy compose với --profile recording.
+   */
+  recordingEnabled: process.env.RECORDING_ENABLED === 'true',
   /** Học viên được vào lớp sớm bao nhiêu phút */
   openBeforeMinutes: 10,
   /** Học viên còn vào được bao lâu sau giờ kết thúc */

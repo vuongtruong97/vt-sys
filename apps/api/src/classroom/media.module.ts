@@ -189,7 +189,7 @@ export class MediaController {
   /** Cho trang web biết lưu trữ đã cấu hình chưa, để ẩn nút ghi hình / tải lên. */
   @Get('features')
   features() {
-    return { storage: this.storage.enabled };
+    return { storage: this.storage.enabled, recording: config.recordingEnabled && this.storage.enabled };
   }
 }
 

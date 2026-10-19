@@ -167,11 +167,11 @@ export function Classroom(props: {
   const myHand = handUp(localParticipant);
   const canShare = isTeacher || meta.allowStudentShare;
 
-  // Nút ghi hình chỉ hiện khi API đã cấu hình nơi lưu trữ.
+  // Nút ghi hình / phát trực tiếp chỉ hiện khi máy chủ bật tính năng (RECORDING_ENABLED) và có nơi lưu trữ.
   const [canRecord, setCanRecord] = useState(false);
   const [recBusy, setRecBusy] = useState(false);
   useEffect(() => {
-    if (isTeacher) api<{ storage: boolean }>('/features').then((f) => setCanRecord(f.storage)).catch(() => {});
+    if (isTeacher) api<{ recording: boolean }>('/features').then((f) => setCanRecord(!!f.recording)).catch(() => {});
   }, [isTeacher]);
   const toggleRecording = async () => {
     if (!meta.recording && !window.confirm('Bắt đầu ghi hình? Mọi người trong lớp sẽ thấy biểu tượng đang ghi.')) return;

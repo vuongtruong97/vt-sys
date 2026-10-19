@@ -80,6 +80,7 @@ export default function UiPage() {
           <p className="ui-course__desc" style={{ WebkitLineClamp: 'unset' }}>
             Dựng từ Figma &quot;E-Learning Site (Community)&quot;. Mã nguồn ở <code>apps/web/components/ui</code>, hướng dẫn trong README.md cùng thư mục.
           </p>
+          <ButtonLink href="/ui/meeting" variant="outline" size="sm">Mockup phòng học kiểu Google Meet →</ButtonLink>
         </header>
 
         <Demo title="Nút" node="28:169, 136:347, 39:268">

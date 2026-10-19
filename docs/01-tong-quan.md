@@ -80,10 +80,14 @@ Nguyên tắc chính:
 
 `components/Materials.tsx` và `components/Recordings.tsx` dùng chung cho trang khoá học, trang xem lại và phòng học.
 
-Phòng học nằm trong `components/room/`:
+Phòng học nằm trong `components/room/`, giao diện kiểu Google Meet dùng chung `components/meet/` (`meet.css` tiền tố `mt-`, bộ icon SVG `icons.tsx`, hộp thoại `Dialog.tsx`). Bộ mockup cùng kiểu, dữ liệu giả, ở `components/meet-mock/` và trang `/ui/meeting`:
 
-- `Classroom.tsx`: bố cục sân khấu (lưới video, màn hình chia sẻ, bảng trắng), thanh điều khiển, giơ tay, ghi hình, nhận tin điều khiển từ giáo viên.
-- `SidePanel.tsx`: tab Trò chuyện, tab Học viên (phòng chờ, tắt mic, mời ra, cho chia sẻ màn hình, mời phát biểu), tab Câu hỏi (giáo viên) và tab Tài liệu.
+- `Lobby.tsx`: kiểm tra thiết bị trước khi vào (xem trước camera, mức micro, chọn thiết bị bằng hook của LiveKit), chờ duyệt, đã rời lớp, buổi học kết thúc.
+- `Stage.tsx`: ô video tự vẽ bằng `VideoTrack` (tên, mic tắt, đang nói, giơ tay), lưới tự chia cột, khung lớn (màn hình chia sẻ, bảng trắng) kèm dải người.
+- `Settings.tsx`: hộp thoại đổi micro, loa, camera khi đang học (`useMediaDeviceSelect`).
+
+- `Classroom.tsx`: thanh trên (ghi hình, phát trực tiếp, giơ tay, nhóm), sân khấu, thanh điều khiển tròn (micro, camera, chia sẻ, giơ tay, bảng trắng, menu Thêm, rời lớp), nút bảng bên, thông báo góc dưới; nhận tin điều khiển từ giáo viên.
+- `SidePanel.tsx`: bảng bên nền sáng: Người tham gia (phòng chờ, giơ tay, tắt mic, mời phát biểu, mời ra, quyền chia sẻ), Trò chuyện, Tài liệu, Hoạt động của giáo viên (câu hỏi nhanh, chia nhóm, bảng trắng, ghi hình, phát trực tiếp). Các bảng cũ (`Quiz.tsx`, `Breakout.tsx`, `Materials`) dùng lại nguyên, đổi tông màu bằng biến CSS trong `.mt-panel--live`.
 - `interaction.ts`: hook `useRoomChat` (lịch sử từ API + tin mới qua chủ đề `chat`, đếm chưa đọc) và `useQuizzes`.
 - `Quiz.tsx`: tab Câu hỏi của giáo viên và thẻ trả lời nổi của học viên.
 - `Breakout.tsx`: tab Nhóm của giáo viên (xếp nhóm, ghé nhóm, nhắn, gọi về). Trang phòng (`app/room/[id]/page.tsx`) có `switchRoom`: gọi lại `/join` rồi gắn lại `LiveKitRoom` bằng token mới.

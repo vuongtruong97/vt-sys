@@ -11,6 +11,8 @@ import { Button, CourseCard, Input, Tabs } from '@/components/ui';
 
 CSS (`tokens.css`, `ui.css`) đã nạp một lần trong `app/layout.tsx`, không cần import ở từng trang.
 
+**Mockup phòng học** kiểu Google Meet (19 màn hình, dữ liệu giả, không kết nối LiveKit) nằm riêng ở `components/meet-mock`, xem tại `/ui/meeting`.
+
 ## Nguyên tắc
 
 - Style chỉ dùng biến `--ui-*` trong `tokens.css`. Class đều có tiền tố `ui-` nên không đụng `globals.css`.
@@ -78,6 +80,11 @@ Màu `--ui-primary`, `--ui-primary-strong`, `--ui-navy` (`#252641`, tiêu đề 
 | `Alert` `tone: error · success · info` | | thông báo trong trang (lỗi đọc ngay bằng `role="alert"`) |
 | `Muted` | | chữ phụ màu xám |
 | `Table` `caption` | (không có trong Figma) | bảng bo góc, cuộn ngang trong khung trên màn hẹp |
+| `ClassroomMockup` | (Landing 10:358, phần hình bên phải) | hình phòng học dựng bằng HTML/CSS cho phần mở đầu trang chủ (bảng phấn, dải video, thanh điều khiển); ẩn khỏi trình đọc màn hình, tắt chuyển động khi `prefers-reduced-motion` |
+| `FeatureIcon` `name: video · screen · board · quiz · groups · record` | | icon nét cho thẻ tính năng (`CategoryCard` trong `.ui-features`) |
+| `Steps` `items: {title, text}[]` | | các bước đánh số nối bằng đường kẻ; màn hẹp xếp dọc |
+| `TeacherIntro` `name`, `title`, `bio`, `highlights`, `photo` | | thẻ giới thiệu giáo viên trên trang chủ (nội dung trong `lib/site.ts`) |
+| `Faq` `items: {q, a}[]` | | câu hỏi thường gặp, dùng `details/summary` nên mở/đóng được bằng bàn phím |
 | `Switch` | | công tắc bật/tắt (`role="switch"`) |
 | `Stat` | Landing "15K+ Students" | số liệu lớn kèm nhãn; nhiều cái đặt trong `div.ui-stats` |
 | `List`, `ListRow` `lead`, `title`, `meta`, `actions`, `highlight` | (từ thẻ Figma) | dòng danh sách dạng thẻ: lịch học, buổi học, bản ghi, tài liệu |

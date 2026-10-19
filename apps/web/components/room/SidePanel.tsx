@@ -1,17 +1,41 @@
 'use client';
+import { useLocalParticipant } from '@livekit/components-react';
 import { Participant } from 'livekit-client';
-import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { FormEvent, ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { Materials } from '@/components/Materials';
+import { Icon, IconName } from '@/components/meet/icons';
 import { api } from '@/lib/api';
 import type { useQuizzes, useRoomChat } from './interaction';
 import type { GroupInfo } from './shared';
 import { BreakoutPanel } from './Breakout';
 import { QuizPanel } from './Quiz';
 import { handUp, Panel, roleOf, RoomMeta } from './shared';
+import { displayName, PersonAvatar } from './Stage';
 
 type JoinRequest = { id: string; user: { id: string; name: string; email: string } };
 
-export function SidePanel(props: {
+/** Các việc giáo viên làm từ bảng "Hoạt động" (chỉ có ở phòng chính). */
+export type Activities = {
+  board: boolean;
+  toggleBoard: () => void;
+  canRecord: boolean;
+  recording: boolean;
+  live: boolean;
+  busy: boolean;
+  toggleRecording: () => void;
+  toggleLive: () => void;
+};
+
+const TITLES: Record<Exclude<Panel, null>, string> = {
+  people: 'Người tham gia',
+  chat: 'Trò chuyện trong lớp',
+  quiz: 'Câu hỏi nhanh',
+  files: 'Tài liệu buổi học',
+  groups: 'Chia nhóm nhỏ',
+  activities: 'Hoạt động',
+};
+
+type Props = {
   panel: Exclude<Panel, null>;
   setPanel: (p: Panel) => void;
   sessionId: string;
@@ -26,42 +50,41 @@ export function SidePanel(props: {
   courseId: string;
   group: GroupInfo | null;
   switchRoom: (group?: number) => Promise<void>;
-}) {
+  activities: Activities | null;
+};
+
+/** Bảng bên phải kiểu Meet (trên điện thoại thành tấm trượt từ dưới lên). */
+export function SidePanel(props: Props) {
   const { panel, setPanel, isTeacher } = props;
+  // Bảng "Câu hỏi", "Nhóm" mở từ "Hoạt động" có nút quay lại.
+  const fromActivities = isTeacher && (panel === 'quiz' || panel === 'groups');
   return (
-    <aside className="side">
-      <div className="side-head">
-        <button className="tab" aria-pressed={panel === 'chat'} onClick={() => setPanel('chat')}>Trò chuyện</button>
-        <button className="tab" aria-pressed={panel === 'people'} onClick={() => setPanel('people')}>
-          Học viên ({props.participants.length})
-        </button>
-        {isTeacher && (
-          <button className="tab" aria-pressed={panel === 'quiz'} onClick={() => setPanel('quiz')}>Câu hỏi</button>
+    <aside className="mt-panel mt-panel--live" aria-label={TITLES[panel]}>
+      <div className="mt-panel__head">
+        {fromActivities && (
+          <button type="button" className="mt-panel__close" aria-label="Quay lại Hoạt động" onClick={() => setPanel('activities')}>
+            <Icon name="chevron" className="mt-flip" />
+          </button>
         )}
-        <button className="tab" aria-pressed={panel === 'files'} onClick={() => setPanel('files')}>Tài liệu</button>
-        {isTeacher && (
-          <button className="tab" aria-pressed={panel === 'groups'} onClick={() => setPanel('groups')}>Nhóm</button>
-        )}
-        <button className="tab x" aria-label="Đóng" onClick={() => setPanel(null)}>✕</button>
+        <h2 style={{ flex: 1 }}>{TITLES[panel]}{panel === 'people' ? ` (${props.participants.length})` : ''}</h2>
+        <button type="button" className="mt-panel__close" aria-label="Đóng bảng" onClick={() => setPanel(null)}><Icon name="close" /></button>
       </div>
       {panel === 'chat' ? (
         <ChatPanel chat={props.chat} teacherId={props.teacherId} say={props.say} />
-      ) : panel === 'files' ? (
-        <div className="side-body">
-          <Materials courseId={props.courseId} sessionId={props.sessionId} canEdit={isTeacher} room onMessage={props.say} />
-        </div>
-      ) : panel === 'groups' && isTeacher ? (
-        <BreakoutPanel
-          sessionId={props.sessionId}
-          participants={props.participants}
-          currentGroup={props.group?.index ?? null}
-          switchRoom={props.switchRoom}
-          say={props.say}
-        />
-      ) : panel === 'quiz' && isTeacher ? (
-        <QuizPanel quiz={props.quiz} say={props.say} />
       ) : (
-        <PeoplePanel {...props} />
+        <div className="mt-panel__body">
+          {panel === 'files' ? (
+            <Materials courseId={props.courseId} sessionId={props.sessionId} canEdit={isTeacher} room onMessage={props.say} />
+          ) : panel === 'groups' && isTeacher ? (
+            <BreakoutPanel sessionId={props.sessionId} participants={props.participants} currentGroup={props.group?.index ?? null} switchRoom={props.switchRoom} say={props.say} />
+          ) : panel === 'quiz' && isTeacher ? (
+            <QuizPanel quiz={props.quiz} say={props.say} />
+          ) : panel === 'activities' && isTeacher ? (
+            <ActivitiesPanel {...props} />
+          ) : (
+            <PeoplePanel {...props} />
+          )}
+        </div>
       )}
     </aside>
   );
@@ -69,6 +92,7 @@ export function SidePanel(props: {
 
 function ChatPanel({ chat, teacherId, say }: { chat: ReturnType<typeof useRoomChat>; teacherId: string | undefined; say: (m: string) => void }) {
   const { messages, send } = chat;
+  const myId = useLocalParticipant().localParticipant.identity;
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const end = useRef<HTMLDivElement>(null);
@@ -93,30 +117,37 @@ function ChatPanel({ chat, teacherId, say }: { chat: ReturnType<typeof useRoomCh
 
   return (
     <>
-      <div className="side-body" aria-live="polite">
-        {messages.length === 0 && <p className="sub" style={{ color: 'var(--on-room-muted)', fontSize: 13 }}>Chưa có tin nhắn. Tin nhắn được lưu lại cùng buổi học.</p>}
-        {messages.map((m) => (
-          <div key={m.id} className="msg">
-            <div className="who">
-              <b className={m.from.id === teacherId ? 'gv' : ''}>{m.from.name}</b> ·{' '}
-              {new Date(m.at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+      <div className="mt-panel__body" aria-live="polite">
+        <p className="mt-muted" style={{ textAlign: 'center' }}>Tin nhắn được lưu lại cùng buổi học. Người vào muộn vẫn xem được.</p>
+        {messages.map((m) => {
+          const mine = m.from.id === myId;
+          return (
+            <div key={m.id} className={`mt-msg${mine ? ' mt-msg--me' : ''}`}>
+              <div className="mt-msg__meta">
+                <b className={m.from.id === teacherId ? 't' : undefined}>{mine ? 'Bạn' : m.from.name}</b>
+                <small>{new Date(m.at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</small>
+              </div>
+              <div className="mt-msg__text">{m.text}</div>
             </div>
-            <div className="txt">{m.text}</div>
-          </div>
-        ))}
+          );
+        })}
         <div ref={end} />
       </div>
-      <form className="chat-form" onSubmit={submit}>
-        <input id="chat-input" value={text} onChange={(e) => setText(e.target.value)} placeholder="Nhắn cho cả lớp" autoComplete="off" maxLength={1000} />
-        <button className="mini pri" disabled={sending}>Gửi</button>
-      </form>
+      <div className="mt-panel__foot">
+        <form className="mt-compose" onSubmit={submit}>
+          <input id="chat-input" value={text} onChange={(e) => setText(e.target.value)} placeholder="Nhắn cho cả lớp" aria-label="Nhắn cho cả lớp" autoComplete="off" maxLength={1000} />
+          <button type="submit" aria-label="Gửi" disabled={sending || !text.trim()}><Icon name="send" size={18} /></button>
+        </form>
+      </div>
     </>
   );
 }
 
-function PeoplePanel(props: Parameters<typeof SidePanel>[0]) {
+function PeoplePanel(props: Props) {
   const { sessionId, isTeacher, meta, participants, sendControl, say } = props;
   const [waiting, setWaiting] = useState<JoinRequest[]>([]);
+  const [menu, setMenu] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
 
   const loadWaiting = useCallback(() => {
     if (!isTeacher) return;
@@ -139,90 +170,168 @@ function PeoplePanel(props: Parameters<typeof SidePanel>[0]) {
   };
 
   const hands = participants.filter(handUp);
+  const q = query.trim().toLowerCase();
+  const list = q ? participants.filter((p) => displayName(p).toLowerCase().includes(q)) : participants;
 
   return (
-    <div className="side-body">
+    <>
+      {isTeacher && (
+        <div className="mt-row">
+          <button type="button" className="mt-pbtn mt-pbtn--ghost mt-pbtn--sm" onClick={() => mod('mod/mute-all', {}, 'Đã tắt mic tất cả học viên')}>
+            <Icon name="mic-off" size={16} /> Tắt mic tất cả
+          </button>
+        </div>
+      )}
+      {participants.length > 6 && (
+        <label className="mt-search">
+          <Icon name="search" size={18} />
+          <span className="mt-sr">Tìm người tham gia</span>
+          <input placeholder="Tìm người tham gia" value={query} onChange={(e) => setQuery(e.target.value)} />
+        </label>
+      )}
+
       {isTeacher && waiting.length > 0 && (
-        <>
-          <div className="grp">Đang chờ duyệt ({waiting.length})</div>
+        <div className="mt-group">
+          <div className="mt-group__head"><span>Phòng chờ · {waiting.length}</span></div>
           {waiting.map((w) => (
-            <div key={w.id} className="wait">
-              <div className="person"><span className="pn">{w.user.name}<br /><small>{w.user.email}</small></span></div>
-              <div className="row" style={{ gap: 6 }}>
-                <button className="mini pri" onClick={() => mod(`join-requests/${w.id}`, { approve: true }, `Đã cho ${w.user.name} vào lớp`).then(loadWaiting)}>Cho vào</button>
-                <button className="mini" onClick={() => mod(`join-requests/${w.id}`, { approve: false }, `Đã từ chối ${w.user.name}`).then(loadWaiting)}>Từ chối</button>
+            <div key={w.id} className="mt-person">
+              <span className="mt-person__av" style={{ background: '#7b8590' }} aria-hidden>{w.user.name.trim()[0]?.toUpperCase()}</span>
+              <div className="mt-person__name"><b>{w.user.name}</b><small>{w.user.email} · chưa có trong lớp</small></div>
+              <div className="mt-person__acts">
+                <button type="button" aria-label={`Từ chối ${w.user.name}`} title="Từ chối" onClick={() => mod(`join-requests/${w.id}`, { approve: false }, `Đã từ chối ${w.user.name}`).then(loadWaiting)}>
+                  <Icon name="x" size={18} />
+                </button>
+                <button type="button" aria-label={`Cho ${w.user.name} vào lớp`} title="Cho vào" style={{ color: '#1e7a3e' }} onClick={() => mod(`join-requests/${w.id}`, { approve: true }, `Đã cho ${w.user.name} vào lớp`).then(loadWaiting)}>
+                  <Icon name="check" size={18} />
+                </button>
               </div>
             </div>
           ))}
-        </>
-      )}
-
-      {isTeacher && (
-        <>
-          <label className="switch" htmlFor="allow-share">
-            <input
-              id="allow-share"
-              type="checkbox"
-              checked={meta.allowStudentShare}
-              onChange={(e) =>
-                mod('mod/allow-share', { allow: e.target.checked }, e.target.checked ? 'Học viên đã được phép chia sẻ màn hình' : 'Đã thu quyền chia sẻ màn hình')
-              }
-            />
-            Cho phép học viên chia sẻ màn hình
-          </label>
-          <button className="mini" style={{ justifySelf: 'start' }} onClick={() => mod('mod/mute-all', {}, 'Đã tắt mic tất cả học viên')}>
-            Tắt mic tất cả học viên
-          </button>
-        </>
+        </div>
       )}
 
       {hands.length > 0 && (
-        <>
-          <div className="grp">Đang giơ tay ({hands.length})</div>
+        <div className="mt-group">
+          <div className="mt-group__head"><span>Đang giơ tay · {hands.length}</span></div>
           {hands.map((p) => (
-            <div key={p.identity} className="person">
-              <span className="pn">✋ {p.name || p.identity}</span>
+            <div key={p.identity} className="mt-person">
+              <PersonAvatar p={p} />
+              <div className="mt-person__name"><b>{displayName(p)}</b>{p.isLocal && <small>Bạn</small>}</div>
               {isTeacher && (
-                <>
-                  <button className="mini pri" onClick={() => sendControl(p.identity, 'speak').then(() => say(`Đã mời ${p.name} phát biểu`))}>Mời phát biểu</button>
-                  <button className="mini" onClick={() => sendControl(p.identity, 'lower')}>Hạ tay</button>
-                </>
+                <div className="mt-person__acts">
+                  <button type="button" aria-label={`Hạ tay ${displayName(p)}`} title="Hạ tay" onClick={() => sendControl(p.identity, 'lower')}>
+                    <Icon name="x" size={18} />
+                  </button>
+                  <button type="button" className="mt-pbtn mt-pbtn--sm" style={{ width: 'auto', color: '#fff' }} onClick={() => sendControl(p.identity, 'speak').then(() => say(`Đã mời ${displayName(p)} phát biểu`))}>
+                    Mời nói
+                  </button>
+                </div>
               )}
             </div>
           ))}
-        </>
+        </div>
       )}
 
-      <div className="grp">Trong lớp ({participants.length})</div>
-      {participants.map((p) => {
-        const teacher = roleOf(p) === 'teacher';
-        return (
-          <div key={p.identity} className="person">
-            <span className="pn">
-              {p.name || p.identity}
-              {p.isLocal && <small> (bạn)</small>}
-              {teacher && <small> · Giáo viên</small>}
-            </span>
-            <small title="Micro">{p.isMicrophoneEnabled ? '🎙️' : '🔇'}</small>
-            <small title="Camera">{p.isCameraEnabled ? '📷' : '—'}</small>
-            {isTeacher && !teacher && (
-              <>
-                {p.isMicrophoneEnabled && (
-                  <button className="mini" onClick={() => mod('mod/mute', { identity: p.identity }, `Đã tắt mic của ${p.name}`)}>Tắt mic</button>
-                )}
-                <button
-                  className="mini warn"
-                  onClick={() => {
-                    if (window.confirm(`Mời ${p.name} ra khỏi lớp?`)) mod('mod/remove', { identity: p.identity }, `Đã mời ${p.name} ra khỏi lớp`);
-                  }}
-                >
-                  Mời ra
-                </button>
-              </>
-            )}
-          </div>
-        );
-      })}
-    </div>
+      <div className="mt-group">
+        <div className="mt-group__head"><span>Trong lớp · {participants.length}</span></div>
+        {list.map((p) => {
+          const teacher = roleOf(p) === 'teacher';
+          const canModerate = isTeacher && !teacher;
+          return (
+            <div key={p.identity}>
+              <div className="mt-person">
+                <PersonAvatar p={p} />
+                <div className="mt-person__name">
+                  <b>{displayName(p)}</b>
+                  <small>{teacher ? 'Giáo viên' : 'Học viên'}{p.isLocal ? ' · bạn' : ''}</small>
+                </div>
+                <div className="mt-person__acts">
+                  {handUp(p) && <span className="mt-person__hand" title="Đang giơ tay"><Icon name="hand" size={18} /></span>}
+                  {canModerate && p.isMicrophoneEnabled ? (
+                    <button type="button" aria-label={`Tắt mic ${displayName(p)}`} title="Tắt mic" onClick={() => mod('mod/mute', { identity: p.identity }, `Đã tắt mic của ${displayName(p)}`)}>
+                      <Icon name="mic" size={18} />
+                    </button>
+                  ) : (
+                    <span className={p.isMicrophoneEnabled ? '' : 'is-off'} title={p.isMicrophoneEnabled ? 'Đang bật micro' : 'Đã tắt micro'} style={{ display: 'grid', placeItems: 'center', width: 34, height: 34 }}>
+                      <Icon name={p.isMicrophoneEnabled ? 'mic' : 'mic-off'} size={18} />
+                    </span>
+                  )}
+                  {canModerate && (
+                    <button type="button" aria-label={`Thao tác với ${displayName(p)}`} aria-expanded={menu === p.identity} onClick={() => setMenu(menu === p.identity ? null : p.identity)}>
+                      <Icon name="more" size={18} />
+                    </button>
+                  )}
+                </div>
+              </div>
+              {canModerate && menu === p.identity && (
+                <div className="mt-pmenu" role="menu">
+                  <button type="button" role="menuitem" onClick={() => { setMenu(null); sendControl(p.identity, 'speak').then(() => say(`Đã mời ${displayName(p)} phát biểu`)); }}>
+                    <Icon name="mic" size={17} /> Mời phát biểu
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="danger"
+                    onClick={() => {
+                      setMenu(null);
+                      if (window.confirm(`Mời ${displayName(p)} ra khỏi lớp?`)) mod('mod/remove', { identity: p.identity }, `Đã mời ${displayName(p)} ra khỏi lớp`);
+                    }}
+                  >
+                    <Icon name="leave" size={17} /> Mời ra khỏi lớp
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {isTeacher && (
+        <div className="mt-switchrow">
+          <span>Cho phép học viên chia sẻ màn hình</span>
+          <button
+            type="button"
+            className="mt-toggle"
+            role="switch"
+            aria-checked={meta.allowStudentShare}
+            aria-label="Cho phép học viên chia sẻ màn hình"
+            onClick={() =>
+              mod('mod/allow-share', { allow: !meta.allowStudentShare }, !meta.allowStudentShare ? 'Học viên đã được phép chia sẻ màn hình' : 'Đã thu quyền chia sẻ màn hình')
+            }
+          />
+        </div>
+      )}
+    </>
+  );
+}
+
+function Activity({ icon, color, title, text, onClick, disabled, on }: { icon: IconName; color: [string, string]; title: string; text: ReactNode; onClick: () => void; disabled?: boolean; on?: boolean }) {
+  return (
+    <button type="button" className="mt-act" onClick={onClick} disabled={disabled} aria-pressed={on}>
+      <span className="mt-act__ic" style={{ color: color[0], background: color[1] }}><Icon name={icon} size={24} /></span>
+      <span className="mt-act__txt"><b>{title}</b><small>{text}</small></span>
+      <Icon name="chevron" size={18} />
+    </button>
+  );
+}
+
+function ActivitiesPanel({ setPanel, activities, quiz, group }: Props) {
+  return (
+    <>
+      <Activity icon="poll" color={['#a15c00', '#fff1d6']} title="Câu hỏi nhanh" text={quiz.open ? 'Đang có câu hỏi mở, xem kết quả trực tiếp.' : 'Trắc nghiệm hoặc thăm dò, xem kết quả tức thì.'} onClick={() => setPanel('quiz')} />
+      <Activity icon="groups" color={['#8a3f9b', '#f4e6f7']} title="Chia nhóm nhỏ" text={group ? `Bạn đang ở ${group.name}. Ghé nhóm khác hoặc gọi các nhóm về.` : 'Chia lớp thành các phòng thảo luận có đếm giờ.'} onClick={() => setPanel('groups')} />
+      {activities && (
+        <>
+          <Activity icon="board" color={['#23733b', '#e3f3e8']} title={activities.board ? 'Đóng bảng trắng' : 'Bảng trắng'} text="Bảng phấn chung, cả lớp cùng viết. Lưu lại cho buổi sau." onClick={activities.toggleBoard} on={activities.board} />
+          {activities.canRecord && (
+            <>
+              <Activity icon="record" color={['#b3261e', '#fde8e7']} title={activities.recording ? 'Dừng ghi hình' : 'Ghi hình'} text="Ghi lại buổi học để học viên xem lại. Mọi người thấy biểu tượng đang ghi." onClick={activities.toggleRecording} disabled={activities.busy} on={activities.recording} />
+              <Activity icon="live" color={['#1d5fb4', '#e3effc']} title={activities.live ? 'Dừng phát trực tiếp' : 'Phát trực tiếp'} text="Phát buổi học cho người xem qua liên kết, không cần vào lớp." onClick={activities.toggleLive} disabled={activities.busy} on={activities.live} />
+            </>
+          )}
+        </>
+      )}
+      {!activities && <p className="mt-muted">Bảng trắng, ghi hình và phát trực tiếp chỉ dùng được ở phòng chính.</p>}
+    </>
   );
 }

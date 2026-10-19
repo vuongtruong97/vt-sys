@@ -25,14 +25,14 @@ docker compose exec postgres psql -U bangden               # vào DB
 ## Quy ước
 
 - Chuỗi hiển thị cho người dùng và thông báo lỗi viết bằng tiếng Việt, nói rõ chuyện gì xảy ra.
-- Mọi endpoint mới phải kiểm tra quyền: `@UseGuards(AuthGuard | TeacherGuard)`; thao tác trên buổi học dùng `ClassroomService.requireTeacher` / `roleOf`.
+- Mọi endpoint mới phải kiểm tra quyền: `@UseGuards(AuthGuard)` (chỉ cần đăng nhập) hoặc `@UseGuards(PermissionGuard) @Need('mã quyền')`; thao tác trên buổi học dùng `ClassroomService.requireTeacher` / `roleOf`.
 - DTO luôn có decorator `class-validator` (ValidationPipe bật `whitelist`, thuộc tính không khai báo sẽ bị bỏ).
 - Không đưa API secret của LiveKit ra client. Quyền trong phòng chỉ cấp qua token hoặc `RoomServiceClient` phía API.
 - `identity` trong LiveKit = `users.id`; vai trò nằm trong metadata `{"role":"teacher"|"student"}`; metadata phòng là `{"board","allowStudentShare","recording"}`.
 - Ghi hình và phát trực tiếp mặc định tắt (`RECORDING_ENABLED`, compose profile `recording`). Code mới dùng egress phải gọi `requireRecording()`; web đọc cờ `recording` từ `GET /features`.
 - Tin dữ liệu do server phát (chat, quiz, breakout) đi qua API rồi `LivekitService.broadcast`; client không tự phát những chủ đề này. Tin gửi cả lớp dùng `ClassroomService.rooms(s)` để tới cả các phòng nhóm.
 - Giao diện mới dùng `apps/web/components/ui` (Material 3, xem README.md trong đó); không thêm class rời vào `globals.css`. Màu, cỡ chữ, bo góc lấy từ biến `--ui-*` trong `tokens.css` (trỏ vào vai trò màu M3 `--md-*`, có chế độ tối).
-- Vai trò: ADMIN ⊃ TEACHER. Kiểm tra "là giáo viên" bằng `role !== 'STUDENT'`, không so sánh `=== 'TEACHER'`.
+- Phân quyền: vai trò lưu ở bảng `roles` (quản trị viên tự tạo), mỗi vai trò là một tập quyền trong `apps/api/src/auth/permissions.ts`. Kiểm tra bằng quyền (`can(user, 'course.create')` ở API, `can(me, ...)` trong `apps/web/lib/can.ts`), không so tên vai trò. Thêm quyền mới thì thêm vào danh mục (và kiểu `Permission` ở web); vai trò key `admin` tự có mọi quyền.
 - Schema dùng Prisma migrate: sửa `schema.prisma` thì thêm thư mục mới trong `prisma/migrations/` (API chạy `migrate deploy` khi khởi động). Không sửa migration đã commit.
 - File lưu qua `StorageService` (S3/R2); không để bucket công khai, link tải là URL ký có hạn.
 - Cập nhật `docs/` khi thay đổi kiến trúc, biến môi trường, API hoặc cách triển khai.

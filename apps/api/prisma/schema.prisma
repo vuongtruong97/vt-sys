@@ -7,11 +7,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  /// Chủ trang: dạy được như giáo viên, cấp quyền giáo viên, xem toàn hệ thống.
-  ADMIN
-  TEACHER
-  STUDENT
+/// Vai trò: một tập quyền (mã quyền ở apps/api/src/auth/permissions.ts). Ba vai trò hệ thống
+/// (key admin, teacher, student) tạo sẵn trong migration 11_roles và không xoá được.
+model Role {
+  id          String   @id @default(cuid())
+  /// Định danh ổn định cho vai trò hệ thống; vai trò tự tạo dùng chuỗi ngẫu nhiên.
+  key         String   @unique
+  name        String
+  description String   @default("")
+  permissions String[]
+  system      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  users       User[]
+
+  @@map("roles")
 }
 
 enum SessionStatus {
@@ -35,7 +44,8 @@ model User {
   passwordHash   String?
   /// `sub` của Google khi đã liên kết đăng nhập Google.
   googleId       String?        @unique
-  role           Role           @default(STUDENT)
+  roleId         String         @default("role_student")
+  role           Role           @relation(fields: [roleId], references: [id])
   /// Tăng lên để vô hiệu mọi phiên đăng nhập cũ (đổi mật khẩu, đăng xuất mọi nơi).
   tokenVersion   Int            @default(0)
   createdAt      DateTime       @default(now())

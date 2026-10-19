@@ -24,6 +24,7 @@ import jwt from 'jsonwebtoken';
 import { SkipThrottle } from '@nestjs/throttler';
 import { WebhookReceiver } from 'livekit-server-sdk';
 import { AuthGuard, AuthUser, CurrentUser } from '../auth/auth.guard';
+import { can } from '../auth/permissions';
 import { config } from '../common/config';
 import { PrismaService } from '../common/prisma.service';
 import { LivekitService, RoomRole } from './livekit.service';
@@ -71,7 +72,8 @@ export class ClassroomService {
 
   /** Vai trò của người dùng trong buổi học, hoặc null nếu chưa có quyền vào. */
   async roleOf(user: AuthUser, s: SessionWithCourse): Promise<RoomRole | null> {
-    if (hostIdOf(s) === user.id) return 'teacher';
+    // Chủ lớp, hoặc người quản lý mọi khoá học (mở lớp thay, điều khiển phòng).
+    if (hostIdOf(s) === user.id || can(user, 'course.manage_all')) return 'teacher';
     if (s.courseId) {
       const enrolled = await this.prisma.enrollment.findUnique({
         where: { userId_courseId: { userId: user.id, courseId: s.courseId } },
@@ -81,12 +83,14 @@ export class ClassroomService {
     const req = await this.prisma.joinRequest.findUnique({
       where: { sessionId_userId: { sessionId: s.id, userId: user.id } },
     });
-    return req?.status === 'APPROVED' ? 'student' : null;
+    if (req?.status === 'APPROVED') return 'student';
+    // Người được xem mọi khoá học vào lớp như học viên (dự giờ, xem bản ghi).
+    return can(user, 'course.view_all') ? 'student' : null;
   }
 
   async requireTeacher(user: AuthUser, id: string) {
     const s = await this.session(id);
-    if (hostIdOf(s) !== user.id) {
+    if (hostIdOf(s) !== user.id && !can(user, 'course.manage_all')) {
       throw new ForbiddenException(isMeeting(s) ? 'Chỉ chủ phòng làm được thao tác này' : 'Chỉ giáo viên của lớp làm được thao tác này');
     }
     return s;

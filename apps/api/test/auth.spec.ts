@@ -1,35 +1,38 @@
 import { ExecutionContext, HttpException, UnauthorizedException } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { AuthGuard, AuthUser, TeacherGuard } from '../src/auth/auth.guard';
+import { Reflector } from '@nestjs/core';
+import { AuthGuard, AuthUser, Need, PermissionGuard } from '../src/auth/auth.guard';
 import { AuthService } from '../src/auth/auth.module';
-import { mockPrisma } from './helpers';
+import { mockPrisma, roles } from './helpers';
 
 const row = (over: Record<string, unknown> = {}) => ({
   id: 'hv1',
   name: 'Lan',
   email: 'hv1@test',
-  role: 'STUDENT',
+  role: roles.student,
   tokenVersion: 0,
   passwordHash: bcrypt.hashSync('dung-mat-khau', 4),
   ...over,
 });
 
 /** ExecutionContext giả mang request có cookie bd_session. */
-function ctxWith(token: string) {
+function ctxWith(token: string, handler: () => void = () => {}) {
   const req: { cookies: Record<string, string>; headers: object; user?: AuthUser } = { cookies: { bd_session: token }, headers: {} };
-  const ctx = { switchToHttp: () => ({ getRequest: () => req }) } as unknown as ExecutionContext;
+  const ctx = { switchToHttp: () => ({ getRequest: () => req }), getHandler: () => handler, getClass: () => Object } as unknown as ExecutionContext;
   return { ctx, req };
 }
 
 describe('Phiên đăng nhập (tokenVersion)', () => {
-  it('cookie còn đúng phiên bản thì qua, vai trò lấy từ DB chứ không từ JWT', async () => {
+  it('cookie còn đúng phiên bản thì qua, vai trò và quyền lấy từ DB chứ không từ JWT', async () => {
     const prisma = mockPrisma();
-    prisma.user.findUnique.mockResolvedValue(row({ role: 'TEACHER', tokenVersion: 2 }));
-    const token = new AuthService(prisma as any).sign({ ...row({ tokenVersion: 2 }), role: 'STUDENT' } as any);
-    const { ctx, req } = ctxWith(token);
-    await expect(new TeacherGuard(prisma as any).canActivate(ctx)).resolves.toBe(true);
-    expect(req.user?.role).toBe('TEACHER');
+    prisma.user.findUnique.mockResolvedValue(row({ role: roles.teacher, tokenVersion: 2 }));
+    const token = new AuthService(prisma as any).sign({ id: 'hv1', tokenVersion: 2 } as any);
+    class C { @Need('course.create') h() {} }
+    const { ctx, req } = ctxWith(token, C.prototype.h);
+    await expect(new PermissionGuard(prisma as any, new Reflector()).canActivate(ctx)).resolves.toBe(true);
+    expect(req.user?.role.key).toBe('teacher');
+    expect(req.user?.permissions).toContain('course.create');
   });
 
   it('đổi mật khẩu hoặc đăng xuất mọi nơi (tokenVersion tăng) thì cookie cũ bị từ chối', async () => {
@@ -169,7 +172,7 @@ describe('Đăng nhập bằng Google', () => {
     prisma.user.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce(row());
     prisma.user.update.mockResolvedValue(row({ googleId: 'g-123' }));
     await new AuthService(prisma as any).googleSignIn({ sub: 'g-123', email: 'hv1@test', name: 'Lan' });
-    expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'hv1' }, data: { googleId: 'g-123' } });
+    expect(prisma.user.update).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'hv1' }, data: { googleId: 'g-123' } }));
   });
 
   it('email mới thì tạo học viên chưa có mật khẩu', async () => {
@@ -177,7 +180,7 @@ describe('Đăng nhập bằng Google', () => {
     prisma.user.findUnique.mockResolvedValue(null);
     prisma.user.create.mockImplementation(({ data }: any) => Promise.resolve(row({ id: 'moi', ...data, passwordHash: null })));
     await new AuthService(prisma as any).googleSignIn({ sub: 'g-9', email: 'moi@gmail.com', name: 'Mới' });
-    expect(prisma.user.create).toHaveBeenCalledWith({ data: { email: 'moi@gmail.com', name: 'Mới', googleId: 'g-9' } });
+    expect(prisma.user.create).toHaveBeenCalledWith(expect.objectContaining({ data: { email: 'moi@gmail.com', name: 'Mới', googleId: 'g-9' } }));
   });
 
   it('tài khoản Google chưa có mật khẩu: đăng nhập bằng mật khẩu báo dùng Google, đặt mật khẩu lần đầu không cần mật khẩu cũ', async () => {

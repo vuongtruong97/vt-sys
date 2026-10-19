@@ -21,7 +21,8 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import type { Recording } from '@prisma/client';
 import { IsOptional, IsString } from 'class-validator';
 import { randomBytes } from 'crypto';
-import { AuthGuard, AuthUser, CurrentUser } from '../auth/auth.guard';
+import { AuthGuard, AuthUser, CurrentUser, denied } from '../auth/auth.guard';
+import { can } from '../auth/permissions';
 import { config } from '../common/config';
 import { PrismaService } from '../common/prisma.service';
 import { StorageService } from '../common/storage.service';
@@ -84,6 +85,7 @@ export class MediaController {
   @HttpCode(200)
   async startRecording(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     const s = await this.room.requireTeacher(user, id);
+    if (!can(user, 'session.record')) throw denied(['session.record']);
     // Quyền xem bản ghi dựa trên danh sách lớp, meeting không có.
     if (isMeeting(s)) throw new BadRequestException('Meeting chưa hỗ trợ ghi hình');
     if (s.status !== 'LIVE') throw new BadRequestException('Chỉ ghi hình được khi lớp đang diễn ra');

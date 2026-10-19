@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { IsISO8601, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
-import { AuthUser, CurrentUser, TeacherGuard } from '../auth/auth.guard';
+import { AuthUser, CurrentUser, Need, PermissionGuard } from '../auth/auth.guard';
 import { ClassroomModule, ClassroomService } from '../classroom/classroom.module';
 import { LivekitService } from '../classroom/livekit.service';
 import { PrismaService } from '../common/prisma.service';
@@ -34,7 +34,8 @@ class MeetingDto {
  * Người có link xin vào qua phòng chờ như buổi học (POST /sessions/:id/join).
  */
 @Controller('meetings')
-@UseGuards(TeacherGuard)
+@UseGuards(PermissionGuard)
+@Need('meeting.create')
 export class MeetingsController {
   constructor(private prisma: PrismaService, private room: ClassroomService, private lk: LivekitService) {}
 

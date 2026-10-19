@@ -1,6 +1,7 @@
 'use client';
 import { ButtonLink, Navbar, NavLink } from '@/components/ui';
 import { api, Me } from '@/lib/api';
+import { can, canAdminArea, canTeachArea } from '@/lib/can';
 
 export function Nav({ me }: { me: Me | null | undefined }) {
   const logout = async () => {
@@ -10,8 +11,10 @@ export function Nav({ me }: { me: Me | null | undefined }) {
   const links: NavLink[] = [{ href: '/', label: 'Trang chủ' }];
   if (me) {
     links.push({ href: '/schedule', label: 'Lịch học' });
-    if (me.role !== 'STUDENT') links.push({ href: '/meet', label: 'Meeting' }, { href: '/ggb', label: 'GeoGebra' }, { href: '/teach', label: 'Quản lý lớp' });
-    if (me.role === 'ADMIN') links.push({ href: '/admin', label: 'Quản trị' });
+    if (can(me, 'meeting.create')) links.push({ href: '/meet', label: 'Meeting' });
+    if (can(me, 'ggb.create')) links.push({ href: '/ggb', label: 'GeoGebra' });
+    if (canTeachArea(me)) links.push({ href: '/teach', label: 'Quản lý lớp' });
+    if (canAdminArea(me)) links.push({ href: '/admin', label: 'Quản trị' });
   }
   return (
     <Navbar

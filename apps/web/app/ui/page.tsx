@@ -59,7 +59,7 @@ export default function UiPage() {
   const [page, setPage] = useState(3);
   const [slide, setSlide] = useState(0);
 
-  const allowed = process.env.NODE_ENV !== 'production' || me?.role === 'ADMIN';
+  const allowed = process.env.NODE_ENV !== 'production' || me?.role.key === 'admin';
   if (!allowed) {
     return (
       <>

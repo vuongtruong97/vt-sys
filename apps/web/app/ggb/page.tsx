@@ -6,6 +6,7 @@ import { Nav } from '@/components/Nav';
 import { Alert, Button, ButtonLink, EmptyState, Muted, Page, PageHeader } from '@/components/ui';
 import { api } from '@/lib/api';
 import { fmtDay, fmtTime } from '@/lib/format';
+import { can } from '@/lib/can';
 import { useMe } from '@/lib/useMe';
 
 type Item = { id: string; title: string; appName: string; sessionId: string | null; updatedAt: string; thumbnailUrl: string | null };
@@ -23,7 +24,7 @@ export default function GgbListPage() {
     if (me) load();
   }, [me, load]);
 
-  const teacher = !!me && me.role !== 'STUDENT';
+  const teacher = can(me, 'ggb.create');
 
   const create = async () => {
     setError('');

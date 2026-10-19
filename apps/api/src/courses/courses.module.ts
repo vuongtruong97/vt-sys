@@ -16,7 +16,8 @@ import {
 import { randomBytes } from 'crypto';
 import { IsBoolean, IsEmail, IsISO8601, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { PrismaService } from '../common/prisma.service';
-import { AuthGuard, AuthUser, CurrentUser, TeacherGuard } from '../auth/auth.guard';
+import { AuthGuard, AuthUser, CurrentUser, Need, PermissionGuard } from '../auth/auth.guard';
+import { can } from '../auth/permissions';
 
 class CourseDto {
   @IsString()
@@ -69,10 +70,16 @@ class UpdateSessionDto {
 export class CoursesController {
   constructor(private prisma: PrismaService) {}
 
-  private async ownCourse(user: AuthUser, id: string) {
+  /**
+   * Khoá học mà người này được xem (mode view) hoặc sửa (mode manage): giáo viên của khoá,
+   * hoặc người có quyền xem/quản lý mọi khoá học.
+   */
+  private async ownCourse(user: AuthUser, id: string, mode: 'view' | 'manage' = 'manage') {
     const course = await this.prisma.course.findUnique({ where: { id } });
     if (!course) throw new NotFoundException('Không tìm thấy khoá học');
-    if (course.teacherId !== user.id) throw new ForbiddenException('Đây không phải khoá học của bạn');
+    const allowed =
+      course.teacherId === user.id || can(user, 'course.manage_all') || (mode === 'view' && can(user, 'course.view_all'));
+    if (!allowed) throw new ForbiddenException('Đây không phải khoá học của bạn');
     return course;
   }
 
@@ -100,18 +107,23 @@ export class CoursesController {
     }));
   }
 
+  /** Khoá học mình dạy; người có quyền xem/quản lý mọi khoá thấy tất cả (kèm tên giáo viên). */
   @Get('courses')
-  @UseGuards(TeacherGuard)
-  myCourses(@CurrentUser() user: AuthUser) {
-    return this.prisma.course.findMany({
-      where: { teacherId: user.id },
+  @UseGuards(PermissionGuard)
+  @Need('course.create', 'course.view_all', 'course.manage_all')
+  async myCourses(@CurrentUser() user: AuthUser) {
+    const all = can(user, 'course.view_all') || can(user, 'course.manage_all');
+    const courses = await this.prisma.course.findMany({
+      where: all ? {} : { teacherId: user.id },
       orderBy: { createdAt: 'desc' },
-      include: { _count: { select: { enrollments: true, sessions: true } } },
+      include: { teacher: { select: { id: true, name: true } }, _count: { select: { enrollments: true, sessions: true } } },
     });
+    return courses.map((c) => ({ ...c, mine: c.teacherId === user.id }));
   }
 
   @Post('courses')
-  @UseGuards(TeacherGuard)
+  @UseGuards(PermissionGuard)
+  @Need('course.create')
   createCourse(@CurrentUser() user: AuthUser, @Body() dto: CourseDto) {
     return this.prisma.course.create({
       data: { teacherId: user.id, title: dto.title, description: dto.description ?? '', published: dto.published ?? false },
@@ -119,9 +131,10 @@ export class CoursesController {
   }
 
   @Get('courses/:id')
-  @UseGuards(TeacherGuard)
+  @UseGuards(PermissionGuard)
+  @Need('course.create', 'course.view_all', 'course.manage_all')
   async course(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    await this.ownCourse(user, id);
+    await this.ownCourse(user, id, 'view');
     return this.prisma.course.findUnique({
       where: { id },
       include: {
@@ -132,14 +145,16 @@ export class CoursesController {
   }
 
   @Patch('courses/:id')
-  @UseGuards(TeacherGuard)
+  @UseGuards(PermissionGuard)
+  @Need('course.create', 'course.manage_all')
   async updateCourse(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateCourseDto) {
     await this.ownCourse(user, id);
     return this.prisma.course.update({ where: { id }, data: dto });
   }
 
   @Post('courses/:id/enrollments')
-  @UseGuards(TeacherGuard)
+  @UseGuards(PermissionGuard)
+  @Need('course.create', 'course.manage_all')
   async enroll(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: EnrollDto) {
     await this.ownCourse(user, id);
     const student = await this.prisma.user.findUnique({ where: { email: dto.email.trim().toLowerCase() } });
@@ -153,7 +168,8 @@ export class CoursesController {
   }
 
   @Delete('courses/:id/enrollments/:userId')
-  @UseGuards(TeacherGuard)
+  @UseGuards(PermissionGuard)
+  @Need('course.create', 'course.manage_all')
   @HttpCode(204)
   async unenroll(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('userId') userId: string) {
     await this.ownCourse(user, id);
@@ -161,7 +177,8 @@ export class CoursesController {
   }
 
   @Post('courses/:id/sessions')
-  @UseGuards(TeacherGuard)
+  @UseGuards(PermissionGuard)
+  @Need('course.create', 'course.manage_all')
   async createSession(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: SessionDto) {
     await this.ownCourse(user, id);
     const startsAt = new Date(dto.startsAt);
@@ -173,7 +190,8 @@ export class CoursesController {
   }
 
   @Patch('sessions/:id')
-  @UseGuards(TeacherGuard)
+  @UseGuards(PermissionGuard)
+  @Need('course.create', 'course.manage_all')
   async updateSession(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateSessionDto) {
     const s = await this.prisma.classSession.findUnique({ where: { id } });
     if (!s) throw new NotFoundException('Không tìm thấy buổi học');
@@ -195,14 +213,14 @@ export class CoursesController {
   @UseGuards(AuthGuard)
   async schedule(@CurrentUser() user: AuthUser) {
     const since = new Date(Date.now() - 14 * 24 * 3600 * 1000);
-    const whose =
-      user.role !== 'STUDENT'
-        ? { OR: [{ course: { teacherId: user.id } }, { hostId: user.id }] }
-        : { course: { enrollments: { some: { userId: user.id } } } };
+    // Buổi mình dạy, meeting mình tạo và buổi của khoá mình học (một người có thể vừa dạy vừa học).
+    const whose = {
+      OR: [{ course: { teacherId: user.id } }, { hostId: user.id }, { course: { enrollments: { some: { userId: user.id } } } }],
+    };
     const sessions = await this.prisma.classSession.findMany({
       where: { startsAt: { gte: since }, ...whose },
       orderBy: { startsAt: 'asc' },
-      include: { course: { select: { id: true, title: true, _count: { select: { enrollments: true } } } } },
+      include: { course: { select: { id: true, title: true, teacherId: true, _count: { select: { enrollments: true } } } } },
     });
     return sessions.map((s) => ({
       id: s.id,
@@ -213,6 +231,8 @@ export class CoursesController {
       kind: s.course ? ('class' as const) : ('meeting' as const),
       course: s.course ? { id: s.course.id, title: s.course.title } : null,
       students: s.course?._count.enrollments ?? 0,
+      /** Mình là người dạy/chủ phòng của buổi này (nút Mở lớp, Điểm danh). */
+      mine: s.course ? s.course.teacherId === user.id : s.hostId === user.id,
     }));
   }
 }

@@ -18,7 +18,7 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import type { GgbDocument } from '@prisma/client';
 import { IsIn, IsInt, IsOptional, IsString, Matches, MaxLength, Min, MinLength } from 'class-validator';
-import { AuthGuard, AuthUser, CurrentUser, TeacherGuard } from '../auth/auth.guard';
+import { AuthGuard, AuthUser, CurrentUser, Need, PermissionGuard } from '../auth/auth.guard';
 import { ClassroomModule, ClassroomService } from '../classroom/classroom.module';
 import { PrismaService } from '../common/prisma.service';
 import { StorageService } from '../common/storage.service';
@@ -106,7 +106,8 @@ export class GgbController {
   }
 
   @Post()
-  @UseGuards(TeacherGuard)
+  @UseGuards(PermissionGuard)
+  @Need('ggb.create')
   async create(@CurrentUser() user: AuthUser, @Body() dto: CreateGgbDto) {
     if (dto.sessionId) await this.room.requireTeacher(user, dto.sessionId);
     return this.prisma.ggbDocument.create({

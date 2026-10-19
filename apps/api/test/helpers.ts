@@ -1,9 +1,20 @@
-import type { AuthUser } from '../src/auth/auth.guard';
+import { AuthUser, toAuthUser } from '../src/auth/auth.guard';
 import { ClassroomService } from '../src/classroom/classroom.module';
 
-export const teacher: AuthUser = { id: 'gv', name: 'Thầy Minh', email: 'gv@test', role: 'TEACHER' };
-export const student: AuthUser = { id: 'hv1', name: 'Lan', email: 'hv1@test', role: 'STUDENT' };
-export const outsider: AuthUser = { id: 'ngoai', name: 'Người lạ', email: 'x@test', role: 'STUDENT' };
+/** Vai trò hệ thống như trong migration 11_roles (kèm danh sách quyền đã tính). */
+export const roles = {
+  admin: { id: 'role_admin', key: 'admin', name: 'Quản trị viên', permissions: [] as string[], system: true },
+  teacher: { id: 'role_teacher', key: 'teacher', name: 'Giáo viên', permissions: ['course.create', 'meeting.create', 'ggb.create', 'session.record'], system: true },
+  student: { id: 'role_student', key: 'student', name: 'Học viên', permissions: [] as string[], system: true },
+};
+/** Người dùng kèm vai trò → AuthUser như AuthGuard trả về. */
+export const asUser = (u: { id: string; name: string; email: string }, role: { id: string; key: string; name: string; permissions: string[] }, extra: string[] = []) =>
+  toAuthUser({ ...u, role: { ...role, permissions: [...role.permissions, ...extra] } });
+
+export const teacher: AuthUser = asUser({ id: 'gv', name: 'Thầy Minh', email: 'gv@test' }, roles.teacher);
+export const student: AuthUser = asUser({ id: 'hv1', name: 'Lan', email: 'hv1@test' }, roles.student);
+export const outsider: AuthUser = asUser({ id: 'ngoai', name: 'Người lạ', email: 'x@test' }, roles.student);
+export const admin: AuthUser = asUser({ id: 'qt', name: 'Quản trị', email: 'qt@test' }, roles.admin);
 
 export const session = (over: Record<string, unknown> = {}) => ({
   id: 's1',
@@ -46,6 +57,7 @@ export function mockPrisma() {
     reminder: table(),
     attendance: table(),
     user: table(),
+    role: table(),
     breakoutGroup: table(),
     ggbDocument: table(),
     $transaction: jest.fn((ops: unknown[]) => Promise.all(ops)),

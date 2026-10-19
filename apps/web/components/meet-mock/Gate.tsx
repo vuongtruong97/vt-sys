@@ -6,7 +6,7 @@ import { Switcher } from './Switcher';
 /** Như trang /ui: mở tự do khi phát triển, trên production chỉ quản trị viên xem được. */
 export function Gate({ children }: { children: ReactNode }) {
   const me = useMe();
-  const allowed = process.env.NODE_ENV !== 'production' || me?.role === 'ADMIN';
+  const allowed = process.env.NODE_ENV !== 'production' || me?.role.key === 'admin';
   if (!allowed) {
     return (
       <main className="mt mt-center" style={{ minHeight: '100dvh' }}>

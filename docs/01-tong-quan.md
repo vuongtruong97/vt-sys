@@ -58,7 +58,7 @@ Nguyên tắc chính:
 | Nhắc lịch | `src/notifications/reminder.module.ts` | Quét mỗi phút, gửi email nhắc lịch qua Resend |
 | Chia nhóm | `src/classroom/breakout.module.ts` | Xếp nhóm, gọi về, nhắn mọi nhóm; phòng nhóm `<roomName>-g<n>` |
 | Webinar | `src/classroom/live.service.ts`, `webinar.module.ts` | Egress phát HLS lên S3; API chuyển tiếp playlist và đoạn video cho người xem |
-| Quản trị | `src/admin/admin.module.ts` | Thống kê, đổi vai trò tài khoản, chuyển khoá học giữa giáo viên (`AdminGuard` đọc vai trò từ DB) |
+| Quản trị | `src/admin/admin.module.ts`, `src/auth/permissions.ts` | Thống kê, tài khoản, vai trò và quyền (`RolesService`: không trao quyền mình không có, không tự đổi vai trò, luôn còn người quản lý vai trò), khoá học của mọi giáo viên, chuyển khoá. Mỗi endpoint cần quyền riêng qua `PermissionGuard` + `@Need` |
 | Common | `src/common/config.ts`, `prisma.service.ts`, `storage.service.ts` | Đọc biến môi trường (thiếu là dừng ngay), kết nối Prisma, lưu file lên S3/R2 |
 | Seed | `src/seed.ts` | Tạo tài khoản giáo viên; `SEED_DEMO=true` thì thêm dữ liệu mẫu |
 
@@ -115,7 +115,8 @@ Image chính thức `livekit/livekit-server`. Khoá API truyền qua biến `LIV
 
 | Bảng | Ý nghĩa | Ghi chú |
 | --- | --- | --- |
-| `users` | Tài khoản | `role`: ADMIN, TEACHER, STUDENT. Tài khoản trong `SEED_TEACHER_EMAIL` là ADMIN; ADMIN cấp quyền giáo viên ở `/admin` |
+| `users` | Tài khoản | `roleId` → `roles`. Tài khoản trong `SEED_TEACHER_EMAIL` luôn là quản trị viên |
+| `roles` | Vai trò | `key` (`admin`, `teacher`, `student` cho 3 vai trò hệ thống, `system: true`, không xoá được), `permissions` là mảng mã quyền. Quản trị viên luôn có mọi quyền |
 | `courses` | Khoá học | `published` quyết định hiện trên trang chủ |
 | `enrollments` | Học viên thuộc khoá | khoá duy nhất (userId, courseId) |
 | `sessions` | Buổi học hoặc meeting, một phòng LiveKit | `roomName` dạng `bd-<hex>`; `status`: SCHEDULED, LIVE, ENDED, CANCELLED; `allowStudentShare`. Buổi học có `courseId`; meeting độc lập có `courseId` null và `hostId` là người tạo |
@@ -131,6 +132,24 @@ Image chính thức `livekit/livekit-server`. Khoá API truyền qua biến `LIV
 | `ggb_documents` | Bài GeoGebra | `base64` là `getBase64()` của applet (tối đa 2 MB); `version` tăng mỗi lần lưu, lưu bằng version cũ trả 409; `thumbnailKey` ảnh PNG trên S3 (bỏ qua khi chưa cấu hình S3); `sessionId` khi lưu từ bảng của buổi học |
 | `ggb_boards` | Bảng GeoGebra của buổi học | Trạng thái Yjs do máy chủ bảng trắng ghi (tài liệu `ggb:<session_id>`); tách khỏi `whiteboards` vì khoá chính là `session_id` |
 | `reminders` | Nhắc lịch đã gửi | khoá duy nhất (sessionId, userId, kind, startsAt): đổi giờ buổi học thì nhắc lại |
+
+## Phân quyền
+
+Vai trò do quản trị viên tạo ở `/admin` (tab Vai trò), mỗi vai trò tick một tập quyền. Ba vai trò hệ thống: Quản trị viên (mọi quyền), Giáo viên (`course.create`, `meeting.create`, `ggb.create`, `session.record`), Học viên (không quyền). Người đăng ký mới là Học viên.
+
+| Mã quyền | Cho phép |
+| --- | --- |
+| `course.create` | Tạo và dạy khoá học của mình |
+| `meeting.create` | Tạo phòng họp nhanh |
+| `ggb.create` | Tạo bài GeoGebra |
+| `session.record` | Ghi hình, phát trực tiếp buổi mình dạy |
+| `course.view_all` | Xem mọi khoá học, điểm danh, bản ghi; vào lớp như học viên |
+| `course.manage_all` | Sửa mọi khoá học, vào lớp với quyền giáo viên, chuyển khoá |
+| `stats.view` | Thống kê hệ thống |
+| `user.manage` | Danh sách tài khoản, đổi vai trò |
+| `role.manage` | Tạo, sửa, xoá vai trò |
+
+API đọc vai trò và quyền từ DB mỗi lần gọi (`currentUser`), nên đổi vai trò có hiệu lực ngay. Web chỉ dùng quyền để ẩn/hiện (`lib/can.ts`).
 
 ## Phân quyền trong phòng học
 
@@ -243,8 +262,12 @@ Giáo viên bật bảng thì metadata phòng `board=true`. Mỗi máy lấy tok
 | POST | `/sessions/:id/breakouts/end`, `/breakouts/announce` `{text}` | giáo viên |
 | POST | `/sessions/:id/live/start` `{public?}`, `/live/stop` | giáo viên, khi lớp đang diễn ra |
 | GET | `/live/:id`, `/live/:id/:file` (playlist, đoạn video) | luồng công khai: mọi người; riêng tư: thành viên khoá |
-| GET | `/admin/stats`, `/admin/users?q=&role=`, `/admin/courses` | quản trị viên |
-| PATCH | `/admin/users/:id` `{role}`, `/admin/courses/:id/teacher` `{teacherId}` | quản trị viên |
+| GET | `/admin/stats` | `stats.view` |
+| GET | `/admin/users?q=&roleId=` · PATCH `/admin/users/:id` `{roleId}` | `user.manage` |
+| GET | `/admin/roles`, `/admin/permissions` | `role.manage` hoặc `user.manage` |
+| POST, PATCH, DELETE | `/admin/roles`, `/admin/roles/:id` `{name, description?, permissions[]}` | `role.manage` |
+| GET | `/admin/courses` | `course.view_all` hoặc `course.manage_all` |
+| GET | `/admin/teachers` · PATCH `/admin/courses/:id/teacher` `{teacherId}` | `course.manage_all` |
 | POST | `/webhooks/livekit` | LiveKit (kiểm tra chữ ký) |
 | GET | `/health` | kiểm tra sống |
 

@@ -23,7 +23,8 @@ export async function api<T = unknown>(path: string, init: RequestInit & { json?
   return data as T;
 }
 
-export type Me = { id: string; name: string; email: string; role: 'ADMIN' | 'TEACHER' | 'STUDENT' };
+/** Tài khoản đang đăng nhập. Vai trò do quản trị viên tạo; kiểm tra quyền bằng can() trong lib/can.ts. */
+export type Me = { id: string; name: string; email: string; role: { id: string; key: string; name: string }; permissions: string[] };
 
 export type ScheduleItem = {
   id: string;
@@ -35,4 +36,6 @@ export type ScheduleItem = {
   /** null: meeting độc lập (chỉ hiện trong lịch của người tạo). */
   course: { id: string; title: string } | null;
   students: number;
+  /** Mình là người dạy/chủ phòng của buổi này (nút Mở lớp, Điểm danh). */
+  mine: boolean;
 };

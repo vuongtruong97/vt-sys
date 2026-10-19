@@ -3,9 +3,18 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Nav } from '@/components/Nav';
 import { Alert, Badge, Button, Card, CourseCard, EmptyState, Input, Muted, Page, PageHeader, Section, Switch, Textarea } from '@/components/ui';
 import { api } from '@/lib/api';
+import { can, canTeachArea } from '@/lib/can';
 import { useMe } from '@/lib/useMe';
 
-type Course = { id: string; title: string; description: string; published: boolean; _count: { enrollments: number; sessions: number } };
+type Course = {
+  id: string;
+  title: string;
+  description: string;
+  published: boolean;
+  mine: boolean;
+  teacher: { id: string; name: string };
+  _count: { enrollments: number; sessions: number };
+};
 
 export default function TeachPage() {
   const me = useMe({ redirect: true });
@@ -16,7 +25,7 @@ export default function TeachPage() {
 
   const load = () => api<Course[]>('/courses').then(setCourses).catch((e) => setError(e.message));
   useEffect(() => {
-    if (me && me.role !== 'STUDENT') load();
+    if (canTeachArea(me)) load();
   }, [me]);
 
   const create = async (e: FormEvent<HTMLFormElement>) => {
@@ -37,12 +46,13 @@ export default function TeachPage() {
     }
   };
 
-  if (me && me.role === 'STUDENT') {
+  const canCreate = can(me, 'course.create');
+  if (me && !canTeachArea(me)) {
     return (
       <>
         <Nav me={me} />
         <Page>
-          <Alert tone="info">Trang này chỉ dành cho giáo viên.</Alert>
+          <Alert tone="info">Tài khoản của bạn chưa có quyền dạy học. Liên hệ quản trị viên nếu bạn cần mở khoá học.</Alert>
         </Page>
       </>
     );
@@ -54,9 +64,9 @@ export default function TeachPage() {
       <Page>
         <PageHeader title="Quản lý lớp" description="Tạo khoá học, lên lịch buổi học và thêm học viên." />
         <div className="ui-cols">
-          <Section title="Khoá học của bạn">
+          <Section title={canCreate && !can(me, 'course.view_all', 'course.manage_all') ? 'Khoá học của bạn' : 'Khoá học'}>
             {courses === null && !error && <Muted>Đang tải…</Muted>}
-            {courses?.length === 0 && <EmptyState title="Chưa có khoá học" icon="📚">Tạo khoá đầu tiên ở khung bên cạnh.</EmptyState>}
+            {courses?.length === 0 && <EmptyState title="Chưa có khoá học" icon="📚">{canCreate ? 'Tạo khoá đầu tiên ở khung bên cạnh.' : 'Chưa có giáo viên nào tạo khoá học.'}</EmptyState>}
             <div className="ui-list">
               {courses?.map((c) => (
                 <CourseCard
@@ -67,7 +77,7 @@ export default function TeachPage() {
                   footerExtra={
                     <span className="ui-actions">
                       <span className="ui-meta">
-                        {c._count.sessions} buổi · {c._count.enrollments} học viên
+                        {c._count.sessions} buổi · {c._count.enrollments} học viên{c.mine ? '' : ` · ${c.teacher.name}`}
                       </span>
                       <Badge variant={c.published ? 'soft' : 'neutral'}>{c.published ? 'Công khai' : 'Nháp'}</Badge>
                     </span>
@@ -77,6 +87,7 @@ export default function TeachPage() {
             </div>
           </Section>
 
+          {canCreate && (
           <Section title="Tạo khoá học">
             <Card padded>
               <form className="ui-form" onSubmit={create}>
@@ -92,6 +103,7 @@ export default function TeachPage() {
               </form>
             </Card>
           </Section>
+          )}
         </div>
       </Page>
     </>

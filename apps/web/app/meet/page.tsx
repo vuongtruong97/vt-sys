@@ -20,6 +20,7 @@ import {
 } from '@/components/ui';
 import { api } from '@/lib/api';
 import { fmtDay, fmtTime, toLocalInput } from '@/lib/format';
+import { can } from '@/lib/can';
 import { useMe } from '@/lib/useMe';
 
 type Meeting = { id: string; title: string; startsAt: string; endsAt: string; status: 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED' };
@@ -42,7 +43,7 @@ export default function MeetPage() {
     if (me) load();
   }, [me, load]);
 
-  const teacher = !!me && me.role !== 'STUDENT';
+  const teacher = can(me, 'meeting.create');
 
   const copy = async (id: string) => {
     try {

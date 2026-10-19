@@ -102,7 +102,8 @@ DB mới tạo (volume trống) thì không cần bước này.
 - **Bảng trắng và ghi hình** chỉ ở phòng chính; bản ghi không có nội dung các nhóm.
 - **Tên file HLS:** API giả định Egress đặt playlist và đoạn video cùng thư mục với `filenamePrefix` (`live/<id>/<thời điểm>/`). Nếu trang xem báo "Luồng chưa sẵn sàng" mãi, xem đường dẫn thật trên bucket và sửa `live.service.ts`.
 - **Webinar riêng tư** không được CDN cache (`Cache-Control: private`), mọi người xem đều tải từ VPS.
-- **Đổi vai trò:** mọi guard đọc vai trò trong DB nên cấp/thu quyền có hiệu lực ngay với API; giao diện đổi theo ở lần tải trang tiếp theo (qua `/auth/me`).
+- **Đổi vai trò, đổi quyền của vai trò:** `PermissionGuard` đọc vai trò và quyền trong DB mỗi lần gọi nên có hiệu lực ngay với API; giao diện đổi theo ở lần tải trang tiếp theo (qua `/auth/me`).
+- **Phân quyền (migration `11_roles`):** chuyển cột enum `users.role` sang `roleId` (ADMIN → Quản trị viên, TEACHER → Giáo viên, STUDENT → Học viên). Quyền theo từng khoá học (trợ giảng của một khoá) chưa làm: hiện quyền "quản lý mọi khoá học" áp cho toàn hệ thống.
 - **Đếm đăng nhập sai** nằm trong RAM của tiến trình API: khởi động lại API là xoá; chạy nhiều bản API thì chuyển sang Redis. Giới hạn số lần gọi của `@nestjs/throttler` cũng lưu trong RAM.
 
 ## Ghi chú cho người làm tiếp

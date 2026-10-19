@@ -4,6 +4,7 @@ import { Nav } from '@/components/Nav';
 import { Badge, Button, ButtonLink, EmptyState, List, ListRow, Muted, Page, PageHeader, Section } from '@/components/ui';
 import { api, ScheduleItem } from '@/lib/api';
 import { fmtDay, fmtTime, joinState } from '@/lib/format';
+import { can } from '@/lib/can';
 import { useMe } from '@/lib/useMe';
 
 const titleOf = (s: ScheduleItem) => (s.course ? `${s.course.title} · ${s.title}` : `Meeting · ${s.title}`);
@@ -24,7 +25,8 @@ export default function SchedulePage() {
   const now = Date.now();
   const upcoming = items?.filter((s) => new Date(s.endsAt).getTime() > now - 30 * 60_000) ?? [];
   const past = items?.filter((s) => new Date(s.endsAt).getTime() <= now - 30 * 60_000).reverse() ?? [];
-  const teacher = !!me && me.role !== 'STUDENT';
+  // Tạo buổi học / meeting: theo quyền. Mở lớp, điểm danh: theo từng buổi (s.mine).
+  const teacher = can(me, 'course.create', 'meeting.create');
 
   return (
     <>
@@ -36,8 +38,8 @@ export default function SchedulePage() {
           actions={
             teacher && (
               <>
-                <ButtonLink href="/meet">Meeting mới</ButtonLink>
-                <ButtonLink href="/teach" variant="outline">Tạo buổi học</ButtonLink>
+                {can(me, 'meeting.create') && <ButtonLink href="/meet">Meeting mới</ButtonLink>}
+                {can(me, 'course.create') && <ButtonLink href="/teach" variant="outline">Tạo buổi học</ButtonLink>}
               </>
             )
           }
@@ -52,7 +54,7 @@ export default function SchedulePage() {
 
         <List>
           {upcoming.map((s) => {
-            const st = teacher
+            const st = s.mine
               ? { open: s.status !== 'CANCELLED', label: s.status === 'LIVE' ? (s.course ? 'Vào lại lớp' : 'Vào lại') : s.course ? 'Mở lớp' : 'Mở phòng' }
               : joinState(s, now);
             return (
@@ -87,7 +89,7 @@ export default function SchedulePage() {
                   actions={
                     <>
                       {s.status !== 'CANCELLED' && s.course && <ButtonLink href={`/sessions/${s.id}`} variant="outline" size="sm">Xem lại</ButtonLink>}
-                      {teacher && <ButtonLink href={`/teach/sessions/${s.id}`} variant="outline" size="sm">Điểm danh</ButtonLink>}
+                      {s.mine && <ButtonLink href={`/teach/sessions/${s.id}`} variant="outline" size="sm">Điểm danh</ButtonLink>}
                     </>
                   }
                 />

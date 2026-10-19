@@ -7,6 +7,8 @@ import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 
 const prisma = new PrismaClient();
+/** Vai trò Quản trị viên tạo sẵn trong migration 11_roles (SYSTEM_ROLES.admin.id). */
+const ADMIN_ROLE = 'role_admin';
 
 async function main() {
   const email = (process.env.SEED_TEACHER_EMAIL ?? 'giaovien@bangden.local').toLowerCase();
@@ -16,12 +18,12 @@ async function main() {
   let teacher = await prisma.user.findUnique({ where: { email } });
   if (!teacher) {
     teacher = await prisma.user.create({
-      data: { email, name, role: 'ADMIN', passwordHash: await bcrypt.hash(password, 10) },
+      data: { email, name, roleId: ADMIN_ROLE, passwordHash: await bcrypt.hash(password, 10) },
     });
     console.log(`Đã tạo tài khoản quản trị ${email}`);
-  } else if (teacher.role !== 'ADMIN') {
+  } else if (teacher.roleId !== ADMIN_ROLE) {
     // Tài khoản trong SEED_TEACHER_EMAIL là chủ trang: luôn có quyền quản trị.
-    await prisma.user.update({ where: { id: teacher.id }, data: { role: 'ADMIN' } });
+    await prisma.user.update({ where: { id: teacher.id }, data: { roleId: ADMIN_ROLE } });
   }
 
   if (process.env.SEED_DEMO !== 'true') return;

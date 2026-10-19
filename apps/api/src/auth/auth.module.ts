@@ -23,7 +23,7 @@ import type { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../common/config';
 import { PrismaService } from '../common/prisma.service';
-import { AuthGuard, AuthUser, CurrentUser } from './auth.guard';
+import { AuthGuard, AuthUser, CurrentUser, toAuthUser } from './auth.guard';
 
 class RegisterDto {
   @IsEmail({}, { message: 'Email không hợp lệ' })
@@ -78,7 +78,8 @@ export class AuthService {
 
   sign(user: AuthUser & { tokenVersion: number }): string {
     return jwt.sign(
-      { sub: user.id, name: user.name, email: user.email, role: user.role, ver: user.tokenVersion },
+      // Chỉ ghi id và phiên bản: tên, vai trò, quyền luôn đọc lại từ DB (AuthGuard).
+      { sub: user.id, ver: user.tokenVersion },
       config.jwtSecret,
       { expiresIn: `${SESSION_DAYS}d` },
     );
@@ -109,6 +110,7 @@ export class AuthService {
     if (exists) throw new ConflictException('Email này đã có tài khoản');
     const user = await this.prisma.user.create({
       data: { email, name: dto.name.trim(), passwordHash: await bcrypt.hash(dto.password, 10) },
+      include: WITH_ROLE,
     });
     return pick(user);
   }
@@ -116,7 +118,7 @@ export class AuthService {
   async login(dto: LoginDto) {
     const email = dto.email.trim().toLowerCase();
     this.checkLocked(email);
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await this.prisma.user.findUnique({ where: { email }, include: WITH_ROLE });
     if (!user || !user.passwordHash || !(await bcrypt.compare(dto.password, user.passwordHash))) {
       this.recordFail(email);
       throw new UnauthorizedException(
@@ -142,6 +144,7 @@ export class AuthService {
     const updated = await this.prisma.user.update({
       where: { id },
       data: { passwordHash: await bcrypt.hash(dto.newPassword, 10), tokenVersion: { increment: 1 } },
+      include: WITH_ROLE,
     });
     return pick(updated);
   }
@@ -213,19 +216,22 @@ export class AuthService {
    * cùng email (Google đã xác minh email); chưa có tài khoản thì tạo học viên mới, chưa có mật khẩu.
    */
   async googleSignIn(g: GoogleProfile) {
-    const linked = await this.prisma.user.findUnique({ where: { googleId: g.sub } });
+    const linked = await this.prisma.user.findUnique({ where: { googleId: g.sub }, include: WITH_ROLE });
     if (linked) return pick(linked);
     const byEmail = await this.prisma.user.findUnique({ where: { email: g.email } });
-    if (byEmail) return pick(await this.prisma.user.update({ where: { id: byEmail.id }, data: { googleId: g.sub } }));
-    return pick(await this.prisma.user.create({ data: { email: g.email, name: g.name.slice(0, 80), googleId: g.sub } }));
+    if (byEmail) return pick(await this.prisma.user.update({ where: { id: byEmail.id }, data: { googleId: g.sub }, include: WITH_ROLE }));
+    return pick(await this.prisma.user.create({ data: { email: g.email, name: g.name.slice(0, 80), googleId: g.sub }, include: WITH_ROLE }));
   }
 }
 
 export type GoogleProfile = { sub: string; email: string; name: string };
 
+/** Đọc người dùng kèm vai trò (để tính quyền). */
+const WITH_ROLE = { role: true } as const;
+
 type UserRow = AuthUser & { tokenVersion: number };
-function pick(u: UserRow): UserRow {
-  return { id: u.id, name: u.name, email: u.email, role: u.role, tokenVersion: u.tokenVersion };
+function pick(u: Parameters<typeof toAuthUser>[0] & { tokenVersion: number }): UserRow {
+  return { ...toAuthUser(u), tokenVersion: u.tokenVersion };
 }
 /** Bỏ tokenVersion trước khi trả về trình duyệt. */
 function view({ tokenVersion: _v, ...user }: UserRow): AuthUser {

@@ -16,7 +16,8 @@ import {
 import { IsBoolean, IsOptional } from 'class-validator';
 import { SkipThrottle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
-import { AuthGuard, AuthUser, CurrentUser, currentUser } from '../auth/auth.guard';
+import { AuthGuard, AuthUser, CurrentUser, currentUser, denied } from '../auth/auth.guard';
+import { can } from '../auth/permissions';
 import { PrismaService } from '../common/prisma.service';
 import { StorageService } from '../common/storage.service';
 import { ClassroomModule, ClassroomService, isMeeting } from './classroom.module';
@@ -46,6 +47,7 @@ export class WebinarController {
   @HttpCode(200)
   async start(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: StartLiveDto) {
     const s = await this.room.requireTeacher(user, id);
+    if (!can(user, 'session.record')) throw denied(['session.record']);
     if (isMeeting(s)) throw new BadRequestException('Meeting chưa hỗ trợ phát trực tiếp');
     if (s.status !== 'LIVE') throw new BadRequestException('Chỉ phát trực tiếp được khi lớp đang diễn ra');
     const live = await this.live.start(s, dto.public ?? false);

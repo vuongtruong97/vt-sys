@@ -585,3 +585,9 @@ body { background: var(--ui-surface); color: var(--ui-text); font-family: var(--
 @media (max-width: 640px) {
   .ggb-editor { padding-top: 8px; gap: 8px; }
 }
+
+/* Nhóm ô tick (hộp thoại quyền của vai trò ở /admin) */
+.ui-fieldset { display: grid; gap: 10px; margin: 0; padding: 12px 14px; border: 1px solid var(--ui-track); border-radius: var(--ui-radius-sm); }
+.ui-fieldset legend { padding: 0 6px; }
+.ui-fieldset:disabled { opacity: .65; }
+.ui-check .ui-sub { display: block; font-size: var(--ui-text-xs); color: var(--ui-text-body); }

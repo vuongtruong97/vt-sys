@@ -4,6 +4,8 @@ import { LocalAudioTrack, LocalVideoTrack, Track } from 'livekit-client';
 import Link from 'next/link';
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon, IconName } from '@/components/meet/icons';
+import { applyEffect, useVideoEffect } from '@/lib/videoEffect';
+import { BackgroundPicker, useBackgroundsSupported } from './BackgroundPicker';
 
 /** Khung chung của các màn hình ngoài phòng học (nền sáng, logo). */
 export function LobbyShell({ children, account }: { children: ReactNode; account?: string }) {
@@ -106,6 +108,14 @@ export function PreJoinScreen(props: {
   const video = tracks?.find((t) => t.kind === Track.Kind.Video) as LocalVideoTrack | undefined;
   const audio = tracks?.find((t) => t.kind === Track.Kind.Audio) as LocalAudioTrack | undefined;
 
+  // Phông nền: áp lên camera xem trước; vào lớp thì Classroom áp lại lên track thật.
+  const [effect] = useVideoEffect();
+  const canBackground = useBackgroundsSupported();
+  const [picking, setPicking] = useState(false);
+  useEffect(() => {
+    if (video) applyEffect(video, effect).catch(() => {});
+  }, [video, effect]);
+
   const el = useRef<HTMLVideoElement>(null);
   useEffect(() => {
     if (!video || !el.current) return;
@@ -168,6 +178,13 @@ export function PreJoinScreen(props: {
                 <Icon name={videoEnabled ? 'cam' : 'cam-off'} />
               </button>
             </div>
+            {canBackground && videoEnabled && video && (
+              <div className="mt-prev__fx">
+                <button type="button" className="mt-cbtn" aria-label="Phông nền" title="Phông nền" onClick={() => setPicking(true)}>
+                  <Icon name="spark" size={20} />
+                </button>
+              </div>
+            )}
           </div>
           <div className="mt-devices">
             <DevicePick kind="audioinput" icon="mic" fallback="Micro" value={audioDeviceId} onChange={(id) => { setAudioDevice(id); saveAudioInputDeviceId(id); }} />
@@ -196,6 +213,7 @@ export function PreJoinScreen(props: {
           <p className="mt-muted" style={{ fontSize: 13 }}>Tên hiển thị trong lớp lấy theo tài khoản của bạn. Điểm danh tự động khi vào lớp.</p>
         </div>
       </main>
+      {picking && <BackgroundPicker track={video} onClose={() => setPicking(false)} />}
     </LobbyShell>
   );
 }

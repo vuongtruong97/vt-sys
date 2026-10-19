@@ -434,3 +434,23 @@
 @media (prefers-reduced-motion: reduce) {
   .mt *, .mt *::before, .mt *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- Chọn phông nền ---------- */
+.mt-bg { display: grid; gap: 14px; }
+.mt-bg__preview { width: min(100%, 420px); justify-self: center; }
+.mt-bg__preview video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.mt-bg__status { position: absolute; left: 50%; bottom: 10px; translate: -50% 0; padding: 6px 12px; border-radius: 8px; background: rgba(20, 18, 24, .8); color: #e6e0e9; font-size: 13px; white-space: nowrap; }
+.mt-bg__heading { margin: 4px 0 0; font-size: 14px; font-weight: 500; letter-spacing: .1px; color: var(--mt-panel-muted); }
+.mt-bg__group { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.mt-bg-tile { position: relative; display: grid; place-items: center; gap: 2px; aspect-ratio: 16 / 9; padding: 0; overflow: hidden; border: 1px solid var(--md-outline-variant); border-radius: 12px; background: var(--md-surface-container-high); color: var(--mt-panel-text) !important; font-size: 12px; }
+.mt-bg-tile img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.mt-bg-tile:hover:not(:disabled) { border-color: var(--md-outline); }
+.mt-bg-tile[aria-pressed="true"] { border-color: transparent; box-shadow: inset 0 0 0 3px var(--mt-accent-strong); }
+.mt-bg-tile[aria-pressed="true"]::after { content: "✓"; position: absolute; top: 4px; right: 4px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--mt-accent-strong); color: var(--mt-on-accent-strong); font-size: 12px; font-weight: 700; }
+.mt-bg-tile:disabled { opacity: .5; cursor: progress; }
+.mt-bg-tile--add { border-style: dashed; color: var(--mt-accent-strong) !important; }
+/* Ô làm mờ: hình người rõ trên nền mờ */
+.mt-bg__blur { position: absolute; inset: 0; background: radial-gradient(circle at 50% 42%, var(--md-on-surface-variant) 0 13%, transparent 14%), radial-gradient(ellipse at 50% 100%, var(--md-on-surface-variant) 0 30%, transparent 31%), linear-gradient(135deg, var(--md-primary-container), var(--md-tertiary-container)); }
+.mt-bg__blur::before { content: ""; position: absolute; inset: 0; backdrop-filter: blur(2px); }
+.mt-bg__blur--strong::before { backdrop-filter: blur(5px); }
+.mt-bg__blur::after { content: ""; position: absolute; left: 50%; top: 42%; width: 26%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; background: var(--md-on-surface-variant); }

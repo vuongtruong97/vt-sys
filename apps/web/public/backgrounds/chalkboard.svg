@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <radialGradient id="b" cx=".5" cy=".45" r=".75">
+      <stop offset="0" stop-color="#2f4a3d"/>
+      <stop offset="1" stop-color="#1c2d25"/>
+    </radialGradient>
+  </defs>
+  <rect width="1280" height="720" fill="#6b4e33"/>
+  <rect x="24" y="24" width="1232" height="672" rx="10" fill="url(#b)"/>
+  <g fill="none" stroke="#eef2e6" stroke-linecap="round" stroke-linejoin="round" opacity=".55">
+    <path d="M120 150c60-20 120-20 180 0" stroke-width="5"/>
+    <path d="M120 200h240" stroke-width="4"/>
+    <path d="M120 240h180" stroke-width="4"/>
+    <circle cx="1060" cy="190" r="70" stroke-width="5"/>
+    <path d="M990 190h140M1060 120v140" stroke-width="3" opacity=".7"/>
+    <path d="M150 560l90-110 90 80 110-140" stroke-width="5" stroke="#f2d266"/>
+    <path d="M960 560h160M1040 480v160" stroke-width="4" stroke="#a8d4f0"/>
+    <path d="M880 600c40-60 80-60 120 0" stroke-width="4" stroke="#f1a5a0"/>
+  </g>
+  <text x="120" y="330" font-family="Roboto, Arial, sans-serif" font-size="40" fill="#eef2e6" opacity=".5">a² + b² = c²</text>
+  <rect x="24" y="676" width="1232" height="20" fill="#5a3e28"/>
+  <rect x="520" y="666" width="70" height="12" rx="4" fill="#eef2e6" opacity=".8"/>
+  <rect x="610" y="668" width="46" height="10" rx="4" fill="#f2d266" opacity=".8"/>
+</svg>

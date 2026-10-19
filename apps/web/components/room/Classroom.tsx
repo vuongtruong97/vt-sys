@@ -9,10 +9,12 @@ import {
   useTrackToggle,
   useTracks,
 } from '@livekit/components-react';
-import { RoomEvent, Track } from 'livekit-client';
+import { LocalVideoTrack, RoomEvent, Track } from 'livekit-client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '@/components/meet/icons';
 import { api } from '@/lib/api';
+import { applyEffect, useVideoEffect } from '@/lib/videoEffect';
+import { BackgroundPicker, useBackgroundsSupported } from './BackgroundPicker';
 import type { GroupInfo } from './shared';
 import { useQuizzes, useRoomChat } from './interaction';
 import { QuizCard } from './Quiz';
@@ -70,7 +72,7 @@ export function Classroom(props: {
   const isTeacher = role === 'teacher';
   const isMeeting = !props.courseId;
   const room = useRoomContext();
-  const { localParticipant } = useLocalParticipant();
+  const { localParticipant, cameraTrack } = useLocalParticipant();
   const participants = useParticipants();
   const { metadata } = useRoomInfo();
   useAttributeTick();
@@ -87,6 +89,14 @@ export function Classroom(props: {
   const [panel, setPanel] = useState<Panel>(null);
   const [menu, setMenu] = useState(false);
   const [settings, setSettings] = useState(false);
+  // Phông nền: bật lại camera là track mới, nên áp lại mỗi khi track đổi.
+  const camTrack = cameraTrack?.track as LocalVideoTrack | undefined;
+  const [effect] = useVideoEffect();
+  const canBackground = useBackgroundsSupported();
+  const [picking, setPicking] = useState(false);
+  useEffect(() => {
+    if (camTrack) applyEffect(camTrack, effect).catch(() => {});
+  }, [camTrack, effect]);
   const chat = useRoomChat(sessionId, panel === 'chat');
   const quiz = useQuizzes(sessionId);
   const teacherId = participants.find((p) => roleOf(p) === 'teacher')?.identity;
@@ -455,6 +465,11 @@ export function Classroom(props: {
               <button type="button" role="menuitem" onClick={pick(copyInvite)}>
                 <Icon name="copy" /> Sao chép link mời
               </button>
+              {canBackground && (
+                <button type="button" role="menuitem" onClick={pick(() => setPicking(true))}>
+                  <Icon name="spark" /> Phông nền
+                </button>
+              )}
               <button type="button" role="menuitem" onClick={pick(() => setSettings(true))}>
                 <Icon name="settings" /> Cài đặt thiết bị
               </button>
@@ -493,7 +508,20 @@ export function Classroom(props: {
         </div>
       </footer>
 
-      {settings && <SettingsDialog onClose={closeSettings} />}
+      {settings && (
+        <SettingsDialog
+          onClose={closeSettings}
+          onBackground={
+            canBackground
+              ? () => {
+                  setSettings(false);
+                  setPicking(true);
+                }
+              : undefined
+          }
+        />
+      )}
+      {picking && <BackgroundPicker track={camTrack} onClose={() => setPicking(false)} />}
     </div>
   );
 }

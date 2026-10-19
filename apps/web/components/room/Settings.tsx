@@ -36,7 +36,7 @@ const TABS: { id: 'audio' | 'video'; label: string; icon: IconName }[] = [
 ];
 
 /** Cài đặt thiết bị trong phòng học: đổi micro, loa, camera ngay khi đang học. */
-export function SettingsDialog({ onClose }: { onClose: () => void }) {
+export function SettingsDialog({ onClose, onBackground }: { onClose: () => void; /** Mở hộp chọn phông nền; không có khi trình duyệt không hỗ trợ. */ onBackground?: () => void }) {
   const [tab, setTab] = useState<'audio' | 'video'>('audio');
   // Trình duyệt Safari, Firefox chưa cho chọn loa (setSinkId).
   const canPickSpeaker = typeof HTMLMediaElement !== 'undefined' && 'setSinkId' in HTMLMediaElement.prototype;
@@ -64,6 +64,13 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
           ) : (
             <>
               <DeviceSelect kind="videoinput" label="Camera" />
+              {onBackground && (
+                <div>
+                  <button type="button" className="mt-pbtn mt-pbtn--ghost" onClick={onBackground}>
+                    <Icon name="spark" size={18} /> Đổi phông nền
+                  </button>
+                </div>
+              )}
               <p className="mt-muted">Hình gửi đi tự điều chỉnh chất lượng theo tốc độ mạng của bạn và người xem.</p>
             </>
           )}

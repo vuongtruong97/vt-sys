@@ -201,18 +201,22 @@ export type ListRowProps = {
 /** Một dòng danh sách dạng thẻ (lịch học, buổi học của khoá, bản ghi, tài liệu). */
 export function ListRow({ lead, title, meta, actions, highlight, className }: ListRowProps) {
   return (
-    <div className={cx('ui-card ui-row', highlight && 'ui-row--hl', !lead && 'ui-row--nolead', className)}>
-      {lead && (
-        <div className="ui-row__lead">
-          <b>{lead.top}</b>
-          {lead.bottom && <span>{lead.bottom}</span>}
+    // Thẻ ngoài là container: bố cục bên trong đổi theo bề rộng của chính dòng (không theo màn hình),
+    // nên dòng nằm trong cột hẹp vẫn không bị ép tên buổi học.
+    <div className={cx('ui-card ui-row', highlight && 'ui-row--hl', className)}>
+      <div className={cx('ui-row__grid', !lead && 'ui-row--nolead')}>
+        {lead && (
+          <div className="ui-row__lead">
+            <b>{lead.top}</b>
+            {lead.bottom && <span>{lead.bottom}</span>}
+          </div>
+        )}
+        <div className="ui-row__main">
+          <div className="ui-row__title">{title}</div>
+          {meta && <div className="ui-row__meta">{meta}</div>}
         </div>
-      )}
-      <div className="ui-row__main">
-        <div className="ui-row__title">{title}</div>
-        {meta && <div className="ui-row__meta">{meta}</div>}
+        {actions && <div className="ui-row__actions">{actions}</div>}
       </div>
-      {actions && <div className="ui-row__actions">{actions}</div>}
     </div>
   );
 }

@@ -33,3 +33,5 @@ export { Footer } from './Footer';
 export type { FooterProps } from './Footer';
 export { Alert, List, ListRow, Muted, Navbar, Page, PageHeader, Section, Stat, Switch, Table } from './Layout';
 export type { AlertProps, ListRowProps, NavbarProps, NavLink, PageHeaderProps, SwitchProps } from './Layout';
+export { ClassroomMockup, Faq, FeatureIcon, Steps, TeacherIntro } from './Landing';
+export type { FeatureIconName, TeacherIntroProps } from './Landing';

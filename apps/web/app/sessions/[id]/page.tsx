@@ -24,8 +24,15 @@ export default function SessionReviewPage({ params }: { params: { id: string } }
   const [info, setInfo] = useState<Info | null>(null);
   const [error, setError] = useState('');
 
+  // Ghi hình đang tắt trên máy chủ và buổi chưa có bản ghi nào thì ẩn khối "Bản ghi hình".
+  const [showRecordings, setShowRecordings] = useState(true);
+
   useEffect(() => {
-    if (me) api<Info>(`/sessions/${params.id}`).then(setInfo).catch((e) => setError(e.message));
+    if (!me) return;
+    api<Info>(`/sessions/${params.id}`).then(setInfo).catch((e) => setError(e.message));
+    Promise.all([api<{ recording: boolean }>('/features'), api<unknown[]>(`/sessions/${params.id}/recordings`)])
+      .then(([f, recs]) => setShowRecordings(!!f.recording || recs.length > 0))
+      .catch(() => {});
   }, [me, params.id]);
 
   const teacher = info?.role === 'teacher';
@@ -46,9 +53,11 @@ export default function SessionReviewPage({ params }: { params: { id: string } }
               actions={teacher && <ButtonLink href={`/teach/sessions/${info.id}`} variant="outline">Điểm danh</ButtonLink>}
             />
             <div className="ui-cols">
-              <Section title="Bản ghi hình">
-                <Recordings sessionId={info.id} canEdit={teacher} />
-              </Section>
+              {showRecordings && (
+                <Section title="Bản ghi hình">
+                  <Recordings sessionId={info.id} canEdit={teacher} />
+                </Section>
+              )}
               <Section title="Tài liệu">
                 <Materials courseId={info.course.id} sessionId={info.id} canEdit={teacher} />
               </Section>

@@ -19,7 +19,7 @@ Hướng dẫn đưa hệ thống lên một VPS bằng Docker Compose, có HTTP
 | --- | --- | --- |
 | Lớp ≤ 5 người, không ghi hình | 2 vCPU / 4 GB RAM / 40 GB SSD | ~15 Mbps lúc dạy |
 | Lớp ≤ 30 người | 4 vCPU / 8 GB RAM / 60 GB SSD | ~75 Mbps lúc dạy, ~3 TB/tháng nếu 2 buổi/ngày |
-| Có ghi hình | thêm 2–4 vCPU và 2 GB RAM cho egress (Chrome ghép video) | thêm lưu lượng tải MP4 lên R2 |
+| Có ghi hình (mặc định tắt, xem "Bật ghi hình" bên dưới) | thêm 2–4 vCPU và 2 GB RAM cho egress (Chrome ghép video) | thêm lưu lượng tải MP4 lên R2 |
 | Ghi hình và phát trực tiếp cùng lúc | mỗi việc là một egress riêng: tính gấp đôi dòng trên | người xem webinar nên đi qua CDN (xem mục 6) |
 
 Yêu cầu bắt buộc:
@@ -102,6 +102,27 @@ Sửa `deploy/livekit.prod.yaml`: đổi `turn.domain` thành `live.<DOMAIN>` c�
 
 Bỏ qua phần này thì nút ghi hình và tải tài liệu sẽ ẩn; các chức năng khác vẫn chạy.
 
+### Bật ghi hình và phát trực tiếp (mặc định tắt)
+
+Hai tính năng này cần dịch vụ `egress` (Chrome không giao diện ghép video), tốn khoảng 1,5–2 GB RAM và 2–4 nhân CPU cho mỗi bản ghi 720p. Máy chủ dưới 8 GB RAM nên để tắt. Khi tắt: không có container `egress`, nút "Ghi hình" và "Phát trực tiếp" trong phòng học ẩn, API từ chối các yêu cầu này; tài liệu vẫn dùng được nếu có S3.
+
+Bật:
+
+1. Điền `S3_*` (mục trên) và đặt `RECORDING_ENABLED=true` trong `.env`.
+2. Khởi động kèm profile `recording`:
+
+```bash
+docker compose -f deploy/docker-compose.prod.yml --env-file .env --profile recording up -d
+```
+
+Tắt lại: đặt `RECORDING_ENABLED=false`, rồi dừng và xoá container egress (lệnh `up -d` không có profile sẽ không tự xoá container đang chạy):
+
+```bash
+dc stop egress && dc rm -f egress && dc up -d api
+```
+
+Bản ghi đã có vẫn xem được ở trang "Xem lại" khi tính năng tắt.
+
 1. Cloudflare → R2 → **Create bucket**, ví dụ `bangden`. Để bucket ở chế độ riêng tư (không bật public access).
 2. R2 → **Manage API tokens** → tạo token quyền **Object Read & Write** cho bucket đó.
 3. Điền vào `.env`:
@@ -152,7 +173,7 @@ dc ps
 4. Điểm danh có dữ liệu sau khi rời phòng, nghĩa là webhook đã chạy.
 5. Bảng trắng vẽ được và đồng bộ, nghĩa là `board.example.vn` chạy tốt.
 6. Bấm **Phát trực tiếp** (công khai), mở link `/live/<id>` bằng điện thoại 4G: video chạy sau 10–20 giây.
-7. Ghi hình thử 1 phút rồi dừng; vài phút sau trang **Xem lại** của buổi hiện "Xem được". Bản ghi FAILED thì xem `dc logs egress`.
+7. (Nếu đã bật ghi hình) Ghi hình thử 1 phút rồi dừng; vài phút sau trang **Xem lại** của buổi hiện "Xem được". Bản ghi FAILED thì xem `dc logs egress`.
 
 ## 6. Vận hành
 

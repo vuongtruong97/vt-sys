@@ -5,7 +5,7 @@ import { config } from '../common/config';
 import { PrismaService } from '../common/prisma.service';
 import { StorageService } from '../common/storage.service';
 import { LivekitService } from './livekit.service';
-import { egressStatus } from './recording.service';
+import { egressStatus, requireRecording } from './recording.service';
 
 /** Tên playlist người xem mở: chỉ chứa các đoạn gần nhất (cửa sổ trượt) nên tải nhanh. */
 export const LIVE_PLAYLIST = 'live.m3u8';
@@ -22,6 +22,7 @@ export class LiveStreamService {
   constructor(private prisma: PrismaService, private storage: StorageService, private lk: LivekitService) {}
 
   async start(s: ClassSession, isPublic: boolean) {
+    requireRecording();
     this.storage.require();
     const current = await this.prisma.liveStream.findUnique({ where: { sessionId: s.id } });
     if (current && (current.status === 'STARTING' || current.status === 'RECORDING')) {

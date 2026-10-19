@@ -14,7 +14,7 @@ Chạy thử trên máy bằng Docker Compose; trạng thái từng phần xem [
 | `apps/api` | NestJS 10, Prisma 5, `livekit-server-sdk` | Tài khoản, khoá học, buổi học, cấp token LiveKit, quyền giáo viên, webhook điểm danh, chat, câu hỏi nhanh, ghi hình, tài liệu, nhắc lịch |
 | `apps/whiteboard` | Hocuspocus 2, Yjs | Đồng bộ nét vẽ bảng trắng, lưu vào Postgres |
 | `livekit` (image) | LiveKit Server 1.8 | SFU: video, âm thanh, chia sẻ màn hình, tin dữ liệu |
-| `egress` (image) | LiveKit Egress 1.8 | Ghi hình phòng học thành MP4 |
+| `egress` (image) | LiveKit Egress 1.8 | Ghi hình và phát trực tiếp. **Mặc định tắt**: bật bằng `RECORDING_ENABLED=true` và `--profile recording` |
 | `redis` (image) | Redis 7.4 | LiveKit giao việc ghi hình cho egress |
 | `s3` (image) | RustFS (tương thích S3) | Lưu bản ghi và tài liệu khi chạy trên máy; VPS dùng Cloudflare R2 |
 | `postgres` (image) | PostgreSQL 16 | Dữ liệu chính |

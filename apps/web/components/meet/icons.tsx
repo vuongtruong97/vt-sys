@@ -5,7 +5,7 @@ export type IconName =
   | 'mic' | 'mic-off' | 'cam' | 'cam-off' | 'screen' | 'hand' | 'board' | 'chat' | 'people' | 'poll' | 'groups'
   | 'files' | 'record' | 'more' | 'settings' | 'leave' | 'layout' | 'close' | 'send' | 'pin' | 'info' | 'smile'
   | 'live' | 'search' | 'check' | 'x' | 'spark' | 'speaker' | 'captions' | 'shield' | 'clock' | 'chevron' | 'star'
-  | 'phone' | 'monitor' | 'copy' | 'apps';
+  | 'phone' | 'monitor' | 'copy' | 'apps' | 'upload';
 
 const P: Record<IconName, ReactNode> = {
   mic: <><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></>,
@@ -43,6 +43,7 @@ const P: Record<IconName, ReactNode> = {
   star: <><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" /></>,
   phone: <><rect x="7" y="2.5" width="10" height="19" rx="2" /><path d="M11 18.5h2" /></>,
   monitor: <><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></>,
+  upload: <><path d="M12 16V4M7 9l5-5 5 5M5 20h14" /></>,
   copy: <><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></>,
   apps: <><rect x="4" y="4" width="6" height="6" rx="1.5" /><rect x="14" y="4" width="6" height="6" rx="1.5" /><rect x="4" y="14" width="6" height="6" rx="1.5" /><rect x="14" y="14" width="6" height="6" rx="1.5" /></>,
 };

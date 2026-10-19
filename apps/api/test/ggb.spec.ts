@@ -23,7 +23,7 @@ function setup(d = doc(), storageEnabled = false) {
   prisma.ggbDocument.findUnique.mockResolvedValue(d);
   const storage = { enabled: storageEnabled, put: jest.fn(), remove: jest.fn(), downloadUrl: jest.fn().mockResolvedValue('https://s3/x.png') };
   const svc = new GgbService(prisma as any, room);
-  return { prisma, storage, ctrl: new GgbController(prisma as any, svc, storage as any) };
+  return { prisma, storage, ctrl: new GgbController(prisma as any, svc, storage as any, room) };
 }
 
 const dtoErrors = async (method: keyof GgbController, body: object) => {
@@ -107,5 +107,55 @@ describe('Ảnh thu nhỏ', () => {
   it('chỉ nhận PNG dạng data URL', async () => {
     expect(await dtoErrors('thumbnail', { png: 'data:image/svg+xml;base64,PHN2Zz4=' })).not.toHaveLength(0);
     expect(await dtoErrors('thumbnail', { png })).toHaveLength(0);
+  });
+});
+
+describe("Lưu bảng GeoGebra của buổi học thành bài", () => {
+  it("chủ phòng lưu được, bài gắn với buổi học", async () => {
+    const { ctrl, prisma } = setup();
+    prisma.ggbDocument.create.mockResolvedValue({ id: "g2" });
+    await ctrl.create(teacher, { base64: "UEsDBA==", sessionId: "s1", title: "Bảng" });
+    expect(prisma.ggbDocument.create.mock.calls[0][0].data).toMatchObject({ ownerId: teacher.id, sessionId: "s1" });
+  });
+
+  it("không phải chủ phòng thì không lưu vào buổi học", async () => {
+    const { ctrl } = setup();
+    await expect(ctrl.create({ ...teacher, id: "gv2" }, { sessionId: "s1" })).rejects.toThrow("Chỉ giáo viên");
+  });
+});
+
+describe('Bảng GeoGebra trong phòng học', () => {
+  const { ClassroomController } = require('../src/classroom/classroom.module');
+  const { mockLivekit } = require('./helpers');
+  const jwt = require('jsonwebtoken');
+
+  function room() {
+    const prisma = mockPrisma();
+    const lk = mockLivekit();
+    const svc = classroom(prisma, session());
+    return { lk, ctrl: new ClassroomController(svc, lk as any, prisma as any, {} as any, {} as any) };
+  }
+
+  it('token bảng GeoGebra mang tên tài liệu ggb:<buổi học> và vai trò', async () => {
+    const { ctrl } = room();
+    const r = await ctrl.boardToken(student, 's1', 'ggb');
+    expect(r.document).toBe('ggb:s1');
+    expect(jwt.decode(r.token)).toMatchObject({ doc: 'ggb:s1', role: 'student' });
+    expect((await ctrl.boardToken(student, 's1')).document).toBe('session:s1');
+  });
+
+  it('mở bảng GeoGebra ghi loại bảng vào metadata phòng; đóng thì chỉ tắt bảng', async () => {
+    const { ctrl, lk } = room();
+    await ctrl.board(teacher, 's1', { open: true, kind: 'ggb' });
+    expect(lk.patchMeta).toHaveBeenLastCalledWith('bd-room', { board: true, boardKind: 'ggb' });
+    await ctrl.board(teacher, 's1', { open: true });
+    expect(lk.patchMeta).toHaveBeenLastCalledWith('bd-room', { board: true, boardKind: 'chalk' });
+    await ctrl.board(teacher, 's1', { open: false });
+    expect(lk.patchMeta).toHaveBeenLastCalledWith('bd-room', { board: false });
+  });
+
+  it('học viên không mở được bảng', async () => {
+    const { ctrl } = room();
+    await expect(ctrl.board(student, 's1', { open: true, kind: 'ggb' })).rejects.toThrow('Chỉ giáo viên');
   });
 });

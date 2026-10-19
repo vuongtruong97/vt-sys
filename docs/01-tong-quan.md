@@ -129,6 +129,7 @@ Image chính thức `livekit/livekit-server`. Khoá API truyền qua biến `LIV
 | `breakout_groups` | Nhóm nhỏ của buổi | `members` là mảng `users.id`; `sessions.breakoutActive` bật thì học viên vào phòng nhóm |
 | `live_streams` | Phát trực tiếp, một dòng mỗi buổi | `public`: ai có link cũng xem; `prefix`: thư mục HLS trên bucket |
 | `ggb_documents` | Bài GeoGebra | `base64` là `getBase64()` của applet (tối đa 2 MB); `version` tăng mỗi lần lưu, lưu bằng version cũ trả 409; `thumbnailKey` ảnh PNG trên S3 (bỏ qua khi chưa cấu hình S3); `sessionId` khi lưu từ bảng của buổi học |
+| `ggb_boards` | Bảng GeoGebra của buổi học | Trạng thái Yjs do máy chủ bảng trắng ghi (tài liệu `ggb:<session_id>`); tách khỏi `whiteboards` vì khoá chính là `session_id` |
 | `reminders` | Nhắc lịch đã gửi | khoá duy nhất (sessionId, userId, kind, startsAt): đổi giờ buổi học thì nhắc lại |
 
 ## Phân quyền trong phòng học
@@ -139,7 +140,8 @@ Image chính thức `livekit/livekit-server`. Khoá API truyền qua biến `LIV
 | Giáo viên | `roomAdmin: true`, phát mọi nguồn |
 | Học viên | `canPublishSources` chỉ có camera và micro. Thêm màn hình khi giáo viên bật quyền |
 | Bật/tắt quyền chia sẻ | `POST /sessions/:id/mod/allow-share`: lưu vào DB, gọi `updateParticipant` cho từng học viên đang trong phòng, cập nhật metadata phòng để giao diện đổi theo |
-| Bảng trắng mở hay đóng | Metadata phòng `{"board":true}`; mọi máy cùng chuyển sang bảng |
+| Bảng trắng mở hay đóng | Metadata phòng `{"board":true, "boardKind":"chalk"|"ggb"}`; mọi máy cùng chuyển sang bảng phấn hoặc bảng GeoGebra |
+| Bảng GeoGebra | Chỉ giáo viên/chủ phòng vẽ. Máy chủ bảng trắng đặt `connection.readOnly` cho token không phải giáo viên với tài liệu `ggb:` nên học viên không ghi được kể cả khi tự gửi tin Yjs |
 | Giơ tay | Attribute `hand` = `"1"` của người tham gia (token có `canUpdateOwnMetadata`) |
 | Mời phát biểu, hạ tay | Giáo viên gửi tin dữ liệu chủ đề `control` riêng cho học viên đó; trình duyệt học viên tự hạ tay và bật micro |
 | Tắt mic | API gọi `mutePublishedTrack` trên track micro |
@@ -177,6 +179,16 @@ Giáo viên bấm "Kết thúc buổi học" thì gọi `POST /sessions/:id/end`
 3. Tìm tài khoản theo `users.googleId`; chưa có thì gắn vào tài khoản cùng email; chưa có tài khoản thì tạo học viên mới với `passwordHash` null. Đặt cookie `bd_session` như đăng nhập thường rồi chuyển về trang cũ (chỉ nhận đường dẫn trong trang).
 4. Lỗi ở bất kỳ bước nào: chuyển về `/login?error=<thông báo tiếng Việt>`.
 
+### Bảng GeoGebra trong phòng học
+
+Giáo viên mở từ Hoạt động hoặc menu Thêm (`boardKind: 'ggb'`). `GgbStage` lấy token `GET /sessions/:id/board-token?kind=ggb`, kết nối Hocuspocus với tài liệu `ggb:<id>`, gắn applet bằng `components/geogebra/syncGgb.ts`:
+
+- Map `ggb` (snapshot): toàn bộ `getXML()` khi cấu trúc đổi (thêm, xoá, đổi tên, sửa định nghĩa), gom 400 ms, tối đa 1,5 giây một lần. Máy xem `setXML`.
+- Map `ggbLive`: khi kéo, toạ độ điểm (`setCoords`) hoặc giá trị thanh trượt (`setValue`), 50 ms một lần, khoảng 90 byte mỗi tin; đối tượng phụ thuộc tự tính lại ngay. Loại khác gửi XML (`evalXML` rồi `UpdateConstruction`) và ghi thêm snapshot khi ngừng kéo.
+- Người vào muộn: nạp snapshot rồi áp các giá trị trong `ggbLive`.
+
+Đo trong spike: nạp snapshot ở máy xem khoảng 110 ms với 30 đối tượng (XML 14 KB), 1,2 giây với 200 đối tượng (XML 73 KB). Bảng rất lớn sẽ khựng một chút ở máy xem mỗi lần thêm/xoá đối tượng. `setXML` đặt góc nhìn của máy xem theo giáo viên. Nút "Lưu thành bài" tạo `ggb_documents` có `sessionId`, học viên của lớp xem lại được (chỉ đọc).
+
 ### Bảng trắng
 
 Giáo viên bật bảng thì metadata phòng `board=true`. Mỗi máy lấy token `GET /sessions/:id/board-token` rồi kết nối Hocuspocus. Nét vẽ là `Y.Map {c, w, pts: Y.Array<number>}` trong `Y.Array 'strokes'`; điểm được thêm khi đang kéo, nên người khác thấy nét vẽ hiện ra ngay.
@@ -209,11 +221,11 @@ Giáo viên bật bảng thì metadata phòng `board=true`. Mỗi máy lấy tok
 | GET | `/schedule` | đã đăng nhập |
 | GET | `/sessions/:id` | đã đăng nhập (trả về kèm `role`, `kind`: `class` hoặc `meeting`; `course` null với meeting) |
 | POST | `/sessions/:id/join` | đã đăng nhập |
-| GET | `/sessions/:id/board-token` | trong lớp |
+| GET | `/sessions/:id/board-token?kind=ggb` | trong lớp; `kind=ggb` là bảng GeoGebra |
 | GET | `/sessions/:id/join-requests` | giáo viên |
 | POST | `/sessions/:id/join-requests/:reqId` `{approve}` | giáo viên |
 | POST | `/sessions/:id/mod/mute` `{identity}`, `/mod/mute-all`, `/mod/remove` `{identity}` | giáo viên |
-| POST | `/sessions/:id/mod/allow-share` `{allow}`, `/mod/board` `{open}` | giáo viên |
+| POST | `/sessions/:id/mod/allow-share` `{allow}`, `/mod/board` `{open, kind?}` | giáo viên |
 | POST | `/sessions/:id/end` | giáo viên |
 | GET | `/sessions/:id/attendance` | giáo viên |
 | GET, POST | `/sessions/:id/chat` `{text}` | trong lớp |

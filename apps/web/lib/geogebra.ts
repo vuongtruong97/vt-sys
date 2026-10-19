@@ -26,6 +26,9 @@ export interface GgbApi {
   getObjectType(name: string): string;
   getXcoord(name: string): number;
   getYcoord(name: string): number;
+  getZcoord(name: string): number;
+  setCoords(name: string, x: number, y: number, z?: number): void;
+  setValue(name: string, value: number): void;
   setFixed(name: string, fixed: boolean, selectionAllowed?: boolean): void;
   setVisible(name: string, visible: boolean): void;
   getPNGBase64(exportScale: number, transparent: boolean, dpi?: number): string;

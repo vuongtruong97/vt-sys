@@ -12,12 +12,13 @@ import {
   NotFoundException,
   Param,
   Post,
+  Query,
   Req,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import type { ClassSession, Course } from '@prisma/client';
-import { IsBoolean, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
 import type { Request } from 'express';
 import jwt from 'jsonwebtoken';
 import { SkipThrottle } from '@nestjs/throttler';
@@ -37,6 +38,8 @@ class AllowDto {
 }
 class OpenDto {
   @IsBoolean() open: boolean;
+  /** Mở bảng nào; bỏ trống là bảng phấn. */
+  @IsOptional() @IsIn(['chalk', 'ggb']) kind?: 'chalk' | 'ggb';
 }
 class DecideDto {
   @IsBoolean() approve: boolean;
@@ -184,15 +187,15 @@ export class ClassroomController {
   }
 
   /** Token cho máy chủ bảng trắng (Hocuspocus). */
+  /** Token cho máy chủ bảng trắng (Hocuspocus). `kind=ggb` là bảng GeoGebra: chỉ giáo viên được ghi (máy chủ chặn). */
   @Get(':id/board-token')
-  async boardToken(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+  async boardToken(@CurrentUser() user: AuthUser, @Param('id') id: string, @Query('kind') kind?: string) {
     const s = await this.svc.session(id);
     const role = await this.svc.roleOf(user, s);
     if (!role) throw new ForbiddenException('Bạn chưa được vào lớp này');
-    const token = jwt.sign({ sub: user.id, name: user.name, role, doc: `session:${s.id}` }, config.whiteboardSecret, {
-      expiresIn: '4h',
-    });
-    return { token, document: `session:${s.id}` };
+    const document = `${kind === 'ggb' ? 'ggb' : 'session'}:${s.id}`;
+    const token = jwt.sign({ sub: user.id, name: user.name, role, doc: document }, config.whiteboardSecret, { expiresIn: '4h' });
+    return { token, document };
   }
 
   // ----- Phòng chờ -----
@@ -279,7 +282,7 @@ export class ClassroomController {
   @HttpCode(200)
   async board(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: OpenDto) {
     const s = await this.svc.requireTeacher(user, id);
-    return this.lk.patchMeta(s.roomName, { board: dto.open });
+    return this.lk.patchMeta(s.roomName, dto.open ? { board: true, boardKind: dto.kind ?? 'chalk' } : { board: false });
   }
 
   @Post(':id/end')

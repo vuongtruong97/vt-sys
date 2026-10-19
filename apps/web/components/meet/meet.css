@@ -466,3 +466,10 @@
 .mt-pip__ctrls { display: flex; justify-content: center; gap: 8px; }
 .mt-pip__ctrls .mt-cbtn { width: 40px; height: 40px; }
 .mt-pip__ctrls .mt-cbtn--leave { width: 56px; }
+
+/* ---------- Bảng GeoGebra trong phòng học ---------- */
+.mt-ggb { position: relative; display: flex; min-width: 0; min-height: 0; }
+.mt-ggb__board { flex: 1; border: 0; border-radius: var(--mt-radius); }
+.mt-ggb__status, .mt-ggb__badge { position: absolute; left: 12px; bottom: 12px; z-index: 2; padding: 6px 10px; border-radius: 8px; background: rgba(20, 18, 24, .82); color: #e6e0e9; font-size: 12.5px; pointer-events: none; }
+.mt-ggb__status { left: 50%; top: 50%; bottom: auto; translate: -50% -50%; }
+.mt-ggb__save { position: absolute; right: 12px; bottom: 12px; z-index: 2; box-shadow: var(--ui-elev-2); }

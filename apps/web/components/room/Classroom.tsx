@@ -23,6 +23,7 @@ import { SettingsDialog } from './Settings';
 import { handUp, Panel, roleOf, RoomMeta } from './shared';
 import { SidePanel } from './SidePanel';
 import { FocusStage, GridStage, ShareTile } from './Stage';
+import { GgbStage } from './GgbStage';
 import { Whiteboard } from './Whiteboard';
 
 const encoder = new TextEncoder();
@@ -240,13 +241,18 @@ export function Classroom(props: {
     }
   };
 
-  const toggleBoard = async () => {
+  const ggbOpen = meta.board && meta.boardKind === 'ggb';
+  const chalkOpen = meta.board && !ggbOpen;
+  /** Mở bảng (phấn hoặc GeoGebra) cho cả lớp, hoặc đóng bảng đang mở. Bảng nào cũng chiếm khung lớn. */
+  const setBoard = async (open: boolean, kind: 'chalk' | 'ggb' = 'chalk') => {
     try {
-      await api(`/sessions/${sessionId}/mod/board`, { json: { open: !meta.board } });
+      await api(`/sessions/${sessionId}/mod/board`, { json: open ? { open, kind } : { open } });
     } catch (e) {
       say((e as Error).message);
     }
   };
+  const toggleBoard = () => setBoard(!chalkOpen, 'chalk');
+  const toggleGgb = () => setBoard(!ggbOpen, 'ggb');
   /** Link mời: người ngoài danh sách mở link sẽ vào phòng chờ để chủ phòng duyệt. */
   const copyInvite = async () => {
     const link = `${window.location.origin}/room/${sessionId}`;
@@ -317,7 +323,9 @@ export function Classroom(props: {
 
       <div className="mt-body">
         <main className="mt-stage" aria-label="Màn hình lớp học">
-          {meta.board ? (
+          {ggbOpen ? (
+            <FocusStage cameras={cameras} main={<GgbStage sessionId={sessionId} title={props.title} canWrite={isTeacher && !group} say={say} />} />
+          ) : meta.board ? (
             <FocusStage
               cameras={cameras}
               main={
@@ -363,8 +371,10 @@ export function Classroom(props: {
             activities={
               teacherMain
                 ? {
-                    board: meta.board,
+                    board: chalkOpen,
                     toggleBoard,
+                    ggb: ggbOpen,
+                    toggleGgb,
                     canRecord,
                     recording: !!meta.recording,
                     live: !!meta.live,
@@ -410,7 +420,7 @@ export function Classroom(props: {
             </button>
           )}
           {teacherMain && (
-            <button type="button" className={`mt-cbtn mt-hide-sm${meta.board ? ' mt-cbtn--on' : ''}`} aria-pressed={meta.board} aria-label={meta.board ? 'Đóng bảng trắng' : 'Mở bảng trắng'} title={meta.board ? 'Đóng bảng trắng' : 'Mở bảng trắng cho cả lớp'} onClick={toggleBoard}>
+            <button type="button" className={`mt-cbtn mt-hide-sm${meta.board ? ' mt-cbtn--on' : ''}`} aria-pressed={meta.board} aria-label={meta.board ? 'Đóng bảng' : 'Mở bảng phấn'} title={meta.board ? 'Đóng bảng' : 'Mở bảng phấn cho cả lớp (bảng GeoGebra ở Hoạt động)'} onClick={() => (meta.board ? setBoard(false) : setBoard(true, 'chalk'))}>
               <Icon name="board" />
             </button>
           )}
@@ -431,7 +441,12 @@ export function Classroom(props: {
               )}
               {teacherMain && (
                 <button type="button" role="menuitem" className="mt-hide-lg" onClick={pick(toggleBoard)}>
-                  <Icon name="board" /> {meta.board ? 'Đóng bảng trắng' : 'Mở bảng trắng'}
+                  <Icon name="board" /> {chalkOpen ? 'Đóng bảng phấn' : 'Mở bảng phấn'}
+                </button>
+              )}
+              {teacherMain && (
+                <button type="button" role="menuitem" onClick={pick(toggleGgb)}>
+                  <Icon name="layout" /> {ggbOpen ? 'Đóng bảng GeoGebra' : 'Mở bảng GeoGebra'}
                 </button>
               )}
               <button type="button" role="menuitem" className="mt-hide-lg" onClick={pick(() => setPanel('people'))}>

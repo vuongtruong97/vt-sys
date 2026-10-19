@@ -32,6 +32,8 @@ class CreateGgbDto {
   @IsOptional() @IsString() @MinLength(1) @MaxLength(120) title?: string;
   @IsOptional() @IsIn(APPS) appName?: (typeof APPS)[number];
   @IsOptional() @IsString() @MaxLength(MAX_GGB_BASE64, { message: 'Bài GeoGebra quá lớn (tối đa 2 MB)' }) base64?: string;
+  /** Lưu từ bảng GeoGebra của buổi học: chỉ chủ phòng; học viên của lớp xem lại được. */
+  @IsOptional() @IsString() sessionId?: string;
 }
 
 class SaveGgbDto {
@@ -78,7 +80,12 @@ export class GgbService {
 @Controller('ggb-documents')
 @UseGuards(AuthGuard)
 export class GgbController {
-  constructor(private prisma: PrismaService, private svc: GgbService, private storage: StorageService) {}
+  constructor(
+    private prisma: PrismaService,
+    private svc: GgbService,
+    private storage: StorageService,
+    private room: ClassroomService,
+  ) {}
 
   private thumbUrl(key: string | null) {
     return key && this.storage.enabled ? this.storage.downloadUrl(key, undefined, 3600) : Promise.resolve(null);
@@ -100,9 +107,16 @@ export class GgbController {
 
   @Post()
   @UseGuards(TeacherGuard)
-  create(@CurrentUser() user: AuthUser, @Body() dto: CreateGgbDto) {
+  async create(@CurrentUser() user: AuthUser, @Body() dto: CreateGgbDto) {
+    if (dto.sessionId) await this.room.requireTeacher(user, dto.sessionId);
     return this.prisma.ggbDocument.create({
-      data: { ownerId: user.id, title: dto.title?.trim() || 'Bài GeoGebra mới', appName: dto.appName ?? 'classic', base64: dto.base64 ?? '' },
+      data: {
+        ownerId: user.id,
+        title: dto.title?.trim() || 'Bài GeoGebra mới',
+        appName: dto.appName ?? 'classic',
+        base64: dto.base64 ?? '',
+        sessionId: dto.sessionId ?? null,
+      },
       select: { id: true, title: true, version: true },
     });
   }

@@ -74,7 +74,7 @@ export function GridLayout({ me }: { me: { cam: boolean; mic: boolean } }) {
 function Strip({ me, count }: { me: { cam: boolean; mic: boolean }; count: number }) {
   const rest = people.filter((p) => !p.speaking);
   return (
-    <div className="mt-strip" style={{ gridTemplateRows: `repeat(${count + 1}, minmax(0, 1fr))` }}>
+    <div className="mt-strip" style={{ '--rows': count + 1 } as CSSProperties}>
       {rest.slice(0, count).map((p) => (
         <Tile key={p.id} p={p} me={p.id === 'p-me'} cam={p.id === 'p-me' ? me.cam : undefined} mic={p.id === 'p-me' ? me.mic : undefined} />
       ))}

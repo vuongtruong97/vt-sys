@@ -91,7 +91,7 @@
 .mt-grid { flex: 1; display: grid; gap: 8px; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); grid-auto-rows: minmax(0, 1fr); }
 /* Người nói lớn + dải bên phải */
 .mt-speaker { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 8px; min-height: 0; }
-.mt-strip { display: grid; gap: 8px; grid-auto-rows: minmax(0, 1fr); min-height: 0; overflow: hidden; }
+.mt-strip { display: grid; gap: 8px; grid-template-rows: repeat(var(--rows, 4), minmax(0, 1fr)); grid-auto-rows: minmax(0, 1fr); min-height: 0; overflow: hidden; }
 .mt-strip .mt-tile { aspect-ratio: auto; }
 .mt-strip__more { display: grid; place-items: center; border-radius: var(--mt-radius); background: var(--mt-surface); color: var(--mt-muted); font-size: 13px; }
 /* Màn hình chia sẻ */
@@ -406,7 +406,8 @@
   /* Một, hai người: mỗi người một hàng, chiếm hết màn hình như Meet trên điện thoại. */
   .mt-grid[data-n="1"], .mt-grid[data-n="2"] { --cols: 1 !important; grid-auto-rows: minmax(0, 1fr); align-content: stretch; overflow: hidden; }
   .mt-speaker { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 110px; }
-  .mt-strip { grid-auto-flow: column; grid-auto-columns: 130px; grid-auto-rows: auto; overflow-x: auto; }
+  /* Dải người thành một hàng ngang cuộn được dưới màn hình chia sẻ. */
+  .mt-strip { grid-template-rows: minmax(0, 1fr); grid-auto-flow: column; grid-auto-columns: 140px; grid-auto-rows: auto; overflow-x: auto; overflow-y: hidden; }
   .mt-controls { grid-template-columns: minmax(0, 1fr); padding: 10px 8px 14px; }
   .mt-controls__mid { justify-content: center; gap: 8px; }
   .mt-controls__right { display: none; }

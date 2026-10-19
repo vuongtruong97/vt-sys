@@ -1,14 +1,16 @@
 # 05 · Triển khai lên máy chủ tại nhà (Proxmox VM, sau Nginx Proxy Manager)
 
-Hướng dẫn cho máy chủ cụ thể: VM Ubuntu 22.04 trên Proxmox (máy thật i5-6500T), 2 nhân, 3,8 GB RAM, ổ 30 GB, mạng Viettel 420/422 Mbps, IP LAN `192.168.168.103`. Trên VM đã có Docker (cài qua Snap), Nginx Proxy Manager (NPM) giữ cổng 443, AdGuard Home, Portainer. Tên miền `chapter97.xyz` quản lý DNS trên Cloudflare; NPM đã có sẵn các Proxy Host khác (ví dụ `chapter97.xyz`, `home.`, `adguard.`), trỏ theo kiểu `http://192.168.168.103:<cổng>`.
+Hướng dẫn cho máy chủ cụ thể: VM Ubuntu 22.04 trên Proxmox (máy thật i5-6500T), 2 nhân, 3,8 GB RAM, ổ 30 GB, mạng Viettel 420/422 Mbps, IP LAN `192.168.168.150`. Trên VM đã có Docker (cài qua Snap), Nginx Proxy Manager (NPM) giữ cổng 443, AdGuard Home, Portainer. Tên miền `chapter97.xyz` quản lý DNS trên Cloudflare; NPM đã có sẵn các Proxy Host khác (ví dụ `chapter97.xyz`, `home.`, `adguard.`), trỏ theo kiểu `http://<IP LAN>:<cổng>`.
+
+**Kiểm tra IP thật của VM trước khi làm** (`hostname -I`): mọi chỗ ghi `192.168.168.150` dưới đây (router, NPM, AdGuard) phải là IP này. Máy `192.168.168.103` trong mạng nhà là một máy khác. Nên gán IP cố định cho VM trên router (DHCP reservation theo địa chỉ MAC), để IP không đổi sau khi khởi động lại.
 
 vt-sys dùng ba tên miền:
 
 | Tên miền | Dùng cho | NPM trỏ tới |
 | --- | --- | --- |
-| `hoc.chapter97.xyz` | trang web | `192.168.168.103:5100` |
-| `live.chapter97.xyz` | LiveKit (báo hiệu WebSocket, TURN) | `192.168.168.103:5101` |
-| `board.chapter97.xyz` | bảng trắng (WebSocket) | `192.168.168.103:5102` |
+| `hoc.chapter97.xyz` | trang web | `192.168.168.150:5100` |
+| `live.chapter97.xyz` | LiveKit (báo hiệu WebSocket, TURN) | `192.168.168.150:5101` |
+| `board.chapter97.xyz` | bảng trắng (WebSocket) | `192.168.168.150:5102` |
 
 Khác bản VPS ([03-trien-khai-vps.md](03-trien-khai-vps.md)):
 
@@ -24,9 +26,9 @@ Khác bản VPS ([03-trien-khai-vps.md](03-trien-khai-vps.md)):
 ## Sơ đồ
 
 ```
-Internet ──443/tcp──► router ──► VM:443  NPM ─┬─► 192.168.168.103:5100  web          (hoc.chapter97.xyz)
-                                               ├─► 192.168.168.103:5101  livekit:7880 (live.chapter97.xyz)
-                                               └─► 192.168.168.103:5102  whiteboard   (board.chapter97.xyz)
+Internet ──443/tcp──► router ──► VM:443  NPM ─┬─► 192.168.168.150:5100  web          (hoc.chapter97.xyz)
+                                               ├─► 192.168.168.150:5101  livekit:7880 (live.chapter97.xyz)
+                                               └─► 192.168.168.150:5102  whiteboard   (board.chapter97.xyz)
 Internet ──7881/tcp, 7882/udp, 3478/udp──► router ──► VM ──► livekit (video, âm thanh: không qua NPM)
 ```
 
@@ -71,7 +73,7 @@ Chụp snapshot VM trong Proxmox trước khi làm tiếp.
 
 ## 3. Router Viettel (NAT / Port Forwarding)
 
-Trỏ về `192.168.168.103`, cùng số cổng ngoài và trong:
+Trỏ về `192.168.168.150`, cùng số cổng ngoài và trong:
 
 | Cổng | Giao thức | Dùng cho |
 | --- | --- | --- |
@@ -146,8 +148,8 @@ dc logs -f api   # chờ dòng "API chạy ở cổng 3001", Ctrl+C để thoát
 Kiểm tra từ VM trước khi cấu hình NPM:
 
 ```bash
-curl -sI http://192.168.168.103:5100 | head -1   # web: HTTP/1.1 200
-curl -s  http://192.168.168.103:5101; echo        # livekit: OK
+for p in 5100 5101 5102; do printf "$p → "; curl -sS -o /dev/null -w "%{http_code}
+" --max-time 5 http://192.168.168.150:$p; done   # cả ba: 200
 ```
 
 Dọn bộ nhớ đệm build (giải phóng 2–3 GB):
@@ -164,9 +166,9 @@ sudo docker builder prune -f
 
 | Domain Names | Scheme | Forward Hostname / IP | Forward Port | Websockets Support |
 | --- | --- | --- | --- | --- |
-| `hoc.chapter97.xyz` | http | `192.168.168.103` | 5100 | bật |
-| `live.chapter97.xyz` | http | `192.168.168.103` | 5101 | **bắt buộc bật** |
-| `board.chapter97.xyz` | http | `192.168.168.103` | 5102 | **bắt buộc bật** |
+| `hoc.chapter97.xyz` | http | `192.168.168.150` | 5100 | bật |
+| `live.chapter97.xyz` | http | `192.168.168.150` | 5101 | **bắt buộc bật** |
+| `board.chapter97.xyz` | http | `192.168.168.150` | 5102 | **bắt buộc bật** |
 
 Cả ba: tab SSL chọn chứng chỉ `*.chapter97.xyz`, bật **Force SSL** và **HTTP/2 Support**.
 
@@ -185,7 +187,7 @@ client_max_body_size 60m;
 
 ## 7. Mạng trong nhà (AdGuard)
 
-Nếu router không hỗ trợ NAT loopback, máy trong nhà mở `hoc.chapter97.xyz` sẽ không vào được (gói tin đi ra IP công khai rồi không quay về). Sửa bằng AdGuard: Filters → DNS rewrites → thêm 3 dòng `hoc.chapter97.xyz`, `live.chapter97.xyz`, `board.chapter97.xyz` → `192.168.168.103`.
+Nếu router không hỗ trợ NAT loopback, máy trong nhà mở `hoc.chapter97.xyz` sẽ không vào được (gói tin đi ra IP công khai rồi không quay về). Sửa bằng AdGuard: Filters → DNS rewrites → thêm 3 dòng `hoc.chapter97.xyz`, `live.chapter97.xyz`, `board.chapter97.xyz` → `192.168.168.150`.
 
 Video của máy trong nhà vẫn chạy vì LiveKit gửi cả địa chỉ IP LAN cho trình duyệt.
 
@@ -232,7 +234,7 @@ API tự áp migration DB khi khởi động. Nên chụp snapshot VM trước m
 Nếu NPM có Proxy Host trỏ vào chính trang quản trị của nó (ví dụ `proxy.chapter97.xyz` → cổng 81), ai biết địa chỉ cũng thấy trang đăng nhập NPM; đoán được mật khẩu là kiểm soát được mọi tên miền và chứng chỉ. Chọn một:
 
 - **Access List** (Access Lists → Add): chỉ cho IP mạng nhà và Tailscale (`192.168.168.0/24`, `100.64.0.0/10`), gán vào Proxy Host đó.
-- Hoặc xoá Proxy Host đó, chỉ vào NPM qua Tailscale bằng `http://192.168.168.103:81`.
+- Hoặc xoá Proxy Host đó, chỉ vào NPM qua Tailscale bằng `http://192.168.168.150:81`.
 
 Áp dụng tương tự cho các trang quản trị khác đang mở ra Internet (AdGuard, Portainer).
 
@@ -257,5 +259,6 @@ Nếu NPM có Proxy Host trỏ vào chính trang quản trị của nó (ví d�
 | Học viên bị rớt lớp đều đặn sau khoảng 1 phút | Thiếu `proxy_read_timeout` ở tab Advanced của `live.`/`board.` |
 | Lỗi 403 khó hiểu khi thao tác | Tắt **Block Common Exploits** của `hoc.` |
 | Tải tài liệu báo 413 | Thêm `client_max_body_size 60m;` ở tab Advanced của `hoc.` |
+| `curl` tới IP LAN báo `Connection refused` nhưng `127.0.0.1` chạy | Gọi sai IP: kiểm tra `hostname -I`, sửa router, NPM, AdGuard theo IP thật |
 | `permission denied ... docker.sock` | Thiếu `sudo` (Docker Snap) |
 | Container khởi động lại liên tục, log có `OOM` | Chạm giới hạn RAM; xem `sudo docker stats`, tăng `mem_limit` của dịch vụ đó |

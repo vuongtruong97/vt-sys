@@ -58,7 +58,7 @@ services:
       - "7881:7881/tcp"   # media qua TCP khi mạng học viên chặn UDP
       - "7882:7882/udp"   # media UDP (một cổng, mux)
       - "3478:3478/udp"   # TURN/UDP
-      - "${LIVEKIT_HTTP_PORT:-5101}:7880"   # NPM: ${LIVE_DOMAIN} → 192.168.168.103:5101 (WebSocket)
+      - "${LIVEKIT_HTTP_PORT:-5101}:7880"   # NPM: ${LIVE_DOMAIN} → <IP LAN của VM>:5101 (WebSocket)
 
   api:
     build: ../apps/api
@@ -107,7 +107,7 @@ services:
       DATABASE_URL: postgresql://bangden:${POSTGRES_PASSWORD}@postgres:5432/bangden
       WHITEBOARD_SECRET: ${WHITEBOARD_SECRET}
     ports:
-      - "${BOARD_PORT:-5102}:1234"   # NPM: ${BOARD_DOMAIN} → 192.168.168.103:5102 (WebSocket)
+      - "${BOARD_PORT:-5102}:1234"   # NPM: ${BOARD_DOMAIN} → <IP LAN của VM>:5102 (WebSocket)
 
   web:
     build:
@@ -121,7 +121,7 @@ services:
     depends_on:
       - api
     ports:
-      - "${WEB_PORT:-5100}:3000"   # NPM: ${APP_DOMAIN} → 192.168.168.103:5100
+      - "${WEB_PORT:-5100}:3000"   # NPM: ${APP_DOMAIN} → <IP LAN của VM>:5100
 
   # Tự cập nhật bản ghi A trên Cloudflare khi IP nhà đổi. Chỉ chạy khi bật profile "ddns":
   #   docker compose -f deploy/docker-compose.homelab.yml --env-file .env --profile ddns up -d

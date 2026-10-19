@@ -177,7 +177,8 @@ export class CoursesController {
   async updateSession(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateSessionDto) {
     const s = await this.prisma.classSession.findUnique({ where: { id } });
     if (!s) throw new NotFoundException('Không tìm thấy buổi học');
-    await this.ownCourse(user, s.courseId);
+    if (s.courseId) await this.ownCourse(user, s.courseId);
+    else if (s.hostId !== user.id) throw new ForbiddenException('Đây không phải meeting của bạn');
     return this.prisma.classSession.update({
       where: { id },
       data: {
@@ -189,15 +190,17 @@ export class CoursesController {
     });
   }
 
-  /** Lịch học: giáo viên thấy buổi của khoá mình dạy, học viên thấy buổi của khoá đã đăng ký. */
+  /** Lịch học: giáo viên thấy buổi của khoá mình dạy và meeting mình tạo, học viên thấy buổi của khoá đã đăng ký. */
   @Get('schedule')
   @UseGuards(AuthGuard)
   async schedule(@CurrentUser() user: AuthUser) {
     const since = new Date(Date.now() - 14 * 24 * 3600 * 1000);
-    const courseFilter =
-      user.role !== 'STUDENT' ? { teacherId: user.id } : { enrollments: { some: { userId: user.id } } };
+    const whose =
+      user.role !== 'STUDENT'
+        ? { OR: [{ course: { teacherId: user.id } }, { hostId: user.id }] }
+        : { course: { enrollments: { some: { userId: user.id } } } };
     const sessions = await this.prisma.classSession.findMany({
-      where: { startsAt: { gte: since }, course: courseFilter },
+      where: { startsAt: { gte: since }, ...whose },
       orderBy: { startsAt: 'asc' },
       include: { course: { select: { id: true, title: true, _count: { select: { enrollments: true } } } } },
     });
@@ -207,8 +210,9 @@ export class CoursesController {
       startsAt: s.startsAt,
       endsAt: s.endsAt,
       status: s.status,
-      course: { id: s.course.id, title: s.course.title },
-      students: s.course._count.enrollments,
+      kind: s.course ? ('class' as const) : ('meeting' as const),
+      course: s.course ? { id: s.course.id, title: s.course.title } : null,
+      students: s.course?._count.enrollments ?? 0,
     }));
   }
 }

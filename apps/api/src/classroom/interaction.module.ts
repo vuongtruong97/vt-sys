@@ -28,7 +28,7 @@ import {
 } from 'class-validator';
 import { AuthGuard, AuthUser, CurrentUser } from '../auth/auth.guard';
 import { PrismaService } from '../common/prisma.service';
-import { ClassroomModule, ClassroomService } from './classroom.module';
+import { ClassroomModule, ClassroomService, hostIdOf } from './classroom.module';
 import { LivekitService } from './livekit.service';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
@@ -194,7 +194,7 @@ export class InteractionController {
       create: { quizId, userId: user.id, choice: dto.choice },
       update: { choice: dto.choice },
     });
-    await this.svc.toClass(s, TOPIC.quiz, { type: 'tally', quizId, ...(await this.svc.counts(q)) }, [s.course.teacherId]);
+    await this.svc.toClass(s, TOPIC.quiz, { type: 'tally', quizId, ...(await this.svc.counts(q)) }, [hostIdOf(s)]);
     return { mine: dto.choice };
   }
 

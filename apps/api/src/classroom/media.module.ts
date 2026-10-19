@@ -25,7 +25,7 @@ import { AuthGuard, AuthUser, CurrentUser } from '../auth/auth.guard';
 import { config } from '../common/config';
 import { PrismaService } from '../common/prisma.service';
 import { StorageService } from '../common/storage.service';
-import { ClassroomModule, ClassroomService } from './classroom.module';
+import { ClassroomModule, ClassroomService, isMeeting } from './classroom.module';
 import { RecordingService } from './recording.service';
 
 class UploadDto {
@@ -84,6 +84,8 @@ export class MediaController {
   @HttpCode(200)
   async startRecording(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     const s = await this.room.requireTeacher(user, id);
+    // Quyền xem bản ghi dựa trên danh sách lớp, meeting không có.
+    if (isMeeting(s)) throw new BadRequestException('Meeting chưa hỗ trợ ghi hình');
     if (s.status !== 'LIVE') throw new BadRequestException('Chỉ ghi hình được khi lớp đang diễn ra');
     return toRecording(await this.recordings.start(s));
   }
@@ -99,6 +101,7 @@ export class MediaController {
   @Get('sessions/:id/recordings')
   async listRecordings(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     const s = await this.room.session(id);
+    if (!s.courseId) return [];
     const { teacher } = await this.access.check(user, s.courseId);
     const rows = await this.prisma.recording.findMany({
       where: { sessionId: id, ...(teacher ? {} : { status: 'READY' }) },
@@ -110,7 +113,7 @@ export class MediaController {
   @Get('recordings/:id/url')
   async recordingUrl(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     const r = await this.prisma.recording.findUnique({ where: { id }, include: { session: true } });
-    if (!r) throw new NotFoundException('Không tìm thấy bản ghi');
+    if (!r || !r.session.courseId) throw new NotFoundException('Không tìm thấy bản ghi');
     await this.access.check(user, r.session.courseId);
     if (r.status !== 'READY') throw new BadRequestException('Bản ghi chưa xử lý xong');
     const name = `${r.session.title} ${r.startedAt.toISOString().slice(0, 10)}.mp4`;

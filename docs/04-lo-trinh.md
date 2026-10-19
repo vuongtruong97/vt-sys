@@ -86,6 +86,7 @@ DB mới tạo (volume trống) thì không cần bước này.
 | Nhiều giáo viên, quản trị | **Xong** (code) | Vai trò ADMIN, trang `/admin`: đổi vai trò, chuyển khoá học. `admin.module.ts` |
 | Chia nhóm nhỏ | **Xong** (code) | Phòng con `<roomName>-g<n>`, `breakout.module.ts`, `components/room/Breakout.tsx`. Chưa chạy thử với nhiều trình duyệt |
 | Webinar HLS | **Xong** (code) | Egress HLS → S3 → API chuyển tiếp (có header cho CDN), trang `/live/[id]`. Chưa chạy thử thật |
+| Meeting độc lập (kiểu Google Meet) | **Xong** | `/meet`: họp ngay hoặc hẹn giờ, khách vào qua phòng chờ. `meetings.module.ts`, migration `8_meetings`. Đã chạy thử tạo, duyệt, vào, huỷ qua API; chưa thử có video thật. Chưa có tài liệu, ghi hình, phát trực tiếp trong meeting |
 | Thanh toán (VietQR + SePay/Casso) | Chưa | Cần tài khoản SePay/Casso và tài khoản ngân hàng thật |
 | Gói học (theo khoá, số buổi, tháng; 1-1) | Chưa | Phụ thuộc thanh toán |
 | Chép lời, tóm tắt bằng AI | Chưa | Cần dịch vụ nhận dạng giọng nói tiếng Việt (chạy trên bản ghi MP4) và một mô hình ngôn ngữ để tóm tắt |

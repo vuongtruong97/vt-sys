@@ -6,6 +6,8 @@ import { api, ScheduleItem } from '@/lib/api';
 import { fmtDay, fmtTime, joinState } from '@/lib/format';
 import { useMe } from '@/lib/useMe';
 
+const titleOf = (s: ScheduleItem) => (s.course ? `${s.course.title} · ${s.title}` : `Meeting · ${s.title}`);
+
 export default function SchedulePage() {
   const me = useMe({ redirect: true });
   const [items, setItems] = useState<ScheduleItem[] | null>(null);
@@ -31,7 +33,14 @@ export default function SchedulePage() {
         <PageHeader
           title="Lịch học"
           description="Học viên vào được lớp từ 10 phút trước giờ học."
-          actions={teacher && <ButtonLink href="/teach" variant="outline">Tạo buổi học</ButtonLink>}
+          actions={
+            teacher && (
+              <>
+                <ButtonLink href="/meet">Meeting mới</ButtonLink>
+                <ButtonLink href="/teach" variant="outline">Tạo buổi học</ButtonLink>
+              </>
+            )
+          }
         />
 
         {items === null && <Muted>Đang tải…</Muted>}
@@ -43,18 +52,21 @@ export default function SchedulePage() {
 
         <List>
           {upcoming.map((s) => {
-            const st = teacher ? { open: s.status !== 'CANCELLED', label: s.status === 'LIVE' ? 'Vào lại lớp' : 'Mở lớp' } : joinState(s, now);
+            const st = teacher
+              ? { open: s.status !== 'CANCELLED', label: s.status === 'LIVE' ? (s.course ? 'Vào lại lớp' : 'Vào lại') : s.course ? 'Mở lớp' : 'Mở phòng' }
+              : joinState(s, now);
             return (
               <ListRow
                 key={s.id}
                 highlight={st.open}
                 lead={{ top: fmtTime(s.startsAt), bottom: fmtDay(s.startsAt) }}
-                title={`${s.course.title} · ${s.title}`}
+                title={titleOf(s)}
                 meta={
                   <>
                     {s.status === 'LIVE' && <Badge>Đang diễn ra</Badge>}
                     {s.status === 'CANCELLED' && <Badge variant="neutral">Đã huỷ</Badge>}
-                    {fmtTime(s.startsAt)} – {fmtTime(s.endsAt)} · {s.students} học viên
+                    {fmtTime(s.startsAt)} – {fmtTime(s.endsAt)}
+                    {s.course && ` · ${s.students} học viên`}
                   </>
                 }
                 actions={st.open ? <ButtonLink href={`/room/${s.id}`}>{st.label}</ButtonLink> : <Button disabled>{st.label}</Button>}
@@ -70,11 +82,11 @@ export default function SchedulePage() {
                 <ListRow
                   key={s.id}
                   lead={{ top: fmtTime(s.startsAt), bottom: fmtDay(s.startsAt) }}
-                  title={`${s.course.title} · ${s.title}`}
+                  title={titleOf(s)}
                   meta={s.status === 'CANCELLED' ? <Badge variant="neutral">Đã huỷ</Badge> : undefined}
                   actions={
                     <>
-                      {s.status !== 'CANCELLED' && <ButtonLink href={`/sessions/${s.id}`} variant="outline" size="sm">Xem lại</ButtonLink>}
+                      {s.status !== 'CANCELLED' && s.course && <ButtonLink href={`/sessions/${s.id}`} variant="outline" size="sm">Xem lại</ButtonLink>}
                       {teacher && <ButtonLink href={`/teach/sessions/${s.id}`} variant="outline" size="sm">Điểm danh</ButtonLink>}
                     </>
                   }

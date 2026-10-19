@@ -57,8 +57,9 @@ type Toast = { id: number; text: string };
 export function Classroom(props: {
   sessionId: string;
   title: string;
-  courseId: string;
-  courseTitle: string;
+  /** null: meeting độc lập (không có tài liệu, ghi hình). */
+  courseId: string | null;
+  courseTitle: string | null;
   endsAt: string;
   role: 'teacher' | 'student';
   /** Phòng nhóm đang ở; null là phòng chính. */
@@ -67,6 +68,7 @@ export function Classroom(props: {
 }) {
   const { sessionId, role, group, switchRoom } = props;
   const isTeacher = role === 'teacher';
+  const isMeeting = !props.courseId;
   const room = useRoomContext();
   const { localParticipant } = useLocalParticipant();
   const participants = useParticipants();
@@ -189,8 +191,9 @@ export function Classroom(props: {
   const [canRecord, setCanRecord] = useState(false);
   const [recBusy, setRecBusy] = useState(false);
   useEffect(() => {
-    if (isTeacher) api<{ recording: boolean }>('/features').then((f) => setCanRecord(!!f.recording)).catch(() => {});
-  }, [isTeacher]);
+    // Meeting chưa hỗ trợ ghi hình (quyền xem bản ghi dựa trên danh sách lớp).
+    if (isTeacher && !isMeeting) api<{ recording: boolean }>('/features').then((f) => setCanRecord(!!f.recording)).catch(() => {});
+  }, [isTeacher, isMeeting]);
   const toggleRecording = async () => {
     if (!meta.recording && !window.confirm('Bắt đầu ghi hình? Mọi người trong lớp sẽ thấy biểu tượng đang ghi.')) return;
     setRecBusy(true);
@@ -233,8 +236,19 @@ export function Classroom(props: {
       say((e as Error).message);
     }
   };
+  /** Link mời: người ngoài danh sách mở link sẽ vào phòng chờ để chủ phòng duyệt. */
+  const copyInvite = async () => {
+    const link = `${window.location.origin}/room/${sessionId}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      say('Đã sao chép link mời');
+    } catch {
+      say(`Link mời: ${link}`);
+    }
+  };
+
   const endClass = async () => {
-    if (!window.confirm('Kết thúc buổi học cho tất cả mọi người?')) return;
+    if (!window.confirm(isMeeting ? 'Kết thúc meeting cho tất cả mọi người?' : 'Kết thúc buổi học cho tất cả mọi người?')) return;
     try {
       await api(`/sessions/${sessionId}/end`, { method: 'POST' });
     } finally {
@@ -267,8 +281,8 @@ export function Classroom(props: {
     <div className="mt mt-room">
       <header className="mt-top">
         <div className="mt-top__title">
-          <b>{props.courseTitle} · {props.title}</b>
-          <span>{isTeacher ? 'Bạn là giáo viên' : `Đến ${new Date(props.endsAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`} · {clock.left}</span>
+          <b>{props.courseTitle ? `${props.courseTitle} · ${props.title}` : props.title}</b>
+          <span>{isTeacher ? (isMeeting ? 'Bạn là chủ phòng' : 'Bạn là giáo viên') : `Đến ${new Date(props.endsAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`} · {clock.left}</span>
         </div>
         <span className="mt-top__grow" />
         {group && (
@@ -412,9 +426,11 @@ export function Classroom(props: {
               <button type="button" role="menuitem" className="mt-hide-lg" onClick={pick(() => setPanel('chat'))}>
                 <Icon name="chat" /> Trò chuyện {chat.unread > 0 && <small>{chat.unread} tin mới</small>}
               </button>
-              <button type="button" role="menuitem" className="mt-hide-lg" onClick={pick(() => setPanel('files'))}>
-                <Icon name="files" /> Tài liệu
-              </button>
+              {!isMeeting && (
+                <button type="button" role="menuitem" className="mt-hide-lg" onClick={pick(() => setPanel('files'))}>
+                  <Icon name="files" /> Tài liệu
+                </button>
+              )}
               {isTeacher && (
                 <>
                   <button type="button" role="menuitem" onClick={pick(() => setPanel('quiz'))}>
@@ -436,6 +452,9 @@ export function Classroom(props: {
                 </>
               )}
               <hr />
+              <button type="button" role="menuitem" onClick={pick(copyInvite)}>
+                <Icon name="copy" /> Sao chép link mời
+              </button>
               <button type="button" role="menuitem" onClick={pick(() => setSettings(true))}>
                 <Icon name="settings" /> Cài đặt thiết bị
               </button>
@@ -443,7 +462,7 @@ export function Classroom(props: {
                 <>
                   <hr />
                   <button type="button" role="menuitem" style={{ color: '#f2b8b5' }} onClick={pick(endClass)}>
-                    <Icon name="close" /> Kết thúc buổi học cho mọi người
+                    <Icon name="close" /> {isMeeting ? 'Kết thúc meeting cho mọi người' : 'Kết thúc buổi học cho mọi người'}
                   </button>
                 </>
               )}
@@ -460,9 +479,11 @@ export function Classroom(props: {
             <Icon name="chat" />
             {chat.unread > 0 && <span className="mt-cbtn__badge">{chat.unread}</span>}
           </button>
-          <button type="button" className="mt-ibtn" aria-pressed={panel === 'files'} aria-label="Tài liệu" title="Tài liệu" onClick={() => togglePanel('files')}>
-            <Icon name="files" />
-          </button>
+          {!isMeeting && (
+            <button type="button" className="mt-ibtn" aria-pressed={panel === 'files'} aria-label="Tài liệu" title="Tài liệu" onClick={() => togglePanel('files')}>
+              <Icon name="files" />
+            </button>
+          )}
           {isTeacher && (
             <button type="button" className="mt-ibtn" aria-pressed={panel === 'activities'} aria-label="Hoạt động" title="Hoạt động: câu hỏi, chia nhóm, ghi hình" onClick={() => togglePanel('activities')}>
               <Icon name="apps" />

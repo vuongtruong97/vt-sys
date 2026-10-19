@@ -27,11 +27,11 @@ function setup(startsInMinutes: number) {
 }
 
 describe('Nhắc lịch', () => {
-  it('chỉ tìm buổi đã lên lịch, bắt đầu trong vòng 60 phút tới', async () => {
+  it('chỉ tìm buổi học (không phải meeting) đã lên lịch, bắt đầu trong vòng 60 phút tới', async () => {
     const { prisma, svc } = setup(45);
     await svc.tick(now);
     expect(prisma.classSession.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { status: 'SCHEDULED', startsAt: { gt: now, lte: at(60) } } }),
+      expect.objectContaining({ where: { status: 'SCHEDULED', courseId: { not: null }, startsAt: { gt: now, lte: at(60) } } }),
     );
   });
 

@@ -115,7 +115,7 @@ Image chính thức `livekit/livekit-server`. Khoá API truyền qua biến `LIV
 | `users` | Tài khoản | `role`: ADMIN, TEACHER, STUDENT. Tài khoản trong `SEED_TEACHER_EMAIL` là ADMIN; ADMIN cấp quyền giáo viên ở `/admin` |
 | `courses` | Khoá học | `published` quyết định hiện trên trang chủ |
 | `enrollments` | Học viên thuộc khoá | khoá duy nhất (userId, courseId) |
-| `sessions` | Buổi học, một phòng LiveKit | `roomName` dạng `bd-<hex>`; `status`: SCHEDULED, LIVE, ENDED, CANCELLED; `allowStudentShare` |
+| `sessions` | Buổi học hoặc meeting, một phòng LiveKit | `roomName` dạng `bd-<hex>`; `status`: SCHEDULED, LIVE, ENDED, CANCELLED; `allowStudentShare`. Buổi học có `courseId`; meeting độc lập có `courseId` null và `hostId` là người tạo |
 | `attendance` | Mỗi lần vào/ra phòng | ghi từ webhook `participant_joined` / `participant_left` |
 | `join_requests` | Xin vào lớp khi chưa có trong danh sách | PENDING, APPROVED, DENIED |
 | `whiteboards` | Trạng thái Yjs của bảng | cột snake_case vì máy chủ bảng trắng dùng SQL trực tiếp |
@@ -140,6 +140,7 @@ Image chính thức `livekit/livekit-server`. Khoá API truyền qua biến `LIV
 | Mời phát biểu, hạ tay | Giáo viên gửi tin dữ liệu chủ đề `control` riêng cho học viên đó; trình duyệt học viên tự hạ tay và bật micro |
 | Tắt mic | API gọi `mutePublishedTrack` trên track micro |
 | Mời ra | API gọi `removeParticipant` và đổi yêu cầu vào lớp (nếu có) sang DENIED |
+| Chủ phòng | Buổi học: giáo viên của khoá (`course.teacherId`). Meeting: `hostId`. Dùng `hostIdOf(s)` trong `classroom.module.ts`, không đọc thẳng `s.course` |
 | Giờ vào lớp | Học viên vào được từ 10 phút trước giờ học đến 30 phút sau giờ kết thúc (`config.ts`). Giáo viên vào lúc nào cũng được |
 | Chat, câu hỏi nhanh | Gửi qua API (kiểm tra quyền, lưu DB), API phát xuống phòng bằng `sendData`. Kết quả câu hỏi đang mở chỉ gửi riêng cho giáo viên; đáp án đúng chỉ lộ khi đóng câu |
 | Đang ghi hình | Metadata phòng `{"recording":true}`; mọi người thấy biểu tượng ● Đang ghi hình |
@@ -156,6 +157,10 @@ Image chính thức `livekit/livekit-server`. Khoá API truyền qua biến `LIV
    - Có trong danh sách lớp hoặc đã được duyệt: kiểm tra giờ, `ensureRoom`, ký token và trả về `{status:'ok', token, url, role}`.
    - Chưa có quyền: tạo `join_requests` PENDING, trả về `{status:'waiting'}`. Trình duyệt gọi lại mỗi 3 giây cho tới khi được duyệt.
 3. Trình duyệt kết nối LiveKit. LiveKit gửi webhook `participant_joined`, API ghi điểm danh.
+
+### Meeting
+
+Giáo viên và quản trị tạo meeting ở `/meet`: "Họp ngay" (bắt đầu bây giờ, 60 phút) hoặc "Hẹn giờ". Link mời là `/room/:id`. Meeting không có danh sách lớp, nên mọi người khác đều xin vào qua phòng chờ và chủ phòng duyệt. Meeting hiện trong Lịch học của người tạo, không gửi email nhắc lịch, chưa có tài liệu, ghi hình, phát trực tiếp (quyền xem các mục đó dựa trên danh sách lớp).
 
 ### Kết thúc buổi
 
@@ -189,9 +194,11 @@ Giáo viên bật bảng thì metadata phòng `board=true`. Mỗi máy lấy tok
 | POST | `/courses/:id/enrollments` `{email}` | giáo viên của khoá |
 | DELETE | `/courses/:id/enrollments/:userId` | giáo viên của khoá |
 | POST | `/courses/:id/sessions` `{title, startsAt, endsAt}` | giáo viên của khoá |
-| PATCH | `/sessions/:id` `{title?, startsAt?, endsAt?, cancelled?}` | giáo viên của khoá |
+| PATCH | `/sessions/:id` `{title?, startsAt?, endsAt?, cancelled?}` | giáo viên của khoá, hoặc chủ meeting |
+| GET, POST | `/meetings` `{title?, startsAt?, durationMinutes?}` | giáo viên; bỏ trống `startsAt` là họp ngay |
+| POST | `/meetings/:id/cancel` | chủ meeting |
 | GET | `/schedule` | đã đăng nhập |
-| GET | `/sessions/:id` | đã đăng nhập (trả về kèm `role`) |
+| GET | `/sessions/:id` | đã đăng nhập (trả về kèm `role`, `kind`: `class` hoặc `meeting`; `course` null với meeting) |
 | POST | `/sessions/:id/join` | đã đăng nhập |
 | GET | `/sessions/:id/board-token` | trong lớp |
 | GET | `/sessions/:id/join-requests` | giáo viên |

@@ -15,7 +15,9 @@ type SessionInfo = {
   startsAt: string;
   endsAt: string;
   status: string;
-  course: { id: string; title: string };
+  kind: 'class' | 'meeting';
+  /** null: meeting độc lập. */
+  course: { id: string; title: string } | null;
   role: 'teacher' | 'student' | null;
 };
 import type { GroupInfo } from '@/components/room/shared';
@@ -160,7 +162,11 @@ export default function RoomPage({ params }: { params: { id: string } }) {
         account={me?.email}
         actions={<button type="button" className="mt-pbtn mt-pbtn--ghost" onClick={() => { stopPoll(); setPhase({ k: 'prejoin' }); }}>Huỷ yêu cầu</button>}
       >
-        <p>Bạn chưa có trong danh sách lớp <b>{info?.course.title}</b>. Giáo viên đã nhận được yêu cầu của bạn; trang tự vào lớp khi được duyệt.</p>
+        {info?.course ? (
+          <p>Bạn chưa có trong danh sách lớp <b>{info.course.title}</b>. Giáo viên đã nhận được yêu cầu của bạn; trang tự vào lớp khi được duyệt.</p>
+        ) : (
+          <p>Chủ phòng của <b>{info?.title}</b> đã nhận được yêu cầu của bạn; trang tự vào phòng khi được duyệt.</p>
+        )}
       </LobbyMessage>
     );
   }
@@ -193,8 +199,8 @@ export default function RoomPage({ params }: { params: { id: string } }) {
         <Classroom
           sessionId={info.id}
           title={info.title}
-          courseId={info.course.id}
-          courseTitle={info.course.title}
+          courseId={info.course?.id ?? null}
+          courseTitle={info.course?.title ?? null}
           endsAt={info.endsAt}
           role={phase.role}
           group={phase.group}
@@ -221,7 +227,7 @@ export default function RoomPage({ params }: { params: { id: string } }) {
     <PreJoinScreen
       name={me.name}
       account={me.email}
-      courseTitle={info.course.title}
+      courseTitle={info.course?.title ?? 'Meeting'}
       title={info.title}
       time={time}
       role={info.role}

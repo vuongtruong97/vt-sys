@@ -47,7 +47,7 @@ type Props = {
   chat: ReturnType<typeof useRoomChat>;
   quiz: ReturnType<typeof useQuizzes>;
   teacherId: string | undefined;
-  courseId: string;
+  courseId: string | null;
   group: GroupInfo | null;
   switchRoom: (group?: number) => Promise<void>;
   activities: Activities | null;
@@ -74,7 +74,11 @@ export function SidePanel(props: Props) {
       ) : (
         <div className="mt-panel__body">
           {panel === 'files' ? (
-            <Materials courseId={props.courseId} sessionId={props.sessionId} canEdit={isTeacher} room onMessage={props.say} />
+            props.courseId ? (
+              <Materials courseId={props.courseId} sessionId={props.sessionId} canEdit={isTeacher} room onMessage={props.say} />
+            ) : (
+              <p className="mt-muted">Meeting chưa có mục tài liệu.</p>
+            )
           ) : panel === 'groups' && isTeacher ? (
             <BreakoutPanel sessionId={props.sessionId} participants={props.participants} currentGroup={props.group?.index ?? null} switchRoom={props.switchRoom} say={props.say} />
           ) : panel === 'quiz' && isTeacher ? (
@@ -315,7 +319,7 @@ function Activity({ icon, color, title, text, onClick, disabled, on }: { icon: I
   );
 }
 
-function ActivitiesPanel({ setPanel, activities, quiz, group }: Props) {
+function ActivitiesPanel({ setPanel, activities, quiz, group, courseId }: Props) {
   return (
     <>
       <Activity icon="poll" color={['var(--md-on-tertiary-container)', 'var(--md-tertiary-container)']} title="Câu hỏi nhanh" text={quiz.open ? 'Đang có câu hỏi mở, xem kết quả trực tiếp.' : 'Trắc nghiệm hoặc thăm dò, xem kết quả tức thì.'} onClick={() => setPanel('quiz')} />
@@ -332,6 +336,7 @@ function ActivitiesPanel({ setPanel, activities, quiz, group }: Props) {
         </>
       )}
       {!activities && <p className="mt-muted">Bảng trắng, ghi hình và phát trực tiếp chỉ dùng được ở phòng chính.</p>}
+      {activities && !courseId && <p className="mt-muted">Meeting chưa hỗ trợ ghi hình và phát trực tiếp.</p>}
     </>
   );
 }

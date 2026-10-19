@@ -17,6 +17,7 @@ import { config } from './common/config';
 import { PrismaModule } from './common/prisma.service';
 import { CoursesModule } from './courses/courses.module';
 import { HealthController } from './health.controller';
+import { MeetingsModule } from './meetings/meetings.module';
 
 /** Giới hạn số lần gọi API theo IP, báo lỗi bằng tiếng Việt. */
 @Injectable()
@@ -29,7 +30,7 @@ class RateLimitGuard extends ThrottlerGuard {
 @Module({
   imports: [
     ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 300 }]),
-    PrismaModule, StorageModule, AuthModule, CoursesModule, ClassroomModule, InteractionModule, MediaModule, ReminderModule, AdminModule, BreakoutModule, WebinarModule,
+    PrismaModule, StorageModule, AuthModule, CoursesModule, ClassroomModule, InteractionModule, MediaModule, ReminderModule, AdminModule, BreakoutModule, WebinarModule, MeetingsModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: RateLimitGuard }],

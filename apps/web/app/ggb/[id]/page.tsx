@@ -2,10 +2,10 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
-import type { GeoGebraBoardHandle } from '@/components/geogebra/GeoGebraBoard';
 import { Nav } from '@/components/Nav';
 import { Alert, Button, Muted } from '@/components/ui';
 import { api, ApiError } from '@/lib/api';
+import type { GgbApi } from '@/lib/geogebra';
 import { useMe } from '@/lib/useMe';
 
 // Tách GeoGebra khỏi bundle chung: chỉ tải khi mở trang này.
@@ -31,7 +31,8 @@ export default function GgbEditorPage({ params }: { params: { id: string } }) {
   const [error, setError] = useState('');
   const [state, setState] = useState<SaveState>('saved');
   const [title, setTitle] = useState('');
-  const board = useRef<GeoGebraBoardHandle>(null);
+  // next/dynamic không chuyển ref, nên giữ api nhận từ onReady.
+  const board = useRef<GgbApi | null>(null);
   const version = useRef(0);
   // Một lần lưu tại một thời điểm; trong lúc đang lưu mà bài đổi tiếp thì lưu bản mới nhất ngay sau đó.
   const inFlight = useRef(false);
@@ -51,8 +52,9 @@ export default function GgbEditorPage({ params }: { params: { id: string } }) {
 
   const uploadThumb = useCallback(() => {
     if (Date.now() - lastThumb.current < THUMB_EVERY) return;
-    const png = board.current?.getPNG(0.4);
-    if (!png) return;
+    const raw = board.current?.getPNGBase64(0.4, false, 72);
+    if (!raw) return;
+    const png = `data:image/png;base64,${raw}`;
     lastThumb.current = Date.now();
     api(`/ggb-documents/${params.id}/thumbnail`, { method: 'PUT', json: { png } }).catch(() => {});
   }, [params.id]);
@@ -139,7 +141,7 @@ export default function GgbEditorPage({ params }: { params: { id: string } }) {
         {error && <Alert tone="error">{error}</Alert>}
         {doc && (
           <GeoGebraBoard
-            ref={board}
+            onReady={(a) => (board.current = a)}
             className="ggb-editor__board"
             initialBase64={doc.base64 || undefined}
             readOnly={!doc.canEdit}

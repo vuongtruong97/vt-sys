@@ -1,0 +1,157 @@
+# Chạy trên máy chủ tại nhà, đặt sau Nginx Proxy Manager (NPM) có sẵn.
+# Khác deploy/docker-compose.prod.yml:
+#   - Không có Caddy: NPM giữ cổng 443 và chuyển vào web, livekit, whiteboard qua mạng Docker chung.
+#   - Không có egress: ghi hình và phát trực tiếp tắt (máy 4 GB RAM không gánh được).
+#   - Giới hạn RAM từng dịch vụ để không lấn AdGuard, NPM, Portainer trên cùng máy.
+# Hướng dẫn đầy đủ: docs/05-trien-khai-homelab.md
+#
+#   docker compose -f deploy/docker-compose.homelab.yml --env-file .env up -d --build
+name: bangden
+
+x-logging: &logging
+  # Giới hạn log để không đầy ổ (mỗi dịch vụ tối đa 3 × 10 MB).
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "3"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    mem_limit: 384m
+    logging: *logging
+    environment:
+      POSTGRES_USER: bangden
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: bangden
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bangden"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # LiveKit cần Redis trong cấu hình (để bật ghi hình sau này); Redis gần như không tốn RAM.
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    mem_limit: 64m
+    logging: *logging
+
+  livekit:
+    image: livekit/livekit-server:v1.8.0
+    restart: unless-stopped
+    mem_limit: 768m
+    logging: *logging
+    depends_on:
+      - redis
+    command: --config /etc/livekit.yaml
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
+    volumes:
+      - ./livekit.homelab.yaml:/etc/livekit.yaml:ro
+    # Video, âm thanh đi thẳng tới đây, không qua NPM. Mở 3 cổng này trên router, trỏ về VM.
+    ports:
+      - "7881:7881/tcp"   # media qua TCP khi mạng học viên chặn UDP
+      - "7882:7882/udp"   # media UDP (một cổng, mux)
+      - "3478:3478/udp"   # TURN/UDP
+    networks:
+      default:
+      npm:
+        aliases: [bangden-livekit]   # NPM: live.<DOMAIN> → bangden-livekit:7880
+
+  api:
+    build: ../apps/api
+    restart: unless-stopped
+    mem_limit: 384m
+    logging: *logging
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://bangden:${POSTGRES_PASSWORD}@postgres:5432/bangden
+      JWT_SECRET: ${JWT_SECRET}
+      WHITEBOARD_SECRET: ${WHITEBOARD_SECRET}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
+      LIVEKIT_URL: http://livekit:7880
+      LIVEKIT_PUBLIC_URL: wss://live.${DOMAIN}
+      SEED_TEACHER_EMAIL: ${SEED_TEACHER_EMAIL}
+      SEED_TEACHER_PASSWORD: ${SEED_TEACHER_PASSWORD}
+      SEED_TEACHER_NAME: ${SEED_TEACHER_NAME}
+      SEED_DEMO: "false"
+      COOKIE_SECURE: "true"
+      # Bỏ trống S3_* thì nút tải tài liệu ẩn; điền Cloudflare R2 để bật (docs/03-trien-khai-vps.md).
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_REGION: ${S3_REGION:-auto}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      RECORDING_ENABLED: "false"
+      APP_URL: https://${DOMAIN}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      TZ: Asia/Ho_Chi_Minh
+
+  whiteboard:
+    build: ../apps/whiteboard
+    restart: unless-stopped
+    mem_limit: 192m
+    logging: *logging
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://bangden:${POSTGRES_PASSWORD}@postgres:5432/bangden
+      WHITEBOARD_SECRET: ${WHITEBOARD_SECRET}
+    networks:
+      default:
+      npm:
+        aliases: [bangden-board]   # NPM: board.<DOMAIN> → bangden-board:1234
+
+  web:
+    build:
+      context: ../apps/web
+      args:
+        API_INTERNAL_URL: http://api:3001
+        NEXT_PUBLIC_WHITEBOARD_URL: wss://board.${DOMAIN}
+    restart: unless-stopped
+    mem_limit: 256m
+    logging: *logging
+    depends_on:
+      - api
+    networks:
+      default:
+      npm:
+        aliases: [bangden-web]   # NPM: <DOMAIN> → bangden-web:3000
+
+  # Tự cập nhật bản ghi DNS trên Cloudflare khi IP nhà đổi. Chỉ chạy khi bật profile "ddns":
+  #   docker compose -f deploy/docker-compose.homelab.yml --env-file .env --profile ddns up -d
+  ddns:
+    image: favonia/cloudflare-ddns:1.17.1
+    profiles: ["ddns"]
+    restart: unless-stopped
+    mem_limit: 32m
+    logging: *logging
+    read_only: true
+    cap_drop: [all]
+    security_opt: [no-new-privileges:true]
+    environment:
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
+      DOMAINS: ${DOMAIN},live.${DOMAIN},board.${DOMAIN}
+      # live. bắt buộc DNS only (TURN/UDP không qua proxy Cloudflare được). Để cả ba DNS only cho đơn giản.
+      PROXIED: "false"
+      IP6_PROVIDER: none
+
+volumes:
+  pgdata:
+
+networks:
+  # Mạng Docker của Nginx Proxy Manager (đã có sẵn). Lấy tên bằng lệnh trong docs/05-trien-khai-homelab.md.
+  npm:
+    external: true
+    name: ${NPM_NETWORK}

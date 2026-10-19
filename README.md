@@ -114,4 +114,4 @@ Khi chạy API ngoài Docker, webhook điểm danh của LiveKit (`http://api:30
 
 ## Đưa lên VPS
 
-Xem [docs/03-trien-khai-vps.md](docs/03-trien-khai-vps.md). File cấu hình nằm trong `deploy/`.
+Xem [docs/03-trien-khai-vps.md](docs/03-trien-khai-vps.md). Máy chủ tại nhà, đặt sau Nginx Proxy Manager: [docs/05-trien-khai-homelab.md](docs/05-trien-khai-homelab.md). File cấu hình nằm trong `deploy/`.

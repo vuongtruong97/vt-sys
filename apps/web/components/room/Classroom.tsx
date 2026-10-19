@@ -1,26 +1,25 @@
 'use client';
 import {
-  CarouselLayout,
-  DisconnectButton,
-  GridLayout,
   isTrackReference,
-  ParticipantTile,
-  TrackToggle,
   useDataChannel,
   useLocalParticipant,
   useParticipants,
   useRoomContext,
   useRoomInfo,
+  useTrackToggle,
   useTracks,
 } from '@livekit/components-react';
 import { RoomEvent, Track } from 'livekit-client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Icon } from '@/components/meet/icons';
 import { api } from '@/lib/api';
 import type { GroupInfo } from './shared';
 import { useQuizzes, useRoomChat } from './interaction';
 import { QuizCard } from './Quiz';
+import { SettingsDialog } from './Settings';
 import { handUp, Panel, roleOf, RoomMeta } from './shared';
 import { SidePanel } from './SidePanel';
+import { FocusStage, GridStage, ShareTile } from './Stage';
 import { Whiteboard } from './Whiteboard';
 
 const encoder = new TextEncoder();
@@ -39,15 +38,21 @@ function useAttributeTick() {
   }, [room]);
 }
 
+/** Giờ hiện tại và số phút còn lại của buổi học. */
 function useClock(endsAt: string) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000);
+    const t = setInterval(() => setNow(Date.now()), 15_000);
     return () => clearInterval(t);
   }, []);
   const left = Math.round((new Date(endsAt).getTime() - now) / 60_000);
-  return left > 0 ? `Còn ${left} phút` : 'Đã quá giờ';
+  return {
+    time: new Date(now).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+    left: left > 0 ? `còn ${left} phút` : 'đã quá giờ',
+  };
 }
+
+type Toast = { id: number; text: string };
 
 export function Classroom(props: {
   sessionId: string;
@@ -78,15 +83,19 @@ export function Classroom(props: {
   }, [metadata]);
 
   const [panel, setPanel] = useState<Panel>(null);
+  const [menu, setMenu] = useState(false);
+  const [settings, setSettings] = useState(false);
   const chat = useRoomChat(sessionId, panel === 'chat');
   const quiz = useQuizzes(sessionId);
   const teacherId = participants.find((p) => roleOf(p) === 'teacher')?.identity;
-  const [toast, setToast] = useState('');
-  const toastTimer = useRef<ReturnType<typeof setTimeout>>();
-  const say = useCallback((msg: string) => {
-    setToast(msg);
-    clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(''), 3000);
+
+  // Thông báo nhỏ góc dưới bên trái, tự ẩn sau 4 giây; giữ tối đa 3 cái.
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const toastId = useRef(0);
+  const say = useCallback((text: string) => {
+    const id = ++toastId.current;
+    setToasts((t) => [...t.slice(-2), { id, text }]);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4000);
   }, []);
 
   // Tin điều khiển giáo viên gửi riêng cho học viên (mời phát biểu, hạ tay).
@@ -167,6 +176,15 @@ export function Classroom(props: {
   const myHand = handUp(localParticipant);
   const canShare = isTeacher || meta.allowStudentShare;
 
+  // Nút micro, camera, chia sẻ màn hình tự vẽ theo kiểu Meet, dùng hook của LiveKit để bật tắt.
+  const mic = useTrackToggle({ source: Track.Source.Microphone, onDeviceError: () => say('Không mở được micro, kiểm tra quyền truy cập của trình duyệt') });
+  const cam = useTrackToggle({ source: Track.Source.Camera, onDeviceError: () => say('Không mở được camera, kiểm tra quyền truy cập của trình duyệt') });
+  const share = useTrackToggle({
+    source: Track.Source.ScreenShare,
+    captureOptions: { audio: true, contentHint: 'detail', resolution: { width: 1920, height: 1080, frameRate: 15 } },
+    onDeviceError: () => say('Không chia sẻ được màn hình'),
+  });
+
   // Nút ghi hình / phát trực tiếp chỉ hiện khi máy chủ bật tính năng (RECORDING_ENABLED) và có nơi lưu trữ.
   const [canRecord, setCanRecord] = useState(false);
   const [recBusy, setRecBusy] = useState(false);
@@ -223,47 +241,81 @@ export function Classroom(props: {
       room.disconnect();
     }
   };
+  const toggleHand = () => {
+    localParticipant.setAttributes({ hand: myHand ? '0' : '1' });
+    say(myHand ? 'Đã hạ tay' : 'Đã giơ tay, giáo viên sẽ thấy bạn trong danh sách');
+  };
+  const togglePanel = (p: Exclude<Panel, null>) => setPanel((cur) => (cur === p ? null : p));
+  const closeSettings = useCallback(() => setSettings(false), []);
+
+  // Esc đóng menu "Thêm".
+  useEffect(() => {
+    if (!menu) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMenu(false);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [menu]);
+  const pick = (fn: () => void) => () => {
+    setMenu(false);
+    fn();
+  };
+
+  // Bảng trắng và ghi hình gắn với phòng chính; ẩn khi giáo viên đang ghé nhóm.
+  const teacherMain = isTeacher && !group;
 
   return (
-    <>
-      <header className="room-top">
-        <div style={{ minWidth: 0 }}>
-          <div className="title">{props.courseTitle} · {props.title}</div>
-          <div className="sub">{participants.length} người trong lớp{isTeacher ? ' · bạn là giáo viên' : ''}</div>
+    <div className="mt mt-room">
+      <header className="mt-top">
+        <div className="mt-top__title">
+          <b>{props.courseTitle} · {props.title}</b>
+          <span>{isTeacher ? 'Bạn là giáo viên' : `Đến ${new Date(props.endsAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`} · {clock.left}</span>
         </div>
-        <span className="grow" />
+        <span className="mt-top__grow" />
         {group && (
-          <span className="pill hand" role="status">
-            {group.name} / {group.count} nhóm{groupLeft != null && (groupLeft > 0 ? ` · còn ${groupLeft} phút` : ' · đã hết giờ')}
+          <span className="mt-pill mt-pill--live" role="status">
+            <Icon name="groups" size={14} /> {group.name} / {group.count} nhóm
+            {groupLeft != null && (groupLeft > 0 ? ` · còn ${groupLeft} phút` : ' · đã hết giờ')}
           </span>
         )}
-        {meta.recording && <span className="pill rec" role="status">● Đang ghi hình</span>}
-        {meta.live && <span className="pill rec" role="status">📡 Đang phát trực tiếp</span>}
+        {meta.recording && <span className="mt-pill mt-pill--rec" role="status"><i /> Đang ghi</span>}
+        {meta.live && <span className="mt-pill mt-pill--rec" role="status"><Icon name="live" size={14} /> Đang phát</span>}
         {hands.length > 0 && (
-          <button className="pill hand" style={{ border: 0 }} onClick={() => setPanel('people')}>
-            ✋ {hands.length} người giơ tay
+          <button type="button" className="mt-pill" style={{ border: 0, color: '#f6b026' }} onClick={() => setPanel('people')}>
+            <Icon name="hand" size={14} /> {hands.length} giơ tay
           </button>
         )}
-        <span className="pill">{clock}</span>
+        <span className="mt-pill mt-pill--count"><Icon name="people" size={15} /> {participants.length}</span>
       </header>
 
-      <div className={`room-main${panel ? '' : ' no-side'}`}>
-        <section className="stage">
+      <div className="mt-body">
+        <main className="mt-stage" aria-label="Màn hình lớp học">
           {meta.board ? (
-            <div className="focus">
-              <div className="main"><Whiteboard sessionId={sessionId} canClear={isTeacher} /></div>
-              <div className="strip"><CarouselLayout tracks={cameras}><ParticipantTile /></CarouselLayout></div>
-            </div>
+            <FocusStage
+              cameras={cameras}
+              main={
+                <div className="mt-boardwrap">
+                  <Whiteboard sessionId={sessionId} canClear={isTeacher} />
+                </div>
+              }
+            />
           ) : screen ? (
-            <div className="focus">
-              <div className="sub" style={{ fontSize: 12 }}>{sharer?.name || 'Ai đó'} đang chia sẻ màn hình</div>
-              <div className="main"><ParticipantTile trackRef={screen} /></div>
-              <div className="strip"><CarouselLayout tracks={cameras}><ParticipantTile /></CarouselLayout></div>
-            </div>
+            <FocusStage cameras={cameras} main={<ShareTile trackRef={screen} by={sharer?.name || 'Ai đó'} />} />
           ) : (
-            <GridLayout tracks={cameras}><ParticipantTile /></GridLayout>
+            <GridStage cameras={cameras} />
           )}
-        </section>
+          <div className="mt-toasts" aria-live="polite">
+            {notice && (
+              <div className="mt-toast" role="alert">
+                <Icon name="chat" size={18} />
+                <span><b>Thông báo:</b> {notice}</span>
+                <button type="button" className="mt-panel__close" aria-label="Đóng thông báo" onClick={() => setNotice('')}><Icon name="close" size={18} /></button>
+              </div>
+            )}
+            {toasts.map((t) => (
+              <div key={t.id} className="mt-toast" role="status">{t.text}</div>
+            ))}
+          </div>
+        </main>
         {panel && (
           <SidePanel
             panel={panel}
@@ -280,97 +332,147 @@ export function Classroom(props: {
             courseId={props.courseId}
             group={group}
             switchRoom={switchRoom}
+            activities={
+              teacherMain
+                ? {
+                    board: meta.board,
+                    toggleBoard,
+                    canRecord,
+                    recording: !!meta.recording,
+                    live: !!meta.live,
+                    busy: recBusy,
+                    toggleRecording,
+                    toggleLive,
+                  }
+                : null
+            }
           />
         )}
         {!isTeacher && <QuizCard quiz={quiz} say={say} />}
       </div>
 
-      <footer className="controls">
-        <TrackToggle source={Track.Source.Microphone} onDeviceError={() => say('Không mở được micro')}>
-          <span className="label">Micro</span>
-        </TrackToggle>
-        <TrackToggle source={Track.Source.Camera} onDeviceError={() => say('Không mở được camera')}>
-          <span className="label">Camera</span>
-        </TrackToggle>
-        {canShare ? (
-          <TrackToggle
-            source={Track.Source.ScreenShare}
-            captureOptions={{ audio: true, contentHint: 'detail', resolution: { width: 1920, height: 1080, frameRate: 15 } }}
-            onDeviceError={() => say('Không chia sẻ được màn hình')}
-          >
-            <span className="label">Chia sẻ màn hình</span>
-          </TrackToggle>
-        ) : (
-          <button className="cb" disabled title="Giáo viên chưa cho phép học viên chia sẻ màn hình">
-            <span className="label">Chia sẻ màn hình</span>
+      <footer className="mt-controls">
+        <div className="mt-controls__left">
+          <span>{clock.time}</span>
+          <i aria-hidden />
+          <span>{props.title}</span>
+        </div>
+
+        <div className="mt-controls__mid" style={{ position: 'relative' }}>
+          <button type="button" className={`mt-cbtn${mic.enabled ? '' : ' mt-cbtn--off'}`} aria-pressed={mic.enabled} aria-label={mic.enabled ? 'Tắt micro' : 'Bật micro'} title={mic.enabled ? 'Tắt micro' : 'Bật micro'} disabled={mic.pending} onClick={() => mic.toggle()}>
+            <Icon name={mic.enabled ? 'mic' : 'mic-off'} />
           </button>
-        )}
-        {/* Bảng trắng và ghi hình gắn với phòng chính; ẩn khi giáo viên đang ghé nhóm. */}
-        {isTeacher && !group && (
-          <button className="cb" aria-pressed={meta.board} onClick={toggleBoard}>
-            <span className="label">{meta.board ? 'Đóng bảng trắng' : 'Bảng trắng'}</span>
+          <button type="button" className={`mt-cbtn${cam.enabled ? '' : ' mt-cbtn--off'}`} aria-pressed={cam.enabled} aria-label={cam.enabled ? 'Tắt camera' : 'Bật camera'} title={cam.enabled ? 'Tắt camera' : 'Bật camera'} disabled={cam.pending} onClick={() => cam.toggle()}>
+            <Icon name={cam.enabled ? 'cam' : 'cam-off'} />
           </button>
-        )}
-        {isTeacher && canRecord && !group && (
-          <button className={`cb${meta.recording ? ' rec-on' : ''}`} disabled={recBusy} onClick={toggleRecording}>
-            ● <span className="label">{meta.recording ? 'Dừng ghi hình' : 'Ghi hình'}</span>
-          </button>
-        )}
-        {isTeacher && canRecord && !group && (
-          <button className={`cb${meta.live ? ' rec-on' : ''}`} disabled={recBusy} onClick={toggleLive}>
-            📡 <span className="label">{meta.live ? 'Dừng phát' : 'Phát trực tiếp'}</span>
-          </button>
-        )}
-        {!isTeacher && (
           <button
-            className={`cb${myHand ? ' hand-on' : ''}`}
-            onClick={() => {
-              localParticipant.setAttributes({ hand: myHand ? '0' : '1' });
-              say(myHand ? 'Đã hạ tay' : 'Đã giơ tay, giáo viên sẽ thấy bạn trong danh sách');
-            }}
+            type="button"
+            className={`mt-cbtn mt-hide-sm${share.enabled ? ' mt-cbtn--on' : ''}`}
+            aria-pressed={share.enabled}
+            aria-label={share.enabled ? 'Dừng chia sẻ màn hình' : 'Chia sẻ màn hình'}
+            title={canShare ? (share.enabled ? 'Dừng chia sẻ màn hình' : 'Chia sẻ màn hình') : 'Giáo viên chưa cho phép học viên chia sẻ màn hình'}
+            disabled={!canShare || share.pending}
+            onClick={() => share.toggle()}
           >
-            ✋ <span className="label">{myHand ? 'Hạ tay' : 'Giơ tay'}</span>
+            <Icon name="screen" />
           </button>
-        )}
-        <button className="cb" aria-pressed={panel === 'chat'} onClick={() => setPanel(panel === 'chat' ? null : 'chat')}>
-          <span className="label">Trò chuyện</span>
-          {chat.unread > 0 && <span className="badge">{chat.unread}</span>}
-        </button>
-        {isTeacher && (
-          <button className="cb" aria-pressed={panel === 'groups'} onClick={() => setPanel(panel === 'groups' ? null : 'groups')}>
-            <span className="label">{group ? `Đang ở ${group.name}` : 'Chia nhóm'}</span>
+          {!isTeacher && (
+            <button type="button" className={`mt-cbtn${myHand ? ' mt-cbtn--on' : ''}`} aria-pressed={myHand} aria-label={myHand ? 'Hạ tay' : 'Giơ tay'} title={myHand ? 'Hạ tay' : 'Giơ tay'} onClick={toggleHand}>
+              <Icon name="hand" />
+            </button>
+          )}
+          {teacherMain && (
+            <button type="button" className={`mt-cbtn mt-hide-sm${meta.board ? ' mt-cbtn--on' : ''}`} aria-pressed={meta.board} aria-label={meta.board ? 'Đóng bảng trắng' : 'Mở bảng trắng'} title={meta.board ? 'Đóng bảng trắng' : 'Mở bảng trắng cho cả lớp'} onClick={toggleBoard}>
+              <Icon name="board" />
+            </button>
+          )}
+          <button type="button" className={`mt-cbtn${menu ? ' mt-cbtn--on' : ''}`} aria-expanded={menu} aria-haspopup="menu" aria-label="Thêm tuỳ chọn" title="Thêm tuỳ chọn" onClick={() => setMenu(!menu)}>
+            <Icon name="more" />
           </button>
-        )}
-        {isTeacher && (
-          <button className="cb" aria-pressed={panel === 'quiz'} onClick={() => setPanel(panel === 'quiz' ? null : 'quiz')}>
-            <span className="label">Câu hỏi</span>
-            {quiz.open && <span className="badge">{quiz.open.total ?? 0}</span>}
+          <button type="button" className="mt-cbtn mt-cbtn--leave" aria-label="Rời lớp" title="Rời lớp" onClick={() => room.disconnect()}>
+            <Icon name="leave" size={24} />
           </button>
-        )}
-        <button className="cb" aria-pressed={panel === 'files'} onClick={() => setPanel(panel === 'files' ? null : 'files')}>
-          <span className="label">Tài liệu</span>
-        </button>
-        <button className="cb" aria-pressed={panel === 'people'} onClick={() => setPanel(panel === 'people' ? null : 'people')}>
-          <span className="label">Học viên</span>
-          {isTeacher && hands.length > 0 && <span className="badge">{hands.length}</span>}
-        </button>
-        {isTeacher && (
-          <button className="cb" onClick={endClass} title="Đóng phòng cho tất cả mọi người">
-            <span className="label">Kết thúc buổi học</span>
+
+          {menu && (
+            <div className="mt-menu mt-menu--more" role="menu" aria-label="Thêm tuỳ chọn">
+              {/* Trên điện thoại một số nút bị ẩn khỏi thanh điều khiển: đưa vào đây. */}
+              {canShare && (
+                <button type="button" role="menuitem" className="mt-hide-lg" onClick={pick(() => share.toggle())}>
+                  <Icon name="screen" /> {share.enabled ? 'Dừng chia sẻ màn hình' : 'Chia sẻ màn hình'}
+                </button>
+              )}
+              {teacherMain && (
+                <button type="button" role="menuitem" className="mt-hide-lg" onClick={pick(toggleBoard)}>
+                  <Icon name="board" /> {meta.board ? 'Đóng bảng trắng' : 'Mở bảng trắng'}
+                </button>
+              )}
+              <button type="button" role="menuitem" className="mt-hide-lg" onClick={pick(() => setPanel('people'))}>
+                <Icon name="people" /> Người tham gia <small>{participants.length}</small>
+              </button>
+              <button type="button" role="menuitem" className="mt-hide-lg" onClick={pick(() => setPanel('chat'))}>
+                <Icon name="chat" /> Trò chuyện {chat.unread > 0 && <small>{chat.unread} tin mới</small>}
+              </button>
+              <button type="button" role="menuitem" className="mt-hide-lg" onClick={pick(() => setPanel('files'))}>
+                <Icon name="files" /> Tài liệu
+              </button>
+              {isTeacher && (
+                <>
+                  <button type="button" role="menuitem" onClick={pick(() => setPanel('quiz'))}>
+                    <Icon name="poll" /> Câu hỏi nhanh {quiz.open && <small>đang mở</small>}
+                  </button>
+                  <button type="button" role="menuitem" onClick={pick(() => setPanel('groups'))}>
+                    <Icon name="groups" /> {group ? `Đang ở ${group.name}` : 'Chia nhóm nhỏ'}
+                  </button>
+                </>
+              )}
+              {teacherMain && canRecord && (
+                <>
+                  <button type="button" role="menuitem" disabled={recBusy} onClick={pick(toggleRecording)}>
+                    <Icon name="record" /> {meta.recording ? 'Dừng ghi hình' : 'Ghi hình buổi học'}
+                  </button>
+                  <button type="button" role="menuitem" disabled={recBusy} onClick={pick(toggleLive)}>
+                    <Icon name="live" /> {meta.live ? 'Dừng phát trực tiếp' : 'Phát trực tiếp'}
+                  </button>
+                </>
+              )}
+              <hr />
+              <button type="button" role="menuitem" onClick={pick(() => setSettings(true))}>
+                <Icon name="settings" /> Cài đặt thiết bị
+              </button>
+              {isTeacher && (
+                <>
+                  <hr />
+                  <button type="button" role="menuitem" style={{ color: '#ff8d84' }} onClick={pick(endClass)}>
+                    <Icon name="close" /> Kết thúc buổi học cho mọi người
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-controls__right">
+          <button type="button" className="mt-ibtn" aria-pressed={panel === 'people'} aria-label="Người tham gia" title="Người tham gia" onClick={() => togglePanel('people')}>
+            <Icon name="people" />
+            {hands.length > 0 && <span className="mt-cbtn__badge">{hands.length}</span>}
           </button>
-        )}
-        <DisconnectButton>Rời lớp</DisconnectButton>
+          <button type="button" className="mt-ibtn" aria-pressed={panel === 'chat'} aria-label="Trò chuyện" title="Trò chuyện" onClick={() => togglePanel('chat')}>
+            <Icon name="chat" />
+            {chat.unread > 0 && <span className="mt-cbtn__badge">{chat.unread}</span>}
+          </button>
+          <button type="button" className="mt-ibtn" aria-pressed={panel === 'files'} aria-label="Tài liệu" title="Tài liệu" onClick={() => togglePanel('files')}>
+            <Icon name="files" />
+          </button>
+          {isTeacher && (
+            <button type="button" className="mt-ibtn" aria-pressed={panel === 'activities'} aria-label="Hoạt động" title="Hoạt động: câu hỏi, chia nhóm, ghi hình" onClick={() => togglePanel('activities')}>
+              <Icon name="apps" />
+              {quiz.open && <span className="mt-cbtn__badge">{quiz.open.total ?? 0}</span>}
+            </button>
+          )}
+        </div>
       </footer>
 
-      {toast && <div className="toast" role="status">{toast}</div>}
-      {notice && (
-        <div className="quiz-card" role="alert" style={{ bottom: 'auto', top: 72 }}>
-          <div className="row" style={{ gap: 6 }}>
-            <b style={{ flex: 1 }}>📣 {notice}</b>
-            <button className="mini" aria-label="Đóng" onClick={() => setNotice('')}>✕</button>
-          </div>
-        </div>
-      )}
-    </>
+      {settings && <SettingsDialog onClose={closeSettings} />}
+    </div>
   );
 }

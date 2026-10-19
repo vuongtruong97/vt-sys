@@ -1,10 +1,11 @@
 'use client';
-import '@livekit/components-styles';
-import { LiveKitRoom, LocalUserChoices, PreJoin, RoomAudioRenderer } from '@livekit/components-react';
+import { LiveKitRoom, LocalUserChoices, RoomAudioRenderer } from '@livekit/components-react';
 import { DisconnectReason, RoomOptions, ScreenSharePresets, VideoPresets } from 'livekit-client';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import '@/components/meet/meet.css';
 import { Classroom } from '@/components/room/Classroom';
+import { LobbyMessage, PreJoinScreen } from '@/components/room/Lobby';
 import { api, ApiError } from '@/lib/api';
 import { useMe } from '@/lib/useMe';
 
@@ -28,7 +29,7 @@ type Phase =
   | { k: 'joining' }
   | { k: 'waiting' }
   | { k: 'in'; token: string; url: string; role: 'teacher' | 'student'; group: GroupInfo | null }
-  | { k: 'left'; reason: string }
+  | { k: 'left'; reason: string; ended?: boolean }
   | { k: 'error'; message: string };
 
 export default function RoomPage({ params }: { params: { id: string } }) {
@@ -103,36 +104,64 @@ export default function RoomPage({ params }: { params: { id: string } }) {
     [choices],
   );
 
+  const time = info
+    ? `${new Date(info.startsAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} – ${new Date(info.endsAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`
+    : undefined;
+  const rejoin = () => {
+    setPhase({ k: 'joining' });
+    join();
+  };
+
   if (phase.k === 'error') {
     return (
-      <div className="center"><div className="box">
-        <h2>Chưa vào được lớp</h2>
+      <LobbyMessage icon="info" title="Chưa vào được lớp" account={me?.email} actions={<Link className="mt-pbtn" href="/schedule">Về lịch học</Link>}>
         <p>{phase.message}</p>
-        <Link className="btn" href="/schedule">Về lịch học</Link>
-      </div></div>
+      </LobbyMessage>
     );
   }
 
   if (phase.k === 'left') {
-    return (
-      <div className="center"><div className="box">
-        <h2>Bạn đã rời lớp</h2>
-        <p style={{ color: 'var(--on-room-muted)' }}>{phase.reason}</p>
-        <div className="row" style={{ justifyContent: 'center' }}>
-          <button className="btn" onClick={() => { setPhase({ k: 'joining' }); join(); }}>Vào lại lớp</button>
-          <Link className="btn ghost" style={{ color: 'var(--on-room)' }} href="/schedule">Về lịch học</Link>
-        </div>
-      </div></div>
+    return phase.ended ? (
+      <LobbyMessage
+        icon="check"
+        title="Buổi học đã kết thúc"
+        account={me?.email}
+        actions={
+          <>
+            <Link className="mt-pbtn" href={`/sessions/${params.id}`}>Xem lại buổi học</Link>
+            <Link className="mt-pbtn mt-pbtn--ghost" href="/schedule">Về lịch học</Link>
+          </>
+        }
+      >
+        <p>Giáo viên đã kết thúc <b>{info?.title}</b>. Bản ghi hình (nếu có) và tài liệu nằm trong mục Xem lại sau vài phút.</p>
+      </LobbyMessage>
+    ) : (
+      <LobbyMessage
+        icon="leave"
+        title="Bạn đã rời lớp"
+        account={me?.email}
+        actions={
+          <>
+            <button type="button" className="mt-pbtn" onClick={rejoin}>Vào lại lớp</button>
+            <Link className="mt-pbtn mt-pbtn--ghost" href="/schedule">Về lịch học</Link>
+          </>
+        }
+      >
+        <p>{phase.reason}</p>
+      </LobbyMessage>
     );
   }
 
   if (phase.k === 'waiting') {
     return (
-      <div className="center"><div className="box">
-        <h2>Đang chờ giáo viên duyệt</h2>
-        <p style={{ color: 'var(--on-room-muted)' }}>Bạn chưa có trong danh sách lớp. Giáo viên sẽ thấy yêu cầu của bạn và cho vào. Trang tự vào lớp khi được duyệt.</p>
-        <button className="btn ghost" style={{ color: 'var(--on-room)' }} onClick={() => { stopPoll(); setPhase({ k: 'prejoin' }); }}>Huỷ</button>
-      </div></div>
+      <LobbyMessage
+        spinner
+        title="Đang chờ giáo viên cho vào"
+        account={me?.email}
+        actions={<button type="button" className="mt-pbtn mt-pbtn--ghost" onClick={() => { stopPoll(); setPhase({ k: 'prejoin' }); }}>Huỷ yêu cầu</button>}
+      >
+        <p>Bạn chưa có trong danh sách lớp <b>{info?.course.title}</b>. Giáo viên đã nhận được yêu cầu của bạn; trang tự vào lớp khi được duyệt.</p>
+      </LobbyMessage>
     );
   }
 
@@ -141,8 +170,7 @@ export default function RoomPage({ params }: { params: { id: string } }) {
       <LiveKitRoom
         // Token mới (đổi phòng) thì gắn lại LiveKitRoom từ đầu.
         key={phase.token}
-        className="classroom"
-        data-lk-theme="default"
+        className="mt-lk"
         serverUrl={phase.url}
         token={phase.token}
         connect
@@ -153,12 +181,11 @@ export default function RoomPage({ params }: { params: { id: string } }) {
           !switching.current &&
           setPhase({
             k: 'left',
+            ended: reason === DisconnectReason.ROOM_DELETED,
             reason:
               reason === DisconnectReason.PARTICIPANT_REMOVED
                 ? 'Giáo viên đã mời bạn ra khỏi lớp.'
-                : reason === DisconnectReason.ROOM_DELETED
-                  ? 'Giáo viên đã kết thúc buổi học.'
-                  : 'Điểm danh đã được ghi lại.',
+                : 'Điểm danh đã được ghi lại. Buổi học vẫn đang diễn ra, bạn có thể vào lại bất cứ lúc nào.',
           })
         }
         onError={(e) => console.error(e)}
@@ -178,37 +205,32 @@ export default function RoomPage({ params }: { params: { id: string } }) {
     );
   }
 
-  // Phòng chờ kiểm tra thiết bị
+  // Kiểm tra thiết bị trước khi vào
+  if (me === null) {
+    // Không đọc được tài khoản (mất mạng, máy chủ đang khởi động lại); 401 thì useMe đã chuyển sang trang đăng nhập.
+    return (
+      <LobbyMessage icon="info" title="Không tải được buổi học" actions={<button type="button" className="mt-pbtn" onClick={() => window.location.reload()}>Thử lại</button>}>
+        <p>Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.</p>
+      </LobbyMessage>
+    );
+  }
+  if (!me || !info) {
+    return <LobbyMessage spinner title="Đang tải buổi học…" />;
+  }
   return (
-    <div className="center" style={{ alignItems: 'start' }}>
-      <div className="box" style={{ width: '100%', maxWidth: 640 }}>
-        <div>
-          <p style={{ color: 'var(--on-room-muted)', fontSize: 13 }}>{info?.course.title ?? 'Đang tải…'}</p>
-          <h2>{info?.title ?? ''}</h2>
-          <p style={{ color: 'var(--on-room-muted)', fontSize: 13, marginTop: 6 }}>
-            Kiểm tra camera và micro trước khi vào lớp. {info?.role === null && 'Bạn chưa có trong danh sách lớp nên cần chờ giáo viên duyệt.'}
-          </p>
-        </div>
-        <div className="prejoin" data-lk-theme="default" style={{ width: '100%' }}>
-          {me && (
-            <PreJoin
-              defaults={{ username: me.name, videoEnabled: true, audioEnabled: info?.role === 'teacher' }}
-              joinLabel={phase.k === 'joining' ? 'Đang vào…' : 'Vào lớp'}
-              micLabel="Micro"
-              camLabel="Camera"
-              userLabel="Tên hiển thị"
-              persistUserChoices
-              onSubmit={(c) => {
-                setChoices(c);
-                setPhase({ k: 'joining' });
-                join();
-              }}
-              onError={(e) => console.warn(e)}
-            />
-          )}
-        </div>
-        <p style={{ color: 'var(--on-room-muted)', fontSize: 12 }}>Tên hiển thị trong lớp lấy theo tài khoản của bạn.</p>
-      </div>
-    </div>
+    <PreJoinScreen
+      name={me.name}
+      account={me.email}
+      courseTitle={info.course.title}
+      title={info.title}
+      time={time}
+      role={info.role}
+      joining={phase.k === 'joining'}
+      onJoin={(c) => {
+        setChoices(c);
+        setPhase({ k: 'joining' });
+        join();
+      }}
+    />
   );
 }

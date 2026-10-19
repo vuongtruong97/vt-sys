@@ -18,6 +18,9 @@ type JoinRequest = { id: string; user: { id: string; name: string; email: string
 export type Activities = {
   board: boolean;
   toggleBoard: () => void;
+  /** Bảng GeoGebra đang mở. */
+  ggb: boolean;
+  toggleGgb: () => void;
   canRecord: boolean;
   recording: boolean;
   live: boolean;
@@ -327,6 +330,7 @@ function ActivitiesPanel({ setPanel, activities, quiz, group, courseId }: Props)
       {activities && (
         <>
           <Activity icon="board" color={['var(--md-on-success-container)', 'var(--md-success-container)']} title={activities.board ? 'Đóng bảng trắng' : 'Bảng trắng'} text="Bảng phấn chung, cả lớp cùng viết. Lưu lại cho buổi sau." onClick={activities.toggleBoard} on={activities.board} />
+          <Activity icon="layout" color={['var(--md-on-primary-container)', 'var(--md-primary-container)']} title={activities.ggb ? 'Đóng bảng GeoGebra' : 'Bảng GeoGebra'} text="Dựng hình, vẽ đồ thị bằng GeoGebra; cả lớp xem trực tiếp, chỉ bạn vẽ." onClick={activities.toggleGgb} on={activities.ggb} />
           {activities.canRecord && (
             <>
               <Activity icon="record" color={['var(--md-on-error-container)', 'var(--md-error-container)']} title={activities.recording ? 'Dừng ghi hình' : 'Ghi hình'} text="Ghi lại buổi học để học viên xem lại. Mọi người thấy biểu tượng đang ghi." onClick={activities.toggleRecording} disabled={activities.busy} on={activities.recording} />

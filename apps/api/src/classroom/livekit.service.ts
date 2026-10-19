@@ -2,7 +2,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import { AccessToken, DataPacket_Kind, RoomServiceClient, TrackSource, VideoGrant } from 'livekit-server-sdk';
 import { config } from '../common/config';
 
-export type RoomMeta = { board: boolean; allowStudentShare: boolean; recording?: boolean; live?: boolean };
+export type RoomMeta = {
+  board: boolean;
+  /** Bảng đang mở là bảng phấn (mặc định) hay GeoGebra. */
+  boardKind?: 'chalk' | 'ggb';
+  allowStudentShare: boolean;
+  recording?: boolean;
+  live?: boolean;
+};
 export type RoomRole = 'teacher' | 'student';
 
 const STUDENT_SOURCES = [TrackSource.CAMERA, TrackSource.MICROPHONE];

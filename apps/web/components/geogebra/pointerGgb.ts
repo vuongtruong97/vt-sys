@@ -22,7 +22,11 @@ const MAX_POINTS = 4000;
 
 export type View = { xMin: number; yMin: number; invXscale: number; invYscale: number; width: number; height: number };
 
-/** Khung vùng hình vẽ trên màn hình: canvas trong applet có đúng kích thước của view đang hoạt động. */
+/**
+ * Khung vùng hình vẽ trên màn hình: canvas lớn nhất trong applet.
+ * Kích thước CSS của canvas có thể khác kích thước view GeoGebra báo (applet co giãn), nên đổi toạ độ
+ * theo tỉ lệ giữa hai kích thước thay vì coi 1 điểm ảnh CSS = 1 điểm ảnh của view.
+ */
 export function graphicsArea(api: GgbApi, root: HTMLElement): { view: View; rect: DOMRect } | null {
   let view: View;
   try {
@@ -30,21 +34,22 @@ export function graphicsArea(api: GgbApi, root: HTMLElement): { view: View; rect
   } catch {
     return null;
   }
+  let best: DOMRect | null = null;
   for (const c of Array.from(root.querySelectorAll('canvas'))) {
-    const rect = c.getBoundingClientRect();
-    if (Math.abs(rect.width - view.width) < 2 && Math.abs(rect.height - view.height) < 2) return { view, rect };
+    const r = c.getBoundingClientRect();
+    if (r.width > 0 && r.height > 0 && (!best || r.width * r.height > best.width * best.height)) best = r;
   }
-  return null;
+  return best && view.width > 0 && view.height > 0 ? { view, rect: best } : null;
 }
 
 export const toWorld = (v: View, rect: DOMRect, clientX: number, clientY: number) => ({
-  x: v.xMin + (clientX - rect.left) * v.invXscale,
-  y: v.yMin + (rect.height - (clientY - rect.top)) * v.invYscale,
+  x: v.xMin + ((clientX - rect.left) * v.width / rect.width) * v.invXscale,
+  y: v.yMin + ((rect.height - (clientY - rect.top)) * v.height / rect.height) * v.invYscale,
 });
 
 export const toScreen = (v: View, rect: DOMRect, x: number, y: number) => ({
-  left: rect.left + (x - v.xMin) / v.invXscale,
-  top: rect.top + rect.height - (y - v.yMin) / v.invYscale,
+  left: rect.left + ((x - v.xMin) / v.invXscale) * rect.width / v.width,
+  top: rect.top + rect.height - ((y - v.yMin) / v.invYscale) * rect.height / v.height,
 });
 
 type AwarenessLike = { setLocalStateField(field: string, value: unknown): void };

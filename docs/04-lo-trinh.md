@@ -90,6 +90,7 @@ DB mới tạo (volume trống) thì không cần bước này.
 | Phông nền camera | **Xong** | Làm mờ, ảnh có sẵn, ảnh tự tải; chọn trước khi vào và trong phòng. `components/room/BackgroundPicker.tsx`, `lib/videoEffect.ts`. Đã thử bằng luồng video giả (canvas); chưa thử với camera thật và trên điện thoại |
 | Cửa sổ thu nhỏ (máy tính) | **Xong** | Document PiP, `components/room/MiniWindow.tsx`. Đã thử portal và chép CSS sang document khác; chưa thử mở cửa sổ thật có video (trình duyệt trong app không mở được cửa sổ) |
 | GeoGebra: lưu và mở bài | **Xong** | `/ggb`, `ggb.module.ts`, migration `9_ggb_documents`. Nhúng GeoGebra Classic từ CDN (đổi sang tự host bằng `NEXT_PUBLIC_GGB_SRC`, `NEXT_PUBLIC_GGB_CODEBASE`). Dùng theo giấy phép phi thương mại của GeoGebra: thu học phí thì phải ký hợp đồng với GeoGebra (office@geogebra.org) |
+| GeoGebra: laser, nét bút realtime | **Xong** | `pointerGgb.ts`, `GgbPointerLayer.tsx`; học viên chỉ thấy vùng hình vẽ. Đã thử bằng sự kiện giả lập; chưa thử bút cảm ứng thật và độ trễ qua mạng |
 | GeoGebra trong phòng học | **Xong** (giai đoạn 1) | Chỉ giáo viên vẽ, cả lớp xem trực tiếp; `GgbStage.tsx`, `syncGgb.ts`, migration `10_ggb_boards`, máy chủ bảng trắng chặn ghi với học viên. Chưa làm: trao bút cho học viên, nhiều người cùng vẽ, ghi hình bảng GeoGebra. Chưa thử trong phòng thật có video (máy dev trỏ IP LiveKit cũ) |
 | Thanh toán (VietQR + SePay/Casso) | Chưa | Cần tài khoản SePay/Casso và tài khoản ngân hàng thật |
 | Gói học (theo khoá, số buổi, tháng; 1-1) | Chưa | Phụ thuộc thanh toán |

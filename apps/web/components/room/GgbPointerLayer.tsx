@@ -18,7 +18,7 @@ const INK_WAIT = 2000;
 /**
  * Lớp phủ ở máy học viên: vẽ con trỏ laser và nét bút đang vẽ của giáo viên (awareness Hocuspocus).
  * Chỉ đọc trạng thái của client tự khai báo là giáo viên; không chặn chuột (pointer-events: none).
- * `snapshotTick` tăng mỗi lần nạp bảng mới: nét tạm đã xong thì xoá vì nét thật đã có.
+ * `snapshotTick` tăng mỗi lần nạp bảng mới: vẽ lại, nét tạm nào đã có nét thật trên bảng thì bỏ.
  */
 export function GgbPointerLayer({
   api,
@@ -34,7 +34,8 @@ export function GgbPointerLayer({
   const svg = useRef<SVGSVGElement>(null);
   const state = useRef({
     laser: null as { x: number; y: number; t: number } | null,
-    strokes: new Map<number, { pts: number[]; doneAt: number }>(),
+    /** penBase: số nét bút thật trên bảng lúc nét tạm bắt đầu; có thêm nét thật nghĩa là nét này đã về. */
+    strokes: new Map<number, { pts: number[]; doneAt: number; penBase: number }>(),
     raf: 0,
     kick: () => {},
   });
@@ -42,12 +43,18 @@ export function GgbPointerLayer({
   // Snapshot mới về: nét thật đã nằm trong bảng, bỏ các nét tạm đã nhấc bút.
   useEffect(() => {
     const s = state.current;
-    s.strokes.forEach((v, id) => v.doneAt && s.strokes.delete(id));
     s.kick();
   }, [snapshotTick]);
 
   useEffect(() => {
     const s = state.current;
+    const penCount = () => {
+      try {
+        return api.getAllObjectNames('penstroke').length;
+      } catch {
+        return 0;
+      }
+    };
     const draw = () => {
       s.raf = 0;
       const el = svg.current;
@@ -56,6 +63,9 @@ export function GgbPointerLayer({
       const host = el.parentElement!.getBoundingClientRect();
       const now = Date.now();
       let html = '';
+      // Nét thật đã có trên bảng (snapshot về trước hoặc sau tin nhấc bút đều được): bỏ nét tạm.
+      const pens = s.strokes.size ? penCount() : 0;
+      s.strokes.forEach((v, id) => v.doneAt && pens > v.penBase && s.strokes.delete(id));
       if (g) {
         const pt = (x: number, y: number) => {
           const p = toScreen(g.view, g.rect, x, y);
@@ -102,7 +112,7 @@ export function GgbPointerLayer({
       else {
         s.laser = null;
         const cur = s.strokes.get(p.id);
-        if (!cur || p.from === 0) s.strokes.set(p.id, { pts: p.pts.slice(), doneAt: p.done ? Date.now() : 0 });
+        if (!cur || p.from === 0) s.strokes.set(p.id, { pts: p.pts.slice(), doneAt: p.done ? Date.now() : 0, penBase: penCount() });
         else {
           // Bỏ phần trùng nếu nhận lại; thiếu đoạn (vào giữa nét) thì nối tiếp phần nhận được.
           const have = cur.pts.length / 2;

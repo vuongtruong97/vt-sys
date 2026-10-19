@@ -206,6 +206,14 @@ Giáo viên mở từ Hoạt động hoặc menu Thêm (`boardKind: 'ggb'`). `Gg
 - Map `ggbLive`: khi kéo, toạ độ điểm (`setCoords`) hoặc giá trị thanh trượt (`setValue`), 50 ms một lần, khoảng 90 byte mỗi tin; đối tượng phụ thuộc tự tính lại ngay. Loại khác gửi XML (`evalXML` rồi `UpdateConstruction`) và ghi thêm snapshot khi ngừng kéo.
 - Người vào muộn: nạp snapshot rồi áp các giá trị trong `ggbLive`.
 
+Học viên mở applet chỉ xem với `perspective: 'G'` (chỉ vùng hình vẽ, ẩn danh sách đối tượng); snapshot mang bố cục của giáo viên nên sau mỗi lần nạp gọi lại `setPerspective('G')`.
+
+Con trỏ laser và nét bút đang vẽ của giáo viên đi qua awareness của Hocuspocus (tin tức thời, không lưu DB), `components/geogebra/pointerGgb.ts` (gửi) và `components/room/GgbPointerLayer.tsx` (lớp SVG ở máy học viên):
+
+- Giáo viên bật nút Laser (phím L); toạ độ gửi là toạ độ hình học nên đúng ở mọi cỡ màn hình. Laser mờ dần sau 1,5 giây đứng yên.
+- Khi dùng công cụ Bút (mode 62), các điểm của nét được gửi dần (chỉ phần mới, khoảng 150 byte/tin, tối đa ~30 tin/giây); nhấc bút thì nét thật được ghi snapshot ngay (khoảng 50 ms tới máy học viên) và nét tạm biến mất khi số nét bút trên bảng tăng (dự phòng: 2 giây).
+- Máy chủ không chặn awareness của kết nối chỉ đọc, nên máy nhận chỉ vẽ trạng thái có `user.role: 'teacher'`. Học viên sửa code trình duyệt vẫn giả được chấm laser trên màn hình người khác, nhưng không sửa được bảng.
+
 Đo trong spike: nạp snapshot ở máy xem khoảng 110 ms với 30 đối tượng (XML 14 KB), 1,2 giây với 200 đối tượng (XML 73 KB). Bảng rất lớn sẽ khựng một chút ở máy xem mỗi lần thêm/xoá đối tượng. `setXML` đặt góc nhìn của máy xem theo giáo viên. Nút "Lưu thành bài" tạo `ggb_documents` có `sessionId`, học viên của lớp xem lại được (chỉ đọc).
 
 ### Bảng trắng

@@ -7,6 +7,7 @@ Thư mục này là nơi bắt đầu cho bất kỳ ai nhận tiếp dự án, 
 | [01-tong-quan.md](01-tong-quan.md) | Mục tiêu, kiến trúc, các thành phần, mô hình dữ liệu, luồng hoạt động chính | Mọi người |
 | [02-phat-trien.md](02-phat-trien.md) | Cài đặt máy mới, chạy trên máy, biến môi trường, quy trình làm việc, xử lý lỗi thường gặp | Lập trình viên |
 | [03-trien-khai-vps.md](03-trien-khai-vps.md) | Đưa lên máy chủ thật: VPS, tên miền, HTTPS, LiveKit, sao lưu, cập nhật | Người vận hành |
+| [05-trien-khai-homelab.md](05-trien-khai-homelab.md) | Đưa lên máy chủ tại nhà (Proxmox VM) sau Nginx Proxy Manager, tắt ghi hình, giới hạn RAM | Người vận hành |
 | [04-lo-trinh.md](04-lo-trinh.md) | Trạng thái hiện tại, việc còn dang dở, kế hoạch giai đoạn 2 và 3 | Người làm tiếp |
 | [../CLAUDE.md](../CLAUDE.md) | Quy ước ngắn cho trợ lý AI làm việc trong repo | Trợ lý AI |
 

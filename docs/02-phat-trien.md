@@ -87,6 +87,7 @@ Tất cả nằm trong `.env` ở thư mục gốc; `docker-compose.yml` truyề
 | `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` | s3, api, s3-init | Nơi lưu bản ghi và tài liệu. Bỏ trống `S3_BUCKET` thì hai tính năng này tắt | `bangden`, xem file |
 | `S3_ENDPOINT`, `S3_REGION` | api (chỉ VPS) | Địa chỉ R2/S3. Trên máy compose đặt sẵn `http://s3:9000` | trống, `auto` |
 | `RESEND_API_KEY`, `EMAIL_FROM` | api | Gửi email nhắc lịch. Bỏ trống thì chỉ ghi log | trống |
+| `NEXT_PUBLIC_GGB_SRC`, `NEXT_PUBLIC_GGB_CODEBASE` | web (lúc build) | Chỉ khi tự host GeoGebra: đường dẫn `deployggb.js` và thư mục `HTML5/5.0/web3d/` của GeoGebra Math Apps Bundle (đặt trong `apps/web/public/GeoGebra/`). Chưa nối vào compose; cần thì thêm build arg cho web | trống (dùng CDN geogebra.org) |
 
 Biến cố định trong compose: `LIVEKIT_URL=http://livekit:7880` (API gọi RoomService), `API_INTERNAL_URL=http://api:3001` (web rewrite, đặt lúc build), `S3_ENDPOINT=http://s3:9000` và `S3_PUBLIC_ENDPOINT=http://localhost:9000` (trình duyệt mở link tải), `APP_URL` (link trong email), `TZ=Asia/Ho_Chi_Minh`.
 

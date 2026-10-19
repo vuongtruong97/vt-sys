@@ -10,7 +10,7 @@ export function Nav({ me }: { me: Me | null | undefined }) {
   const links: NavLink[] = [{ href: '/', label: 'Trang chủ' }];
   if (me) {
     links.push({ href: '/schedule', label: 'Lịch học' });
-    if (me.role !== 'STUDENT') links.push({ href: '/meet', label: 'Meeting' }, { href: '/teach', label: 'Quản lý lớp' });
+    if (me.role !== 'STUDENT') links.push({ href: '/meet', label: 'Meeting' }, { href: '/ggb', label: 'GeoGebra' }, { href: '/teach', label: 'Quản lý lớp' });
     if (me.role === 'ADMIN') links.push({ href: '/admin', label: 'Quản trị' });
   }
   return (

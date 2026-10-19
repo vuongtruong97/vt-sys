@@ -560,3 +560,28 @@ body { background: var(--ui-surface); color: var(--ui-text); font-family: var(--
 @media (prefers-reduced-motion: reduce) {
   .ui-mock__window, .ui-mock__chip--hand { animation: none; }
 }
+
+/* ---------- GeoGebra ---------- */
+/* Applet GeoGebra không có chế độ tối: giữ nền sáng, chỉ khung bao theo token M3. */
+.ggb-wrap { position: relative; min-width: 0; min-height: 0; overflow: hidden; border-radius: var(--ui-radius-md); background: #ffffff; border: 1px solid var(--ui-outline-variant); }
+.ggb-wrap__applet { position: absolute; inset: 0; }
+.ggb-wrap__msg { position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; margin: 0; padding: 16px; text-align: center; font-family: var(--ui-font); font-size: var(--ui-text-sm); color: #49454f; background: #ffffff; }
+.ggb-editor { display: flex; flex-direction: column; gap: 12px; height: calc(100dvh - 64px); max-width: 1440px; margin: 0 auto; padding: 12px max(16px, env(safe-area-inset-left, 0px)) 16px; font-family: var(--ui-font); }
+.ggb-editor__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
+.ggb-editor__title { flex: 1 1 260px; max-width: 520px; }
+.ggb-editor__title .ui-input { height: 44px; font-size: var(--ui-text-md); }
+.ggb-editor__name { font-size: var(--ui-text-md); color: var(--ui-text); }
+.ggb-editor__state { font-size: var(--ui-text-xs); letter-spacing: .4px; color: var(--ui-text-body); }
+.ggb-editor__state--saving, .ggb-editor__state--dirty { color: var(--ui-primary); }
+.ggb-editor__state--error, .ggb-editor__state--conflict { color: var(--ui-danger); font-weight: 500; }
+.ggb-editor__board { flex: 1; min-height: 360px; }
+.ggb-card { display: grid; overflow: hidden; padding: 0; }
+.ggb-card__thumb { display: grid; place-items: center; aspect-ratio: 16 / 9; background: #ffffff; border-bottom: 1px solid var(--ui-outline-variant); font-size: 40px; text-decoration: none; }
+.ggb-card__thumb img { width: 100%; height: 100%; object-fit: contain; }
+.ggb-card__thumb:focus-visible { outline: 3px solid var(--md-secondary); outline-offset: -3px; }
+.ggb-card__body { display: grid; gap: 6px; padding: 12px 16px 16px; }
+.ggb-card__title { font-size: var(--ui-text-md); font-weight: 500; color: var(--ui-text); overflow-wrap: anywhere; }
+.ggb-card__meta { font-size: var(--ui-text-xs); color: var(--ui-text-body); }
+@media (max-width: 640px) {
+  .ggb-editor { padding-top: 8px; gap: 8px; }
+}

@@ -75,6 +75,7 @@ Nguyên tắc chính:
 | `/teach/sessions/[id]` | `app/teach/sessions/[id]/page.tsx` | Bảng điểm danh |
 | `/sessions/[id]` | `app/sessions/[id]/page.tsx` | Xem lại buổi học: bản ghi hình và tài liệu (giáo viên và học viên) |
 | `/live/[id]` | `app/live/[id]/page.tsx` | Xem phát trực tiếp bằng hls.js; luồng công khai không cần đăng nhập |
+| `/ggb`, `/ggb/[id]` | `app/ggb/` | Bài GeoGebra của giáo viên: danh sách (ảnh thu nhỏ), soạn bài với GeoGebra Classic nhúng (`components/geogebra/GeoGebraBoard.tsx`, `lib/geogebra.ts`), tự lưu sau 1,5 giây không đổi, báo khi bị sửa ở nơi khác |
 | `/admin` | `app/admin/page.tsx` | Quản trị: thống kê, vai trò tài khoản, chuyển khoá học |
 | `/room/[id]` | `app/room/[id]/page.tsx` | Phòng kiểm tra thiết bị (PreJoin), phòng chờ, phòng học |
 
@@ -127,6 +128,7 @@ Image chính thức `livekit/livekit-server`. Khoá API truyền qua biến `LIV
 | `materials` | Tài liệu | `sessionId` null là tài liệu chung của khoá |
 | `breakout_groups` | Nhóm nhỏ của buổi | `members` là mảng `users.id`; `sessions.breakoutActive` bật thì học viên vào phòng nhóm |
 | `live_streams` | Phát trực tiếp, một dòng mỗi buổi | `public`: ai có link cũng xem; `prefix`: thư mục HLS trên bucket |
+| `ggb_documents` | Bài GeoGebra | `base64` là `getBase64()` của applet (tối đa 2 MB); `version` tăng mỗi lần lưu, lưu bằng version cũ trả 409; `thumbnailKey` ảnh PNG trên S3 (bỏ qua khi chưa cấu hình S3); `sessionId` khi lưu từ bảng của buổi học |
 | `reminders` | Nhắc lịch đã gửi | khoá duy nhất (sessionId, userId, kind, startsAt): đổi giờ buổi học thì nhắc lại |
 
 ## Phân quyền trong phòng học
@@ -197,6 +199,11 @@ Giáo viên bật bảng thì metadata phòng `board=true`. Mỗi máy lấy tok
 | DELETE | `/courses/:id/enrollments/:userId` | giáo viên của khoá |
 | POST | `/courses/:id/sessions` `{title, startsAt, endsAt}` | giáo viên của khoá |
 | PATCH | `/sessions/:id` `{title?, startsAt?, endsAt?, cancelled?}` | giáo viên của khoá, hoặc chủ meeting |
+| GET, POST | `/ggb-documents` | xem danh sách: bài của mình; tạo: giáo viên |
+| GET | `/ggb-documents/:id` | chủ bài, hoặc thành viên buổi học nếu bài gắn buổi học (kèm `canEdit`) |
+| PUT | `/ggb-documents/:id` `{base64, version}` | chủ bài; 409 khi version cũ; 60 lần/phút |
+| PATCH, DELETE | `/ggb-documents/:id` `{title}` | chủ bài |
+| PUT | `/ggb-documents/:id/thumbnail` `{png}` | chủ bài; không có S3 thì bỏ qua |
 | GET, POST | `/meetings` `{title?, startsAt?, durationMinutes?}` | giáo viên; bỏ trống `startsAt` là họp ngay |
 | POST | `/meetings/:id/cancel` | chủ meeting |
 | GET | `/schedule` | đã đăng nhập |

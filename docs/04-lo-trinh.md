@@ -89,6 +89,8 @@ DB mới tạo (volume trống) thì không cần bước này.
 | Meeting độc lập (kiểu Google Meet) | **Xong** | `/meet`: họp ngay hoặc hẹn giờ, khách vào qua phòng chờ. `meetings.module.ts`, migration `8_meetings`. Đã chạy thử tạo, duyệt, vào, huỷ qua API; chưa thử có video thật. Chưa có tài liệu, ghi hình, phát trực tiếp trong meeting |
 | Phông nền camera | **Xong** | Làm mờ, ảnh có sẵn, ảnh tự tải; chọn trước khi vào và trong phòng. `components/room/BackgroundPicker.tsx`, `lib/videoEffect.ts`. Đã thử bằng luồng video giả (canvas); chưa thử với camera thật và trên điện thoại |
 | Cửa sổ thu nhỏ (máy tính) | **Xong** | Document PiP, `components/room/MiniWindow.tsx`. Đã thử portal và chép CSS sang document khác; chưa thử mở cửa sổ thật có video (trình duyệt trong app không mở được cửa sổ) |
+| GeoGebra: lưu và mở bài | **Xong** | `/ggb`, `ggb.module.ts`, migration `9_ggb_documents`. Nhúng GeoGebra Classic từ CDN (đổi sang tự host bằng `NEXT_PUBLIC_GGB_SRC`, `NEXT_PUBLIC_GGB_CODEBASE`). Dùng theo giấy phép phi thương mại của GeoGebra: thu học phí thì phải ký hợp đồng với GeoGebra (office@geogebra.org) |
+| GeoGebra trong phòng học | Đang làm | Bảng GeoGebra đồng bộ qua Hocuspocus, chỉ giáo viên vẽ |
 | Thanh toán (VietQR + SePay/Casso) | Chưa | Cần tài khoản SePay/Casso và tài khoản ngân hàng thật |
 | Gói học (theo khoá, số buổi, tháng; 1-1) | Chưa | Phụ thuộc thanh toán |
 | Chép lời, tóm tắt bằng AI | Chưa | Cần dịch vụ nhận dạng giọng nói tiếng Việt (chạy trên bản ghi MP4) và một mô hình ngôn ngữ để tóm tắt |

@@ -47,6 +47,7 @@ export function mockPrisma() {
     attendance: table(),
     user: table(),
     breakoutGroup: table(),
+    ggbDocument: table(),
     $transaction: jest.fn((ops: unknown[]) => Promise.all(ops)),
   };
 }

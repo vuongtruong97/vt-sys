@@ -47,6 +47,7 @@ model User {
   quizAnswers    QuizAnswer[]
   reminders      Reminder[]
   hostedMeetings ClassSession[] @relation("HostedMeetings")
+  ggbDocuments   GgbDocument[]
 
   @@map("users")
 }
@@ -107,6 +108,7 @@ model ClassSession {
   recordings        Recording[]
   materials         Material[]
   reminders         Reminder[]
+  ggbDocuments      GgbDocument[]
 
   @@index([startsAt])
   @@index([hostId, startsAt])
@@ -286,4 +288,25 @@ model Reminder {
 
   @@unique([sessionId, userId, kind, startsAt])
   @@map("reminders")
+}
+
+/// Bài GeoGebra (getBase64() của applet). Ảnh thu nhỏ nằm trên S3 nếu có cấu hình lưu trữ.
+model GgbDocument {
+  id           String        @id @default(cuid())
+  title        String
+  ownerId      String
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  /// Bài lưu từ bảng GeoGebra của một buổi học/meeting.
+  sessionId    String?
+  session      ClassSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  appName      String        @default("classic")
+  base64       String        @default("") @db.Text
+  thumbnailKey String?
+  /// Tăng mỗi lần lưu; lưu bằng version cũ thì bị từ chối (409) để không ghi đè bản mới hơn.
+  version      Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([ownerId, updatedAt])
+  @@map("ggb_documents")
 }

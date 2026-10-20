@@ -150,6 +150,8 @@ services:
       args:
         API_INTERNAL_URL: http://api:3001
         NEXT_PUBLIC_WHITEBOARD_URL: ${WHITEBOARD_PUBLIC_URL}
+    environment:
+      APP_URL: http://localhost:3000
     depends_on:
       - api
     ports:

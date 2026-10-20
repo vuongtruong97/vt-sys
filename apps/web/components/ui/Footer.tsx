@@ -1,12 +1,14 @@
 'use client';
 import Link from 'next/link';
-import { FormEvent, useState } from 'react';
+import { FormEvent, ReactNode, useState } from 'react';
 import { Button } from './Button';
 import { Logo } from './Display';
 import { Input } from './Field';
 
 export type FooterProps = {
   tagline?: string;
+  /** Logo hiện ở chân trang; mặc định là logo chữ "Bảng Đen". */
+  logo?: ReactNode;
   links?: Array<{ label: string; href: string }>;
   copyright?: string;
   /** Có thì hiện ô đăng ký bản tin; nhận email, ném lỗi (Error.message) nếu thất bại. */
@@ -16,6 +18,7 @@ export type FooterProps = {
 /** Footer nền xanh than (Figma: logo, "Virtual Class for Zoom", đăng ký bản tin, liên kết, bản quyền). */
 export function Footer({
   tagline = 'Lớp học trực tuyến',
+  logo,
   links = [],
   copyright = `© ${new Date().getFullYear()} Bảng Đen`,
   onSubscribe,
@@ -40,7 +43,7 @@ export function Footer({
     <footer className="ui-footer">
       <div className="ui-footer__inner">
         <div className="ui-footer__brand">
-          <Logo tone="light" size={64} name="Bảng Đen" />
+          {logo ?? <Logo tone="light" size={64} name="Bảng Đen" />}
           <span className="ui-footer__tagline">{tagline}</span>
         </div>
         {onSubscribe && (

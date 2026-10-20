@@ -250,12 +250,16 @@ export type LogoProps = {
   size?: number;
   tone?: 'dark' | 'light';
   href?: string;
+  /** Ảnh logo (vuông hoặc ngang); có ảnh thì thay cho khung thoi và chữ viết tắt. */
+  image?: string | null;
   className?: string;
 };
 
 /** Logo: khung thoi viền màu primary (vẽ bằng CSS để đổi theo chế độ sáng/tối), chữ viết tắt, và tên sản phẩm (tuỳ chọn). */
-export function Logo({ text = 'BĐ', name, size = 83, tone = 'dark', href, className }: LogoProps) {
-  const mark = (
+export function Logo({ text = 'BĐ', name, size = 83, tone = 'dark', href, image, className }: LogoProps) {
+  const mark = image ? (
+    <img className="ui-logo__img" src={image} alt="" style={{ height: size }} />
+  ) : (
     <span className="ui-logo__mark" style={{ width: size, height: size }}>
       <span style={{ fontSize: Math.round(size * 0.36) }}>{text}</span>
     </span>

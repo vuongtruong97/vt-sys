@@ -58,6 +58,8 @@ model User {
   reminders      Reminder[]
   hostedMeetings ClassSession[] @relation("HostedMeetings")
   ggbDocuments   GgbDocument[]
+  siteEdits      SiteContent[]
+  siteAssets     SiteAsset[]
 
   @@map("users")
 }
@@ -331,4 +333,31 @@ model GgbBoard {
   session   ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@map("ggb_boards")
+}
+
+/// Nội dung trang công khai (trang chủ, thương hiệu, chân trang, SEO, đăng nhập). Hai dòng: "draft" và "published".
+/// Kiểu và cách làm sạch dữ liệu: apps/api/src/site/site-content.ts.
+model SiteContent {
+  key         String   @id
+  data        Json
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+  updatedBy   User?    @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("site_content")
+}
+
+/// Ảnh của trang công khai (slider, logo, favicon…). Không sửa sau khi tải lên: đổi ảnh là tải ảnh mới, nên cache được lâu.
+model SiteAsset {
+  id          String   @id @default(cuid())
+  data        Bytes
+  contentType String
+  width       Int
+  height      Int
+  size        Int
+  createdAt   DateTime @default(now())
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@map("site_assets")
 }

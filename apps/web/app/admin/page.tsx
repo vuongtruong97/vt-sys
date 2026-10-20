@@ -2,7 +2,7 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { fmtSize } from '@/components/Materials';
 import { Nav } from '@/components/Nav';
-import { Alert, Badge, Button, Checkbox, Input, Modal, Muted, Page, PageHeader, Section, Select, Stat, Table, Tabs, Textarea } from '@/components/ui';
+import { Alert, Badge, Button, ButtonLink, Checkbox, Input, Modal, Muted, Page, PageHeader, Section, Select, Stat, Table, Tabs, Textarea } from '@/components/ui';
 import { api } from '@/lib/api';
 import { can, canAdminArea } from '@/lib/can';
 import { fmtDay, fmtTime } from '@/lib/format';
@@ -51,6 +51,7 @@ export default function AdminPage() {
     users: can(me, 'user.manage'),
     roles: can(me, 'role.manage', 'user.manage'),
     courses: can(me, 'course.manage_all', 'course.view_all'),
+    site: can(me, 'site.manage'),
   };
   const canEditRoles = can(me, 'role.manage');
   const canTransfer = can(me, 'course.manage_all');
@@ -325,6 +326,16 @@ export default function AdminPage() {
     show.users && { id: 'users', label: 'Tài khoản', content: usersTab },
     show.roles && { id: 'roles', label: 'Vai trò', content: rolesTab },
     show.courses && { id: 'courses', label: 'Khoá học', content: coursesTab },
+    show.site && {
+      id: 'site',
+      label: 'Trang web',
+      content: (
+        <Section title="Nội dung trang web">
+          <Muted>Ảnh, slider, nội dung trang chủ, tên và logo, màu chủ đạo, chân trang, SEO, trang đăng nhập. Sửa trong bản nháp, xem trước rồi mới xuất bản.</Muted>
+          <div className="ui-actions"><ButtonLink href="/admin/site">Mở trình chỉnh sửa trang web</ButtonLink></div>
+        </Section>
+      ),
+    },
   ].filter(Boolean) as { id: string; label: string; content: React.ReactNode }[];
 
   return (

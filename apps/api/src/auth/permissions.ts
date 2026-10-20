@@ -13,6 +13,7 @@ export const PERMISSIONS = [
   { code: 'stats.view', group: 'Quản trị', label: 'Xem thống kê hệ thống', hint: 'Số người dùng, khoá học, buổi học' },
   { code: 'user.manage', group: 'Quản trị', label: 'Quản lý tài khoản', hint: 'Xem danh sách tài khoản, đổi vai trò người dùng' },
   { code: 'role.manage', group: 'Quản trị', label: 'Quản lý vai trò', hint: 'Tạo, sửa, xoá vai trò và quyền của vai trò' },
+  { code: 'site.manage', group: 'Quản trị', label: 'Quản lý nội dung trang web', hint: 'Ảnh, slider, nội dung trang chủ, thương hiệu, chân trang, SEO, trang đăng nhập' },
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number]['code'];

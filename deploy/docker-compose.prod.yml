@@ -107,6 +107,8 @@ services:
         API_INTERNAL_URL: http://api:3001
         NEXT_PUBLIC_WHITEBOARD_URL: wss://board.${DOMAIN}
     restart: unless-stopped
+    environment:
+      APP_URL: https://${DOMAIN}
     depends_on:
       - api
 

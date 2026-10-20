@@ -24,7 +24,6 @@ export function GgbStage({ sessionId, title, canWrite, say }: { sessionId: strin
   const [ggb, setGgb] = useState<GgbApi | null>(null);
   const [conn, setConn] = useState<{ ydoc: Y.Doc; provider: HocuspocusProvider | null; synced: boolean } | null>(null);
   const [status, setStatus] = useState<'connecting' | 'ready' | 'error'>('connecting');
-  const [saving, setSaving] = useState(false);
   const [laser, setLaser] = useState(false);
   const [tick, setTick] = useState(0);
   const [root, setRoot] = useState<HTMLDivElement | null>(null);
@@ -114,22 +113,6 @@ export function GgbStage({ sessionId, title, canWrite, say }: { sessionId: strin
 
   const onReady = useCallback((a: GgbApi) => setGgb(a), []);
 
-  /** Lưu bảng hiện tại thành một bài GeoGebra, học viên của lớp xem lại được ở /ggb. */
-  const saveCopy = async () => {
-    // next/dynamic không chuyển ref, nên dùng api nhận từ onReady.
-    const base64 = ggb?.getBase64();
-    if (!base64) return;
-    setSaving(true);
-    try {
-      await api('/ggb-documents', { json: { title: `Bảng GeoGebra · ${title}`.slice(0, 120), base64, sessionId } });
-      say('Đã lưu bảng GeoGebra vào mục GeoGebra của bạn');
-    } catch (e) {
-      say((e as Error).message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const awareness = conn?.provider?.awareness;
   return (
     <div ref={setRoot} className={`mt-ggb${canWrite && laser ? ' mt-ggb--laser' : ''}`}>
@@ -150,9 +133,6 @@ export function GgbStage({ sessionId, title, canWrite, say }: { sessionId: strin
             onClick={toggleLaser}
           >
             <Icon name="pin" size={16} /> {laser ? 'Tắt laser' : 'Laser'}
-          </button>
-          <button type="button" className="mt-pbtn mt-pbtn--sm" disabled={saving} onClick={saveCopy}>
-            {saving ? 'Đang lưu…' : 'Lưu thành bài'}
           </button>
         </div>
       )}

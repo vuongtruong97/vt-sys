@@ -75,7 +75,6 @@ Nguyên tắc chính:
 | `/teach/sessions/[id]` | `app/teach/sessions/[id]/page.tsx` | Bảng điểm danh |
 | `/sessions/[id]` | `app/sessions/[id]/page.tsx` | Xem lại buổi học: bản ghi hình và tài liệu (giáo viên và học viên) |
 | `/live/[id]` | `app/live/[id]/page.tsx` | Xem phát trực tiếp bằng hls.js; luồng công khai không cần đăng nhập |
-| `/ggb`, `/ggb/[id]` | `app/ggb/` | Bài GeoGebra của giáo viên: danh sách (ảnh thu nhỏ), soạn bài với GeoGebra Classic nhúng (`components/geogebra/GeoGebraBoard.tsx`, `lib/geogebra.ts`), tự lưu sau 1,5 giây không đổi, báo khi bị sửa ở nơi khác |
 | `/admin/site` | `app/admin/site/page.tsx` | Sửa nội dung trang công khai: thương hiệu (tên, logo, favicon, màu chủ đạo), slider đầu trang, các khối trang chủ (bật/tắt, tính năng, các bước, banner), giáo viên, câu hỏi, chân trang, SEO, trang đăng nhập. Tự lưu nháp, Xem trước (`/?preview=1`), Xuất bản, Bỏ nháp. Ảnh thu nhỏ trên trình duyệt trước khi tải |
 | `/admin` | `app/admin/page.tsx` | Quản trị: thống kê, vai trò tài khoản, chuyển khoá học |
 | `/room/[id]` | `app/room/[id]/page.tsx` | Phòng kiểm tra thiết bị (PreJoin), phòng chờ, phòng học |
@@ -147,7 +146,7 @@ Vai trò do quản trị viên tạo ở `/admin` (tab Vai trò), mỗi vai trò
 | --- | --- |
 | `course.create` | Tạo và dạy khoá học của mình |
 | `meeting.create` | Tạo phòng họp nhanh |
-| `ggb.create` | Tạo bài GeoGebra |
+| `ggb.create` | Tạo bài GeoGebra qua API `/ggb-documents` (giao diện hiện chưa dùng; bảng GeoGebra trong phòng học chỉ cần là giáo viên của buổi) |
 | `session.record` | Ghi hình, phát trực tiếp buổi mình dạy |
 | `course.view_all` | Xem mọi khoá học, điểm danh, bản ghi; vào lớp như học viên |
 | `course.manage_all` | Sửa mọi khoá học, vào lớp với quyền giáo viên, chuyển khoá |
@@ -252,7 +251,7 @@ Giáo viên bật bảng thì metadata phòng `board=true`. Mỗi máy lấy tok
 | PUT | `/admin/site/draft` `{content}` | `site.manage`; làm sạch rồi lưu nháp |
 | POST | `/admin/site/publish`, `/admin/site/discard` | `site.manage`; xuất bản nháp, hoặc đưa nháp về bản đã xuất bản |
 | POST | `/admin/site/assets` (multipart `file`, ≤ 3 MB), `/admin/site/assets/cleanup` | `site.manage`; chỉ nhận JPEG/PNG/WebP (kiểm magic bytes, không nhận SVG); dọn ảnh không dùng quá 1 ngày |
-| GET, POST | `/ggb-documents` | xem danh sách: bài của mình; tạo: giáo viên |
+| GET, POST | `/ggb-documents` | xem danh sách: bài của mình; tạo: giáo viên. Giao diện hiện chưa dùng (đã bỏ trang /ggb và nút lưu thành bài trong phòng học); API và bảng `ggb_documents` giữ lại cho dữ liệu cũ |
 | GET | `/ggb-documents/:id` | chủ bài, hoặc thành viên buổi học nếu bài gắn buổi học (kèm `canEdit`) |
 | PUT | `/ggb-documents/:id` `{base64, version}` | chủ bài; 409 khi version cũ; 60 lần/phút |
 | PATCH, DELETE | `/ggb-documents/:id` `{title}` | chủ bài |

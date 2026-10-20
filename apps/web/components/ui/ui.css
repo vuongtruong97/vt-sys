@@ -732,3 +732,7 @@ body { background: var(--ui-surface); color: var(--ui-text); font-family: var(--
   .sa-nav { position: static; grid-auto-flow: column; overflow-x: auto; }
   .sa-nav__item { white-space: nowrap; }
 }
+
+/* Bảng: cột số căn phải; chữ phụ cắt còn một dòng (mô tả khoá học ở /teach). */
+.ui-table th.ui-num, .ui-table td.ui-num { text-align: right; }
+.ui-clamp-1, .ui-table .ui-sub.ui-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; max-width: 46ch; }

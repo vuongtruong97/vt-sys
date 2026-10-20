@@ -1,7 +1,7 @@
 'use client';
 import { FormEvent, useEffect, useState } from 'react';
 import { Nav } from '@/components/Nav';
-import { Alert, Badge, Button, Card, CourseCard, EmptyState, Input, Muted, Page, PageHeader, Section, Switch, Textarea } from '@/components/ui';
+import { Alert, Badge, Button, ButtonLink, EmptyState, Input, Modal, Muted, Page, PageHeader, Section, Select, Switch, Table, Textarea } from '@/components/ui';
 import { api } from '@/lib/api';
 import { can, canTeachArea } from '@/lib/can';
 import { useMe } from '@/lib/useMe';
@@ -16,12 +16,18 @@ type Course = {
   _count: { enrollments: number; sessions: number };
 };
 
+/** Quản lý lớp: bảng khoá học (của mình, hoặc mọi khoá nếu có quyền xem/quản lý toàn hệ thống), tạo khoá qua hộp thoại. */
 export default function TeachPage() {
   const me = useMe({ redirect: true });
   const [courses, setCourses] = useState<Course[] | null>(null);
   const [error, setError] = useState('');
+  const [msg, setMsg] = useState('');
+  const [q, setQ] = useState('');
+  const [scope, setScope] = useState<'all' | 'mine'>('all');
+  const [creating, setCreating] = useState(false);
   const [published, setPublished] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [formError, setFormError] = useState('');
 
   const load = () => api<Course[]>('/courses').then(setCourses).catch((e) => setError(e.message));
   useEffect(() => {
@@ -30,17 +36,18 @@ export default function TeachPage() {
 
   const create = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const form = e.currentTarget;
-    const f = new FormData(form);
-    setError('');
+    const f = new FormData(e.currentTarget);
+    setFormError('');
     setBusy(true);
     try {
-      await api('/courses', { json: { title: f.get('title'), description: f.get('description'), published } });
-      form.reset();
+      const title = String(f.get('title') ?? '').trim();
+      await api('/courses', { json: { title, description: f.get('description'), published } });
+      setCreating(false);
       setPublished(false);
+      setMsg(`Đã tạo khoá "${title}". Bấm Quản lý để lên lịch buổi học và thêm học viên.`);
       load();
     } catch (err) {
-      setError((err as Error).message);
+      setFormError((err as Error).message);
     } finally {
       setBusy(false);
     }
@@ -58,54 +65,107 @@ export default function TeachPage() {
     );
   }
 
+  // Có khoá của giáo viên khác (người xem/quản lý mọi khoá): hiện cột Giáo viên và bộ lọc "Của tôi".
+  const others = !!courses?.some((c) => !c.mine);
+  const term = q.trim().toLowerCase();
+  const shown = (courses ?? []).filter(
+    (c) => (scope === 'all' || c.mine) && (!term || c.title.toLowerCase().includes(term) || c.teacher.name.toLowerCase().includes(term)),
+  );
+  const openCreate = () => {
+    setFormError('');
+    setCreating(true);
+  };
+
   return (
     <>
       <Nav me={me} />
       <Page>
-        <PageHeader title="Quản lý lớp" description="Tạo khoá học, lên lịch buổi học và thêm học viên." />
-        <div className="ui-cols">
-          <Section title={canCreate && !can(me, 'course.view_all', 'course.manage_all') ? 'Khoá học của bạn' : 'Khoá học'}>
-            {courses === null && !error && <Muted>Đang tải…</Muted>}
-            {courses?.length === 0 && <EmptyState title="Chưa có khoá học" icon="📚">{canCreate ? 'Tạo khoá đầu tiên ở khung bên cạnh.' : 'Chưa có giáo viên nào tạo khoá học.'}</EmptyState>}
-            <div className="ui-list">
-              {courses?.map((c) => (
-                <CourseCard
-                  key={c.id}
-                  href={`/teach/courses/${c.id}`}
-                  title={c.title}
-                  description={c.description || undefined}
-                  footerExtra={
-                    <span className="ui-actions">
-                      <span className="ui-meta">
-                        {c._count.sessions} buổi · {c._count.enrollments} học viên{c.mine ? '' : ` · ${c.teacher.name}`}
-                      </span>
-                      <Badge variant={c.published ? 'soft' : 'neutral'}>{c.published ? 'Công khai' : 'Nháp'}</Badge>
-                    </span>
-                  }
-                />
-              ))}
-            </div>
-          </Section>
+        <PageHeader
+          title="Quản lý lớp"
+          description="Khoá học, lịch buổi học và danh sách học viên."
+          actions={canCreate && <Button onClick={openCreate}>Tạo khoá học</Button>}
+        />
+        {error && <Alert tone="error">{error}</Alert>}
+        {msg && <Alert tone="success">{msg}</Alert>}
 
-          {canCreate && (
-          <Section title="Tạo khoá học">
-            <Card padded>
-              <form className="ui-form" onSubmit={create}>
-                <Input label="Tên khoá học" name="title" required minLength={3} placeholder="Ví dụ: Python cơ bản" />
-                <Textarea label="Mô tả" name="description" rows={3} placeholder="Khoá học dành cho ai, học xong làm được gì" />
-                <Switch checked={published} onChange={setPublished} label="Hiện trên trang chủ" />
-                {error && <Alert tone="error">{error}</Alert>}
-                <div className="ui-actions">
-                  <Button type="submit" loading={busy}>
-                    Tạo khoá học
-                  </Button>
-                </div>
-              </form>
-            </Card>
-          </Section>
+        <Section>
+          {courses === null && !error && <Muted>Đang tải…</Muted>}
+          {courses?.length === 0 && (
+            <EmptyState title="Chưa có khoá học" icon="📚" action={canCreate && <Button onClick={openCreate}>Tạo khoá học đầu tiên</Button>}>
+              {canCreate ? 'Tạo khoá học, rồi lên lịch buổi học và thêm học viên bằng email.' : 'Chưa có giáo viên nào tạo khoá học.'}
+            </EmptyState>
           )}
-        </div>
+
+          {!!courses?.length && (
+            <>
+              <div className="ui-form-row" style={{ alignItems: 'end' }}>
+                <Input label="Tìm khoá học" value={q} onChange={(e) => setQ(e.target.value)} placeholder={others ? 'Tên khoá hoặc giáo viên' : 'Tên khoá học'} />
+                {others && (
+                  <Select
+                    label="Hiện"
+                    value={scope}
+                    onChange={(e) => setScope(e.target.value as 'all' | 'mine')}
+                    options={[
+                      { value: 'all', label: 'Tất cả khoá học' },
+                      { value: 'mine', label: 'Khoá tôi dạy' },
+                    ]}
+                  />
+                )}
+              </div>
+              <Muted small>
+                {shown.length === courses.length ? `${courses.length} khoá học` : `${shown.length} / ${courses.length} khoá học`}
+              </Muted>
+              <Table caption="Khoá học">
+                <thead>
+                  <tr>
+                    <th>Khoá học</th>
+                    {others && <th>Giáo viên</th>}
+                    <th className="ui-num">Buổi</th>
+                    <th className="ui-num">Học viên</th>
+                    <th>Trạng thái</th>
+                    <th aria-label="Thao tác" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {shown.map((c) => (
+                    <tr key={c.id}>
+                      <td>
+                        <a className="ui-link" href={`/teach/courses/${c.id}`}>{c.title}</a>
+                        {c.description && <span className="ui-sub ui-clamp-1">{c.description}</span>}
+                      </td>
+                      {others && <td>{c.mine ? 'Bạn' : c.teacher.name}</td>}
+                      <td className="ui-num">{c._count.sessions}</td>
+                      <td className="ui-num">{c._count.enrollments}</td>
+                      <td>
+                        <Badge variant={c.published ? 'soft' : 'neutral'}>{c.published ? 'Công khai' : 'Nháp'}</Badge>
+                      </td>
+                      <td>
+                        <div className="ui-actions" style={{ justifyContent: 'flex-end' }}>
+                          <ButtonLink href={`/teach/courses/${c.id}`} variant="outline" size="sm">Quản lý</ButtonLink>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+              {shown.length === 0 && <Muted small>Không có khoá học nào khớp.</Muted>}
+            </>
+          )}
+        </Section>
       </Page>
+
+      <Modal open={creating} onClose={() => setCreating(false)} title="Tạo khoá học">
+        <form className="ui-form" onSubmit={create}>
+          <Input label="Tên khoá học" name="title" required minLength={3} placeholder="Ví dụ: Python cơ bản" />
+          <Textarea label="Mô tả" name="description" rows={3} placeholder="Khoá học dành cho ai, học xong làm được gì" />
+          <Switch checked={published} onChange={setPublished} label="Hiện trên trang chủ" />
+          {formError && <Alert tone="error">{formError}</Alert>}
+          <div className="ui-actions" style={{ justifyContent: 'flex-end' }}>
+            <Button type="button" variant="ghost" onClick={() => setCreating(false)}>Huỷ</Button>
+            <Button type="submit" loading={busy}>Tạo khoá học</Button>
+          </div>
+        </form>
+      </Modal>
     </>
   );
 }

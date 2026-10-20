@@ -3,13 +3,15 @@ import Link from 'next/link';
 import { ReactNode, useState } from 'react';
 import { people, session } from './data';
 import { Icon } from '@/components/meet/icons';
+import { useSite } from '@/lib/site';
 import { Av } from './Tiles';
 
 function LobbyShell({ children }: { children: ReactNode }) {
+  const { brand } = useSite();
   return (
     <div className="mt mt-lobby">
       <header className="mt-lobby__top">
-        <span className="mt-brand"><i>BĐ</i>Bảng Đen</span>
+        <span className="mt-brand"><i>{brand.short}</i>{brand.name}</span>
         <span className="mt-muted">lananh.hv@gmail.com</span>
       </header>
       {children}

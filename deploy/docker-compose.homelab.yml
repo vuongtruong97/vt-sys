@@ -117,6 +117,9 @@ services:
         NEXT_PUBLIC_WHITEBOARD_URL: wss://${BOARD_DOMAIN}
     restart: unless-stopped
     mem_limit: 256m
+    environment:
+      # Link tuyệt đối cho ảnh chia sẻ mạng xã hội (trang quản trị nội dung).
+      APP_URL: https://${APP_DOMAIN}
     logging: *logging
     depends_on:
       - api

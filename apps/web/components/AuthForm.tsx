@@ -5,10 +5,12 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Nav } from './Nav';
 import { Alert, Button, Input, Tabs } from '@/components/ui';
 import { api } from '@/lib/api';
+import { assetUrl, useSite } from '@/lib/site';
 
 /** Đăng nhập / đăng ký theo màn "Login" của Figma: ảnh lớn bên trái, form bên phải (điện thoại chỉ còn form). */
 export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const router = useRouter();
+  const { auth } = useSite();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [google, setGoogle] = useState(false);
@@ -47,15 +49,15 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
       <Nav me={undefined} />
       <main className="ui-auth">
         <div className="ui-auth__hero">
-          <img src="/ui/auth-hero.jpg" alt="" />
+          <img src={assetUrl(auth.imageAssetId) ?? '/ui/auth-hero.jpg'} alt="" />
           <div className="ui-auth__caption">
-            <b>Học trực tiếp cùng giáo viên</b>
-            <span>Ở bất cứ đâu, trên mọi thiết bị</span>
+            <b>{auth.captionTitle}</b>
+            <span>{auth.captionText}</span>
           </div>
         </div>
 
         <div className="ui-auth__panel">
-          <h1 className="ui-auth__welcome">{login ? 'Chào mừng bạn quay lại!' : 'Chào mừng bạn đến với Bảng Đen!'}</h1>
+          <h1 className="ui-auth__welcome">{login ? auth.loginWelcome : auth.registerWelcome}</h1>
           <Tabs
             variant="segmented"
             className="ui-auth__switch"
@@ -68,9 +70,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
             ]}
           />
           <p className="ui-auth__lead">
-            {login
-              ? 'Vào lớp học video, xem lịch học, bản ghi và tài liệu của các buổi đã học.'
-              : 'Tạo tài khoản học viên miễn phí. Giáo viên sẽ thêm bạn vào khoá học bằng email này.'}
+            {login ? auth.loginLead : auth.registerLead}
           </p>
 
           <form className="ui-form" onSubmit={submit}>

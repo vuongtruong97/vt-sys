@@ -76,6 +76,7 @@ Nguyên tắc chính:
 | `/sessions/[id]` | `app/sessions/[id]/page.tsx` | Xem lại buổi học: bản ghi hình và tài liệu (giáo viên và học viên) |
 | `/live/[id]` | `app/live/[id]/page.tsx` | Xem phát trực tiếp bằng hls.js; luồng công khai không cần đăng nhập |
 | `/ggb`, `/ggb/[id]` | `app/ggb/` | Bài GeoGebra của giáo viên: danh sách (ảnh thu nhỏ), soạn bài với GeoGebra Classic nhúng (`components/geogebra/GeoGebraBoard.tsx`, `lib/geogebra.ts`), tự lưu sau 1,5 giây không đổi, báo khi bị sửa ở nơi khác |
+| `/admin/site` | `app/admin/site/page.tsx` | Sửa nội dung trang công khai: thương hiệu (tên, logo, favicon, màu chủ đạo), slider đầu trang, các khối trang chủ (bật/tắt, tính năng, các bước, banner), giáo viên, câu hỏi, chân trang, SEO, trang đăng nhập. Tự lưu nháp, Xem trước (`/?preview=1`), Xuất bản, Bỏ nháp. Ảnh thu nhỏ trên trình duyệt trước khi tải |
 | `/admin` | `app/admin/page.tsx` | Quản trị: thống kê, vai trò tài khoản, chuyển khoá học |
 | `/room/[id]` | `app/room/[id]/page.tsx` | Phòng kiểm tra thiết bị (PreJoin), phòng chờ, phòng học |
 
@@ -131,6 +132,8 @@ Image chính thức `livekit/livekit-server`. Khoá API truyền qua biến `LIV
 | `live_streams` | Phát trực tiếp, một dòng mỗi buổi | `public`: ai có link cũng xem; `prefix`: thư mục HLS trên bucket |
 | `ggb_documents` | Bài GeoGebra | `base64` là `getBase64()` của applet (tối đa 2 MB); `version` tăng mỗi lần lưu, lưu bằng version cũ trả 409; `thumbnailKey` ảnh PNG trên S3 (bỏ qua khi chưa cấu hình S3); `sessionId` khi lưu từ bảng của buổi học |
 | `ggb_boards` | Bảng GeoGebra của buổi học | Trạng thái Yjs do máy chủ bảng trắng ghi (tài liệu `ggb:<session_id>`); tách khỏi `whiteboards` vì khoá chính là `session_id` |
+| `site_content` | Nội dung trang công khai | Hai dòng `key`: `draft`, `published`; `data` JSON theo kiểu `SiteContent` (`apps/api/src/site/site-content.ts`), luôn qua `sanitize` khi lưu và khi đọc |
+| `site_assets` | Ảnh của trang (slider, logo, favicon, ảnh giáo viên…) | Lưu byte trong Postgres (homelab không có S3); không sửa sau khi tải: đổi ảnh là id mới, nên trả cache 1 năm |
 | `reminders` | Nhắc lịch đã gửi | khoá duy nhất (sessionId, userId, kind, startsAt): đổi giờ buổi học thì nhắc lại |
 
 ## Phân quyền
@@ -238,6 +241,11 @@ Giáo viên bật bảng thì metadata phòng `board=true`. Mỗi máy lấy tok
 | DELETE | `/courses/:id/enrollments/:userId` | giáo viên của khoá |
 | POST | `/courses/:id/sessions` `{title, startsAt, endsAt}` | giáo viên của khoá |
 | PATCH | `/sessions/:id` `{title?, startsAt?, endsAt?, cancelled?}` | giáo viên của khoá, hoặc chủ meeting |
+| GET | `/site`, `/site/assets/:id` | mọi người (không cần đăng nhập); nội dung đã xuất bản (cache 30 giây), ảnh (cache 1 năm) |
+| GET | `/admin/site` | `site.manage`: `{draft, published, draftUpdatedAt, publishedAt}` |
+| PUT | `/admin/site/draft` `{content}` | `site.manage`; làm sạch rồi lưu nháp |
+| POST | `/admin/site/publish`, `/admin/site/discard` | `site.manage`; xuất bản nháp, hoặc đưa nháp về bản đã xuất bản |
+| POST | `/admin/site/assets` (multipart `file`, ≤ 3 MB), `/admin/site/assets/cleanup` | `site.manage`; chỉ nhận JPEG/PNG/WebP (kiểm magic bytes, không nhận SVG); dọn ảnh không dùng quá 1 ngày |
 | GET, POST | `/ggb-documents` | xem danh sách: bài của mình; tạo: giáo viên |
 | GET | `/ggb-documents/:id` | chủ bài, hoặc thành viên buổi học nếu bài gắn buổi học (kèm `canEdit`) |
 | PUT | `/ggb-documents/:id` `{base64, version}` | chủ bài; 409 khi version cũ; 60 lần/phút |

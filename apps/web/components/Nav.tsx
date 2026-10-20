@@ -1,6 +1,7 @@
 'use client';
 import { ButtonLink, Navbar, NavLink } from '@/components/ui';
 import { api, Me } from '@/lib/api';
+import { SiteLogo } from './SiteLogo';
 import { can, canAdminArea, canTeachArea } from '@/lib/can';
 
 export function Nav({ me }: { me: Me | null | undefined }) {
@@ -18,6 +19,7 @@ export function Nav({ me }: { me: Me | null | undefined }) {
   }
   return (
     <Navbar
+      brand={<SiteLogo href="/" size={48} />}
       links={links}
       user={me ? { name: me.name, href: '/account' } : me}
       onLogout={logout}

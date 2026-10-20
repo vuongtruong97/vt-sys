@@ -19,6 +19,7 @@ import { CoursesModule } from './courses/courses.module';
 import { HealthController } from './health.controller';
 import { MeetingsModule } from './meetings/meetings.module';
 import { GgbModule } from './geogebra/ggb.module';
+import { SiteModule } from './site/site.module';
 
 /** Giới hạn số lần gọi API theo IP, báo lỗi bằng tiếng Việt. */
 @Injectable()
@@ -31,7 +32,7 @@ class RateLimitGuard extends ThrottlerGuard {
 @Module({
   imports: [
     ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 300 }]),
-    PrismaModule, StorageModule, AuthModule, CoursesModule, ClassroomModule, InteractionModule, MediaModule, ReminderModule, AdminModule, BreakoutModule, WebinarModule, MeetingsModule, GgbModule,
+    PrismaModule, StorageModule, AuthModule, CoursesModule, ClassroomModule, InteractionModule, MediaModule, ReminderModule, AdminModule, BreakoutModule, WebinarModule, MeetingsModule, GgbModule, SiteModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: RateLimitGuard }],

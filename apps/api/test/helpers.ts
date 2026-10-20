@@ -60,6 +60,8 @@ export function mockPrisma() {
     role: table(),
     breakoutGroup: table(),
     ggbDocument: table(),
+    siteContent: table(),
+    siteAsset: table(),
     $transaction: jest.fn((ops: unknown[]) => Promise.all(ops)),
   };
 }

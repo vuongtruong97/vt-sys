@@ -13,7 +13,8 @@ export type Permission =
   | 'course.manage_all'
   | 'stats.view'
   | 'user.manage'
-  | 'role.manage';
+  | 'role.manage'
+  | 'site.manage';
 
 /** Người dùng có ít nhất một trong các quyền. */
 export function can(me: Me | null | undefined, ...perms: Permission[]) {
@@ -24,4 +25,4 @@ export function can(me: Me | null | undefined, ...perms: Permission[]) {
 export const canTeachArea = (me: Me | null | undefined) => can(me, 'course.create', 'course.view_all', 'course.manage_all');
 
 /** Thấy trang Quản trị: có ít nhất một quyền quản trị. */
-export const canAdminArea = (me: Me | null | undefined) => can(me, 'stats.view', 'user.manage', 'role.manage', 'course.manage_all');
+export const canAdminArea = (me: Me | null | undefined) => can(me, 'stats.view', 'user.manage', 'role.manage', 'course.manage_all', 'site.manage');

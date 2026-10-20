@@ -4,15 +4,17 @@ import { LocalAudioTrack, LocalVideoTrack, Track } from 'livekit-client';
 import Link from 'next/link';
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon, IconName } from '@/components/meet/icons';
+import { useSite } from '@/lib/site';
 import { applyEffect, useVideoEffect } from '@/lib/videoEffect';
 import { BackgroundPicker, useBackgroundsSupported } from './BackgroundPicker';
 
 /** Khung chung của các màn hình ngoài phòng học (nền sáng, logo). */
 export function LobbyShell({ children, account }: { children: ReactNode; account?: string }) {
+  const { brand } = useSite();
   return (
     <div className="mt mt-lobby">
       <header className="mt-lobby__top" style={{ paddingTop: 20 }}>
-        <Link href="/" className="mt-brand" style={{ textDecoration: 'none' }}><i>BĐ</i>Bảng Đen</Link>
+        <Link href="/" className="mt-brand" style={{ textDecoration: 'none' }}><i>{brand.short}</i>{brand.name}</Link>
         {account && <span className="mt-muted">{account}</span>}
       </header>
       {children}

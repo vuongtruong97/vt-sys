@@ -50,7 +50,7 @@ function Demo({ title, node, children }: { title: string; node?: string; childre
 }
 
 /**
- * Trang xem mẫu bộ components (components/ui), giao diện Material 3. Bố cục gốc lấy từ Figma
+ * Trang xem mẫu bộ components (components/ui), giao diện theo Figma Skilline. Bố cục gốc lấy từ Figma
  * "E-Learning Site (Community)" (số node bên cạnh tiêu đề). Chỉ mở khi chạy dev hoặc với tài khoản quản trị.
  */
 export default function UiPage() {
@@ -78,7 +78,7 @@ export default function UiPage() {
         <header className="ui-demo">
           <h1 className="ui-section-head__title" style={{ fontSize: 36 }}>Bộ components</h1>
           <p className="ui-course__desc" style={{ WebkitLineClamp: 'unset' }}>
-            Giao diện Material 3 (bảng màu baseline, sáng và tối theo hệ điều hành). Mã nguồn ở <code>apps/web/components/ui</code>, hướng dẫn trong README.md cùng thư mục.
+            Giao diện theo Figma Skilline (cam, navy, xanh ngọc; chỉ chế độ sáng). Mã nguồn ở <code>apps/web/components/ui</code>, hướng dẫn trong README.md cùng thư mục.
           </p>
           <ButtonLink href="/ui/meeting" variant="outline" size="sm">Mockup phòng học kiểu Google Meet →</ButtonLink>
         </header>

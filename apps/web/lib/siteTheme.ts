@@ -1,56 +1,33 @@
 import { argbFromHex, hexFromArgb, Hct, MaterialDynamicColors, SchemeTonalSpot } from '@material/material-color-utilities';
 
 /**
- * Bảng màu Material 3 sinh từ màu chủ đạo quản trị viên chọn (trang /admin/site).
- * Trả CSS ghi đè các biến --md-* trong components/ui/tokens.css cho cả chế độ sáng và tối.
- * Màu "thành công" (--md-success*) và màu sao giữ nguyên vì M3 không có vai trò này.
+ * Màu chủ đạo quản trị viên chọn (trang /admin/site) thay cho cam Skilline #F48C06.
+ * Nút chính dùng đúng mã màu đã chọn; chữ trên nút là trắng hoặc navy tuỳ màu nào dễ đọc hơn.
+ * Nền nhạt (primary-container) và màu đảo sinh bằng material-color-utilities. Chỉ có chế độ sáng.
  */
 const ROLES: [string, keyof typeof MaterialDynamicColors][] = [
-  ['primary', 'primary'],
-  ['on-primary', 'onPrimary'],
   ['primary-container', 'primaryContainer'],
   ['on-primary-container', 'onPrimaryContainer'],
-  ['secondary', 'secondary'],
-  ['on-secondary', 'onSecondary'],
-  ['secondary-container', 'secondaryContainer'],
-  ['on-secondary-container', 'onSecondaryContainer'],
-  ['tertiary', 'tertiary'],
-  ['on-tertiary', 'onTertiary'],
-  ['tertiary-container', 'tertiaryContainer'],
-  ['on-tertiary-container', 'onTertiaryContainer'],
-  ['surface', 'surface'],
-  ['on-surface', 'onSurface'],
-  ['surface-variant', 'surfaceVariant'],
-  ['on-surface-variant', 'onSurfaceVariant'],
-  ['surface-container-lowest', 'surfaceContainerLowest'],
-  ['surface-container-low', 'surfaceContainerLow'],
-  ['surface-container', 'surfaceContainer'],
-  ['surface-container-high', 'surfaceContainerHigh'],
-  ['surface-container-highest', 'surfaceContainerHighest'],
-  ['outline', 'outline'],
-  ['outline-variant', 'outlineVariant'],
-  ['inverse-surface', 'inverseSurface'],
-  ['inverse-on-surface', 'inverseOnSurface'],
   ['inverse-primary', 'inversePrimary'],
 ];
 
-function vars(hex: string, dark: boolean) {
-  const scheme = new SchemeTonalSpot(Hct.fromInt(argbFromHex(hex)), dark, 0);
-  return ROLES.map(([name, key]) => {
+/** Độ sáng tương đối theo WCAG. */
+function luminance(hex: string) {
+  const ch = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
+}
+const contrast = (a: number, b: number) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+const NAVY = '#252641';
+
+/** CSS cho thẻ <style> trong layout; null khi chưa chọn màu (giữ cam của tokens.css). */
+export function themeCss(primaryColor: string | null): string | null {
+  if (!primaryColor || !/^#[0-9a-f]{6}$/i.test(primaryColor)) return null;
+  const scheme = new SchemeTonalSpot(Hct.fromInt(argbFromHex(primaryColor)), false, 0);
+  const l = luminance(primaryColor);
+  const onPrimary = contrast(l, 1) >= contrast(l, luminance(NAVY)) ? '#ffffff' : NAVY;
+  const roles = ROLES.map(([name, key]) => {
     const color = MaterialDynamicColors[key] as { getArgb(s: SchemeTonalSpot): number };
     return `--md-${name}:${hexFromArgb(color.getArgb(scheme))};`;
   }).join('');
-}
-
-/** CSS cho thẻ <style> trong layout; null khi chưa chọn màu (giữ baseline tím của tokens.css). */
-export function themeCss(primaryColor: string | null): string | null {
-  if (!primaryColor || !/^#[0-9a-f]{6}$/i.test(primaryColor)) return null;
-  const light = vars(primaryColor, false);
-  const dark = vars(primaryColor, true);
-  // Cùng độ ưu tiên với tokens.css nhưng nằm sau nên thắng; giữ nguyên quy tắc ép chế độ bằng data-theme.
-  return (
-    `:root{${light}}` +
-    `@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){${dark}}}` +
-    `:root[data-theme="dark"]{${dark}}`
-  );
+  return `:root{--md-primary:${primaryColor.toLowerCase()};--md-on-primary:${onPrimary};--ui-deco-orange:${primaryColor.toLowerCase()};${roles}}`;
 }

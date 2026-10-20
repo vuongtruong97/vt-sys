@@ -51,10 +51,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,600;0,6..12,700;0,6..12,800;1,6..12,400&display=swap"
         />
-        <meta name="theme-color" content="#fef7ff" media="(prefers-color-scheme: light)" />
-        <meta name="theme-color" content="#141218" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#ffffff" />
         {/* Màu chủ đạo do quản trị viên chọn: chỉ chứa mã màu #rrggbb đã kiểm tra (siteTheme.ts). */}
         {theme && <style dangerouslySetInnerHTML={{ __html: theme }} />}
       </head>

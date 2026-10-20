@@ -1,21 +1,21 @@
 /* Bảng Đen: nền xanh bảng đen cho phòng học, điểm nhấn màu phấn vàng. */
-/* Biến cũ của các trang trước khi có components/ui; trỏ vào token Material 3 (components/ui/tokens.css).
+/* Biến cũ của các trang trước khi có components/ui; trỏ vào token trong components/ui/tokens.css.
    Màu bảng phấn giữ nguyên vì là nội dung bảng, không phải màu giao diện. */
 :root {
   --bg: var(--md-surface); --surface: var(--md-surface-container-low); --ink: var(--md-on-surface); --muted: var(--md-on-surface-variant);
   --line: var(--md-outline-variant); --line-strong: var(--md-outline);
   --accent: var(--md-primary); --accent-soft: var(--md-primary-container); --on-accent: var(--md-on-primary);
   --chalk: #d9a514; --danger: var(--md-error); --good: var(--md-success);
-  --room: #141218; --room-2: #1d1b20; --tile: #2b2930; --on-room: #e6e0e9; --on-room-muted: #cac4d0; --room-line: #49454f;
+  --room: #1b1c33; --room-2: #252641; --tile: #2f3052; --on-room: #eeeef6; --on-room-muted: #b2b3cf; --room-line: #44456b;
   --board: #23392f; --chalk-white: #eef2e6; --chalk-yellow: #f2d266; --chalk-pink: #f1a5a0; --chalk-blue: #a8d4f0;
-  --f-display: var(--ui-font);
+  --f-display: var(--ui-font-display);
   --f-body: var(--ui-font);
 }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.55; }
-a { color: var(--accent); }
+a { color: var(--md-secondary); }
 h1, h2, h3 { font-family: var(--f-display); line-height: 1.2; margin: 0; text-wrap: balance; }
 h1 { font-size: clamp(26px, 4vw, 36px); font-weight: 600; }
 h2 { font-size: 22px; font-weight: 600; }

@@ -80,6 +80,8 @@ Nguyên tắc chính:
 | `/admin` | `app/admin/page.tsx` | Quản trị: thống kê, vai trò tài khoản, chuyển khoá học |
 | `/room/[id]` | `app/room/[id]/page.tsx` | Phòng kiểm tra thiết bị (PreJoin), phòng chờ, phòng học |
 
+Giao diện chung ở `components/ui` theo Figma "Online Learning Landing Page" (Skilline): cam `#F48C06`, navy `#2F327D`, xanh ngọc `#23BDEE`, tiêu đề Be Vietnam Pro, đoạn văn Nunito Sans, chỉ chế độ sáng. Token và các chỗ khác Figma có chủ ý ghi trong `apps/web/components/ui/README.md`. Ảnh mặc định của trang chủ ở `public/ui/skilline/`.
+
 `components/Materials.tsx` và `components/Recordings.tsx` dùng chung cho trang khoá học, trang xem lại và phòng học.
 
 Phòng học nằm trong `components/room/`, giao diện kiểu Google Meet dùng chung `components/meet/` (`meet.css` tiền tố `mt-`, bộ icon SVG `icons.tsx`, hộp thoại `Dialog.tsx`). Bộ mockup cùng kiểu, dữ liệu giả, ở `components/meet-mock/` và trang `/ui/meeting`:

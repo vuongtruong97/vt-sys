@@ -25,8 +25,8 @@ export function Nav({ me }: { me: Me | null | undefined }) {
       onLogout={logout}
       guestActions={
         <>
-          <ButtonLink href="/login" variant="ghost" size="sm">Đăng nhập</ButtonLink>
-          <ButtonLink href="/register" size="sm">Đăng ký</ButtonLink>
+          <ButtonLink href="/login" variant="light">Đăng nhập</ButtonLink>
+          <ButtonLink href="/register">Đăng ký</ButtonLink>
         </>
       }
     />

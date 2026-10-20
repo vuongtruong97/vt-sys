@@ -3,9 +3,9 @@ import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { cx } from './internal';
 
 export type HeroSlide = {
-  /** Ảnh nền; không có thì dùng nền primary-container. */
+  /** Ảnh bên phải; không có thì dùng ảnh học viên minh hoạ của Figma. */
   image: string | null;
-  /** Phần chữ nhấn (gạch chân) trước tiêu đề, có thể trống. */
+  /** Phần chữ nhấn màu cam trước tiêu đề, có thể trống. */
   accent?: string;
   title: string;
   text?: string;
@@ -13,14 +13,66 @@ export type HeroSlide = {
   button?: { label: string; href: string } | null;
 };
 
-export type HeroSliderProps = {
-  slides: HeroSlide[];
-  /** Số giây mỗi slide; 0 là không tự chuyển. */
-  autoplaySec?: number;
+type Shared = {
   /** Nút chung dưới chữ (đăng ký, đăng nhập…), hiện ở slide không có nút riêng. */
   actions?: ReactNode;
   /** Các dòng ✓ dưới nút. */
   trust?: string[];
+  /** Thẻ nổi trên ảnh (số liệu, buổi học sắp tới). */
+  decor?: ReactNode;
+};
+
+/** Ảnh học viên đã tách nền, cùng màu nền kem của hero (Figma "Header"). */
+export const HERO_FALLBACK_IMAGE = '/ui/skilline/hero-student.jpg';
+
+/** Nội dung một màn hero: chữ bên trái, ảnh và thẻ nổi bên phải. */
+function HeroContent({ slide, heading, actions, trust, decor }: Shared & { slide: HeroSlide; heading: 'h1' | 'h2' }) {
+  const H = heading;
+  return (
+    <div className="ui-hero__inner">
+      <div className="ui-hero__copy">
+        <H className="ui-hero__title">
+          {slide.accent && <span className="ui-hero__accent">{slide.accent}</span>} {slide.title}
+        </H>
+        {slide.text && <p className="ui-hero__text">{slide.text}</p>}
+        <div className="ui-actions">
+          {slide.button ? (
+            <a className="ui-btn ui-btn--primary ui-btn--lg" href={slide.button.href}>
+              {slide.button.label}
+            </a>
+          ) : (
+            actions
+          )}
+        </div>
+        {trust && trust.length > 0 && (
+          <ul className="ui-hero__trust">
+            {trust.map((t) => (
+              <li key={t}>{t}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <div className={cx('ui-hero__media', slide.image && 'ui-hero__media--framed')}>
+        <img className="ui-hero__photo" src={slide.image || HERO_FALLBACK_IMAGE} alt="" />
+        {decor}
+      </div>
+    </div>
+  );
+}
+
+/** Đầu trang chủ một màn (không chuyển slide). */
+export function Hero({ slide, className, ...shared }: Shared & { slide: HeroSlide; className?: string }) {
+  return (
+    <section className={cx('ui-hero', className)}>
+      <HeroContent slide={slide} heading="h1" {...shared} />
+    </section>
+  );
+}
+
+export type HeroSliderProps = Shared & {
+  slides: HeroSlide[];
+  /** Số giây mỗi slide; 0 là không tự chuyển. */
+  autoplaySec?: number;
   className?: string;
 };
 
@@ -28,7 +80,7 @@ export type HeroSliderProps = {
  * Slider đầu trang chủ. Tự chuyển theo `autoplaySec`, dừng khi rê chuột hoặc focus vào slider, có nút
  * tạm dừng (WCAG 2.2.2), nút trước/sau và chấm chọn slide. Người dùng bật "giảm chuyển động" thì không tự chuyển.
  */
-export function HeroSlider({ slides, autoplaySec = 6, actions, trust, className }: HeroSliderProps) {
+export function HeroSlider({ slides, autoplaySec = 6, className, ...shared }: HeroSliderProps) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [hover, setHover] = useState(false);
@@ -66,7 +118,7 @@ export function HeroSlider({ slides, autoplaySec = 6, actions, trust, className 
   return (
     <section
       ref={root}
-      className={cx('ui-slider', className)}
+      className={cx('ui-slider', n > 1 && 'ui-slider--multi', className)}
       aria-roledescription="carousel"
       aria-label="Giới thiệu"
       onMouseEnter={() => setHover(true)}
@@ -79,69 +131,43 @@ export function HeroSlider({ slides, autoplaySec = 6, actions, trust, className 
         {slides.map((s, i) => (
           <div
             key={i}
-            className={cx('ui-slider__slide', i === index && 'ui-slider__slide--on', !s.image && 'ui-slider__slide--plain')}
+            className={cx('ui-slider__slide', i === index && 'ui-slider__slide--on')}
             role="group"
             aria-roledescription="slide"
             aria-label={`${i + 1} / ${n}`}
             aria-hidden={i !== index}
             // Slide đang ẩn: không cho focus vào nút bên trong (inert chưa có trong kiểu React 18).
             {...(i !== index ? ({ inert: '' } as Record<string, string>) : {})}
-            style={s.image ? { backgroundImage: `url("${s.image}")` } : undefined}
           >
-            <div className="ui-slider__inner">
-              <div className="ui-hero__copy">
-                {i === 0 ? (
-                  <h1 className="ui-hero__title">
-                    {s.accent && <span className="ui-hero__accent">{s.accent}</span>} {s.title}
-                  </h1>
-                ) : (
-                  <h2 className="ui-hero__title">
-                    {s.accent && <span className="ui-hero__accent">{s.accent}</span>} {s.title}
-                  </h2>
-                )}
-                {s.text && <p className="ui-hero__text">{s.text}</p>}
-                <div className="ui-actions">
-                  {s.button ? (
-                    <a className="ui-btn ui-btn--light ui-btn--lg" href={s.button.href}>
-                      {s.button.label}
-                    </a>
-                  ) : (
-                    actions
-                  )}
-                </div>
-                {trust && trust.length > 0 && (
-                  <ul className="ui-hero__trust">
-                    {trust.map((t) => (
-                      <li key={t}>{t}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
+            <HeroContent slide={s} heading={i === 0 ? 'h1' : 'h2'} {...shared} />
           </div>
         ))}
       </div>
       {n > 1 && (
-        <div className="ui-slider__controls">
-          <button type="button" className="ui-slider__btn" aria-label="Slide trước" onClick={() => go(index - 1)}>‹</button>
-          <div className="ui-slider__dots">
-            {slides.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                className="ui-slider__dot"
-                aria-label={`Slide ${i + 1}`}
-                aria-current={i === index || undefined}
-                onClick={() => go(i)}
-              />
-            ))}
+        <div className="ui-slider__bar">
+          <div className="ui-slider__bar-inner">
+            <div className="ui-slider__controls">
+              <button type="button" className="ui-slider__btn" aria-label="Slide trước" onClick={() => go(index - 1)}>‹</button>
+              <div className="ui-slider__dots">
+                {slides.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className="ui-slider__dot"
+                    aria-label={`Slide ${i + 1}`}
+                    aria-current={i === index || undefined}
+                    onClick={() => go(i)}
+                  />
+                ))}
+              </div>
+              <button type="button" className="ui-slider__btn" aria-label="Slide sau" onClick={() => go(index + 1)}>›</button>
+              {auto && (
+                <button type="button" className="ui-slider__btn" aria-label={paused ? 'Tiếp tục tự chuyển' : 'Tạm dừng tự chuyển'} onClick={() => setPaused(!paused)}>
+                  {paused ? '▶' : '❚❚'}
+                </button>
+              )}
+            </div>
           </div>
-          <button type="button" className="ui-slider__btn" aria-label="Slide sau" onClick={() => go(index + 1)}>›</button>
-          {auto && (
-            <button type="button" className="ui-slider__btn" aria-label={paused ? 'Tiếp tục tự chuyển' : 'Tạm dừng tự chuyển'} onClick={() => setPaused(!paused)}>
-              {paused ? '▶' : '❚❚'}
-            </button>
-          )}
         </div>
       )}
     </section>

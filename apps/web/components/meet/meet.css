@@ -1,24 +1,24 @@
 /*
  * Giao diện phòng học kiểu Google Meet: dùng cho phòng học thật (app/room) và bộ mockup (/ui/meeting). Tiền tố mt-.
- * Theo Material 3: khu video luôn dùng bảng màu tối của M3 (như Meet); bảng bên, phòng chờ, hộp thoại
- * dùng token --md-* nên đổi theo chế độ sáng/tối của trang (components/ui/tokens.css).
+ * Khu video luôn tối (navy của Figma Skilline, như Meet); bảng bên, phòng chờ, hộp thoại
+ * dùng token --md-* của trang (components/ui/tokens.css).
  */
 .mt {
-  /* Khu video: M3 dark scheme cố định */
-  --mt-bg: #141218;               /* surface */
-  --mt-surface: #211f26;          /* surface-container */
-  --mt-tile: #2b2930;             /* surface-container-high */
-  --mt-tile-2: #36343b;           /* surface-container-highest */
-  --mt-text: #e6e0e9;             /* on-surface */
-  --mt-muted: #cac4d0;            /* on-surface-variant */
-  --mt-line: #49454f;             /* outline-variant */
-  --mt-accent: #d0bcff;           /* primary (tối) */
-  --mt-on-accent: #381e72;
+  /* Khu video: nền navy tối cố định, điểm nhấn cam */
+  --mt-bg: #1b1c33;
+  --mt-surface: #252641;
+  --mt-tile: #2f3052;
+  --mt-tile-2: #3a3b60;
+  --mt-text: #eeeef6;
+  --mt-muted: #b2b3cf;
+  --mt-line: #44456b;
+  --mt-accent: #ffb45c;           /* cam sáng trên nền tối */
+  --mt-on-accent: #3d2000;
   --mt-danger: #b3261e;           /* nút tắt mic/cam, rời lớp: chữ trắng 6,5:1 */
   --mt-on-danger: #ffffff;
   --mt-warn: #ffb95c;
   --mt-on-warn: #2b1700;
-  /* Bảng bên, phòng chờ, hộp thoại: theo chế độ của trang */
+  /* Bảng bên, phòng chờ, hộp thoại: theo màu của trang */
   --mt-accent-strong: var(--md-primary);
   --mt-on-accent-strong: var(--md-on-primary);
   --mt-panel: var(--md-surface-container-low);
@@ -27,7 +27,7 @@
   --mt-panel-line: var(--md-outline-variant);
   --mt-panel-soft: var(--md-surface-container-high);
   --mt-radius: 12px;
-  --mt-focus: 0 0 0 3px #ccc2dc;
+  --mt-focus: 0 0 0 3px #ffd29c;
   font-family: var(--ui-font, "Roboto", system-ui, sans-serif);
   color: var(--mt-text);
   background: var(--mt-bg);
@@ -64,7 +64,7 @@
 .mt-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 8px; background: var(--mt-surface); font-size: 12px; font-weight: 500; letter-spacing: .5px; white-space: nowrap; }
 .mt-pill--rec { background: #8c1d18; color: #f9dedc; }
 .mt-pill--rec i { width: 8px; height: 8px; border-radius: 50%; background: #f2b8b5; animation: mt-blink 1.6s ease-in-out infinite; }
-.mt-pill--live { background: #4f378b; color: #eaddff; }
+.mt-pill--live { background: #5b72ee; color: #fff; }
 @keyframes mt-blink { 50% { opacity: .3; } }
 
 .mt-body { display: flex; gap: 12px; min-height: 0; padding: 4px 16px 0; }
@@ -101,7 +101,7 @@
 .mt-slide h3 { margin: 0 0 4%; font-size: clamp(14px, 2.3vw, 30px); color: #4f378a; }
 .mt-slide ul { margin: 0; padding-left: 1.2em; font-size: clamp(9px, 1.25vw, 16px); line-height: 1.7; color: #3a4048; }
 .mt-slide pre { margin: 0; padding: 6%; border-radius: 8px; background: #1e2430; color: #d7e3f4; font: 500 clamp(8px, 1.15vw, 15px)/1.65 ui-monospace, Consolas, monospace; white-space: pre; overflow: hidden; }
-.mt-slide pre b { color: #d0bcff; font-weight: 600; } .mt-slide pre i { color: #f2c86b; font-style: normal; }
+.mt-slide pre b { color: #ffb45c; font-weight: 600; } .mt-slide pre i { color: #f2c86b; font-style: normal; }
 /* Bảng trắng */
 .mt-board { position: relative; overflow: hidden; border-radius: var(--mt-radius); background: var(--board, #23392f); border: 8px solid #5c4430; }
 .mt-board svg { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -118,7 +118,7 @@
 
 /* Toast */
 .mt-toasts { position: absolute; left: 16px; bottom: 16px; z-index: 5; display: grid; gap: 8px; }
-.mt-toast { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 4px; background: #e6e0e9; color: #322f35; font-size: 14px; box-shadow: var(--ui-elev-3); animation: mt-in .3s ease both; }
+.mt-toast { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 4px; background: #eeeef6; color: #252641; font-size: 14px; box-shadow: var(--ui-elev-3); animation: mt-in .3s ease both; }
 .mt-toast b { font-weight: 500; }
 .mt-toast .mt-btn-text { margin-left: 6px; }
 @keyframes mt-in { from { opacity: 0; translate: 0 8px; } }
@@ -271,7 +271,7 @@
 .mt-select { width: 100%; height: 48px; padding: 0 12px; border: 1px solid var(--md-outline); border-radius: 4px; font: inherit; font-size: 14px; background: transparent; color: var(--mt-panel-text); }
 .mt-select option, .mt-devices select option { background: var(--md-surface-container-high); color: var(--md-on-surface); }
 .mt-meter { display: flex; gap: 3px; } .mt-meter i { flex: 1; height: 8px; border-radius: 2px; background: var(--md-surface-container-highest); } .mt-meter i.on { background: var(--mt-accent-strong); }
-.mt-preview { position: relative; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; background: #2b2930; }
+.mt-preview { position: relative; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; background: #2f3052; }
 .mt-preview img { width: 100%; height: 100%; object-fit: cover; }
 .mt-layouts { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
 .mt-layout-opt { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--md-outline-variant); border-radius: 12px; background: transparent; font-size: 13px; text-align: left; color: var(--mt-panel-text) !important; }
@@ -284,9 +284,9 @@
 .mt-brand { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 500; color: var(--mt-panel-text); }
 .mt-brand i { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; background: #1f3a33; color: #f2d266; font-size: 13px; font-style: normal; font-weight: 700; }
 .mt-lobby__main { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: clamp(24px, 5vw, 64px); align-items: center; width: min(100%, 1180px); margin: 0 auto; padding: 16px 24px 48px; }
-.mt-prev { position: relative; aspect-ratio: 16 / 9.5; border-radius: 28px; overflow: hidden; background: #211f26; color: #fff; box-shadow: var(--ui-elev-1); }
+.mt-prev { position: relative; aspect-ratio: 16 / 9.5; border-radius: 28px; overflow: hidden; background: #252641; color: #fff; box-shadow: var(--ui-elev-1); }
 .mt-prev img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.mt-prev__off { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: 10px; font-size: 15px; color: #cac4d0; }
+.mt-prev__off { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: 10px; font-size: 15px; color: #b2b3cf; }
 .mt-prev__name { position: absolute; top: 14px; left: 16px; font-size: 14px; font-weight: 500; text-shadow: 0 1px 3px rgba(0, 0, 0, .6); }
 .mt-prev__ctrls { position: absolute; left: 50%; bottom: 16px; translate: -50% 0; display: flex; gap: 14px; }
 .mt-prev__ctrls .mt-cbtn { width: 54px; height: 54px; background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .5); }
@@ -330,16 +330,16 @@
 .mt-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 16px; }
 .mt-scard { display: grid; gap: 10px; padding: 12px; border-radius: 12px; background: var(--md-surface-container-low); box-shadow: var(--ui-elev-1); color: inherit; text-decoration: none; transition: box-shadow .2s; }
 .mt-scard:hover { box-shadow: var(--ui-elev-2); }
-.mt-scard__thumb { position: relative; aspect-ratio: 16 / 10; border-radius: 10px; overflow: hidden; background: #141218; }
+.mt-scard__thumb { position: relative; aspect-ratio: 16 / 10; border-radius: 10px; overflow: hidden; background: #1b1c33; }
 .mt-scard__thumb iframe { position: absolute; top: 0; left: 0; width: 400%; height: 400%; border: 0; transform: scale(.25); transform-origin: 0 0; pointer-events: none; }
 .mt-scard b { font-size: 16px; font-weight: 500; padding: 0 4px; }
 .mt-scard span { font-size: 13px; color: var(--mt-panel-muted); padding: 0 4px 4px; line-height: 1.5; }
 .mt-devices-view { display: grid; grid-template-columns: minmax(0, 1fr) 390px; gap: 24px; align-items: start; }
 .mt-frame { display: grid; gap: 8px; }
-.mt-frame__box { position: relative; overflow: hidden; border-radius: 12px; border: 1px solid var(--md-outline-variant); background: #141218; aspect-ratio: 16 / 10; }
+.mt-frame__box { position: relative; overflow: hidden; border-radius: 12px; border: 1px solid var(--md-outline-variant); background: #1b1c33; aspect-ratio: 16 / 10; }
 .mt-frame__box iframe { position: absolute; top: 0; left: 0; width: 1280px; height: 800px; border: 0; transform-origin: 0 0; }
 .mt-phone { width: 390px; height: 800px; padding: 12px; border-radius: 44px; background: #0d0f12; box-shadow: 0 20px 50px rgba(0, 0, 0, .25); }
-.mt-phone iframe { width: 100%; height: 100%; border: 0; border-radius: 34px; background: #141218; }
+.mt-phone iframe { width: 100%; height: 100%; border: 0; border-radius: 34px; background: #1b1c33; }
 
 /* ---------- Phòng học thật (app/room): phần chỉ có khi nối LiveKit ---------- */
 .mt-room .mt-top { padding-top: 12px; }
@@ -440,7 +440,7 @@
 .mt-bg { display: grid; gap: 14px; }
 .mt-bg__preview { width: min(100%, 420px); justify-self: center; }
 .mt-bg__preview video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.mt-bg__status { position: absolute; left: 50%; bottom: 10px; translate: -50% 0; padding: 6px 12px; border-radius: 8px; background: rgba(20, 18, 24, .8); color: #e6e0e9; font-size: 13px; white-space: nowrap; }
+.mt-bg__status { position: absolute; left: 50%; bottom: 10px; translate: -50% 0; padding: 6px 12px; border-radius: 8px; background: rgba(27, 28, 51, .82); color: #eeeef6; font-size: 13px; white-space: nowrap; }
 .mt-bg__heading { margin: 4px 0 0; font-size: 14px; font-weight: 500; letter-spacing: .1px; color: var(--mt-panel-muted); }
 .mt-bg__group { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
 .mt-bg-tile { position: relative; display: grid; place-items: center; gap: 2px; aspect-ratio: 16 / 9; padding: 0; overflow: hidden; border: 1px solid var(--md-outline-variant); border-radius: 12px; background: var(--md-surface-container-high); color: var(--mt-panel-text) !important; font-size: 12px; }
@@ -470,7 +470,7 @@
 /* ---------- Bảng GeoGebra trong phòng học ---------- */
 .mt-ggb { position: relative; display: flex; flex: 1; width: 100%; min-width: 0; min-height: 0; }
 .mt-ggb__board { flex: 1; border: 0; border-radius: var(--mt-radius); }
-.mt-ggb__status, .mt-ggb__badge { position: absolute; left: 12px; bottom: 12px; z-index: 2; padding: 6px 10px; border-radius: 8px; background: rgba(20, 18, 24, .82); color: #e6e0e9; font-size: 12.5px; pointer-events: none; }
+.mt-ggb__status, .mt-ggb__badge { position: absolute; left: 12px; bottom: 12px; z-index: 2; padding: 6px 10px; border-radius: 8px; background: rgba(27, 28, 51, .82); color: #eeeef6; font-size: 12.5px; pointer-events: none; }
 .mt-ggb__status { left: 50%; top: 50%; bottom: auto; translate: -50% -50%; }
 .mt-ggb__tools { position: absolute; right: 12px; bottom: 12px; z-index: 2; display: flex; gap: 8px; }
 .mt-ggb__tools .mt-pbtn { box-shadow: var(--ui-elev-2); }

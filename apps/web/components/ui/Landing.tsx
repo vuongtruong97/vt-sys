@@ -125,26 +125,122 @@ export function Steps({ items, className }: { items: { title: string; text: Reac
 
 // ---------- Giới thiệu giáo viên ----------
 
-export type TeacherIntroProps = { name: string; title: string; bio: string; highlights: string[]; photo?: string; className?: string };
+export type TeacherIntroProps = {
+  name: string;
+  title: string;
+  bio: string;
+  highlights: string[];
+  /** Ảnh giáo viên; không có thì dùng ảnh lớp học minh hoạ. */
+  photo?: string;
+  /** Dòng nhỏ phía trên tên, ví dụ "Người đứng lớp". */
+  eyebrow?: string;
+  className?: string;
+};
 
-/** Thẻ giới thiệu giáo viên: ảnh (hoặc chữ cái đầu) bên trái, giới thiệu bên phải. */
-export function TeacherIntro({ name, title, bio, highlights, photo, className }: TeacherIntroProps) {
+const CLASSROOM_PHOTO = '/ui/skilline/classroom.jpg';
+
+/**
+ * Giới thiệu giáo viên theo khối "Everything you can do in a physical classroom" của Figma Skilline:
+ * chữ bên trái, ảnh bên phải với hai khối màu ở góc.
+ */
+export function TeacherIntro({ name, title, bio, highlights, photo, eyebrow, className }: TeacherIntroProps) {
   return (
-    <div className={cx('ui-card ui-teacher', className)}>
-      <div className="ui-teacher__photo">
-        <Avatar name={name} src={photo || null} size={168} decorative />
-      </div>
+    <div className={cx('ui-teacher', className)}>
       <div className="ui-teacher__body">
-        <p className="ui-teacher__role">{title}</p>
-        <h3 className="ui-teacher__name">{name}</h3>
+        {eyebrow && <p className="ui-teacher__role">{eyebrow}</p>}
+        <h3 className="ui-teacher__name">
+          {name}
+          {title && (
+            <>
+              , <span className="ui-teacher__sub">{title}</span>
+            </>
+          )}
+        </h3>
         <p className="ui-teacher__bio">{bio}</p>
-        <ul className="ui-teacher__list">
-          {highlights.map((h) => (
-            <li key={h}>{h}</li>
-          ))}
-        </ul>
+        {highlights.length > 0 && (
+          <ul className="ui-teacher__list">
+            {highlights.map((h) => (
+              <li key={h}>{h}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <div className="ui-teacher__media">
+        <img src={photo || CLASSROOM_PHOTO} alt={photo ? `Ảnh ${name}` : ''} />
       </div>
     </div>
+  );
+}
+
+// ---------- Thẻ nổi trên ảnh đầu trang ----------
+
+export type HeroIconName = 'calendar' | 'users' | 'chart';
+
+const HERO_ICONS: Record<HeroIconName, ReactNode> = {
+  calendar: (
+    <>
+      <rect x="3.5" y="5" width="17" height="15" rx="2" />
+      <path d="M3.5 10h17M8 3v4M16 3v4M7.5 14h2M11 14h2M14.5 14h2M7.5 17h2M11 17h2" />
+    </>
+  ),
+  users: (
+    <>
+      <circle cx="12" cy="8" r="3.2" />
+      <circle cx="5.5" cy="10" r="2.2" />
+      <circle cx="18.5" cy="10" r="2.2" />
+      <path d="M6.5 19c.5-3 2.8-4.8 5.5-4.8s5 1.8 5.5 4.8M1.8 18c.3-2 1.6-3.3 3.4-3.5M22.2 18c-.3-2-1.6-3.3-3.4-3.5" />
+    </>
+  ),
+  chart: <path d="M6 18V11M10 18V6M14 18V9M18 18V13" />,
+};
+
+function HeroIcon({ name, size = 24 }: { name: HeroIconName; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      {HERO_ICONS[name]}
+    </svg>
+  );
+}
+
+/** Thẻ kính nổi trên ảnh đầu trang (Figma: "250k Assisted Student"). `place`: vị trí a (trên trái) hoặc b (giữa phải). */
+export function HeroCard({ icon, color, title, text, place }: { icon: HeroIconName; color: string; title: ReactNode; text: ReactNode; place: 'a' | 'b' }) {
+  return (
+    <div className={`ui-hero-card ui-hero-card--${place}`}>
+      <span className="ui-hero-card__icon" style={{ background: color }}>
+        <HeroIcon name={icon} />
+      </span>
+      <span className="ui-hero-card__text">
+        <b>{title}</b>
+        <span>{text}</span>
+      </span>
+    </div>
+  );
+}
+
+/** Thẻ buổi học sắp tới (Figma: "User Experience Class · Today at 12.00 PM · Join Now"). */
+export function HeroClassCard({ teacher, title, text, href, label }: { teacher: string; title: string; text: string; href: string; label: string }) {
+  return (
+    <div className="ui-hero-card ui-hero-card--class">
+      <span className="ui-hero-card__row">
+        <Avatar name={teacher} size={46} decorative />
+        <span className="ui-hero-card__text">
+          <b>{title}</b>
+          <span>{text}</span>
+        </span>
+      </span>
+      <a className="ui-hero-card__btn" href={href}>
+        {label}
+      </a>
+    </div>
+  );
+}
+
+/** Ô biểu đồ hồng góc trên ảnh (chỉ trang trí). */
+export function HeroChip() {
+  return (
+    <span className="ui-hero__chip" aria-hidden>
+      <HeroIcon name="chart" size={26} />
+    </span>
   );
 }
 

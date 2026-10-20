@@ -1,9 +1,9 @@
 # components/ui
 
-Bộ components tái sử dụng. Giao diện theo **Material 3** (Figma "Material 3 Design Kit", bảng màu baseline tím, sáng và tối):
-https://www.figma.com/design/inOn631rp3bNlntpNZYgQS/Material-3-Design-Kit--Community-
+Bộ components tái sử dụng. Giao diện theo Figma **Online Learning Landing Page (Community)** ("Skilline"): nền trắng, cam `#F48C06` cho nút chính, navy `#2F327D` cho tiêu đề, xanh ngọc `#23BDEE` làm màu phụ, thẻ bo 20px với bóng mềm, chỉ có chế độ sáng.
+https://www.figma.com/design/23s40efxYZw10qoAKxjN5L/Online-Learning-Landing-Page--Community-
 
-Bố cục các khối (thẻ khoá học, hộp giá, đánh giá…) ban đầu tách từ Figma **E-Learning Site (Community)**:
+Bố cục các khối (thẻ khoá học, hộp giá, đánh giá…) ban đầu tách từ Figma **E-Learning Site (Community)**; tên vai trò màu `--md-*` giữ từ thời dùng Material 3:
 https://www.figma.com/design/afEnwWVWapxKrTuaFF4brt/E-Learning-Site--Community-
 
 Xem mọi component tại `/ui` (chạy `npm run dev`; trên production chỉ quản trị viên mở được).
@@ -23,53 +23,43 @@ CSS (`tokens.css`, `ui.css`) đã nạp một lần trong `app/layout.tsx`, khô
 - Chữ hiển thị mặc định bằng tiếng Việt. Thông báo lỗi nói rõ chuyện gì xảy ra.
 - Phòng học (`components/room/*`) dùng `components/meet/meet.css`, cùng token `--md-*`.
 
-## Material 3
+## Màu và chữ
 
 `tokens.css` có hai lớp biến:
 
-- `--md-*`: vai trò màu M3 (`--md-primary`, `--md-surface-container-low`, `--md-on-secondary-container`…). Đổi theo `prefers-color-scheme`; ép một chế độ bằng `<html data-theme="light">` hoặc `"dark"`.
-- `--ui-*`: tên mà components dùng, trỏ vào `--md-*` (ví dụ `--ui-primary` → primary, `--ui-text-body` → on-surface-variant, `--ui-surface-low` → surface-container-low). Component chỉ dùng `--ui-*`.
+- `--md-*`: vai trò màu (`--md-primary` cam, `--md-secondary` navy, `--md-tertiary` xanh ngọc, `--md-surface-container-low` nền thẻ…). Màu chủ đạo chọn ở `/admin/site` ghi đè `--md-primary` và nền nhạt đi kèm (`lib/siteTheme.ts`).
+- `--ui-*`: tên mà components dùng, trỏ vào `--md-*` (`--ui-primary`, `--ui-heading` navy cho tiêu đề, `--ui-text-body` `#696984`, `--ui-hero-bg` nền kem đầu trang chủ, `--ui-deco-*` màu trang trí của Figma). Component chỉ dùng `--ui-*`.
 
-Đổi bảng màu (ví dụ sinh từ Material Theme Builder) chỉ cần sửa giá trị `--md-*` ở hai khối sáng và tối.
-
-| Thành phần | Theo M3 |
+| Thành phần | Theo Figma Skilline |
 | --- | --- |
-| Chữ | Roboto (có đủ dấu tiếng Việt), thang body/title/headline/display, tiêu đề nét 400 |
-| Nút | cao 40, bo tròn hẳn; `primary` = filled, `outline` = outlined, `ghost` = text, `light` = elevated, `glass` = outlined theo màu nền |
-| Lớp trạng thái | hover 8%, nhấn 10% màu chữ phủ lên nền; disabled 38% chữ, 12% nền |
-| Ô nhập | outlined: cao 56, góc 4, viền 2px màu primary khi focus |
-| Thẻ | elevated card: surface-container-low, độ nổi level 1, góc 12 |
-| Tabs | `boxed` = primary tabs (chỉ báo 3px), `segmented` = segmented button |
-| Hộp thoại | surface-container-high, góc 28, level 3, nền mờ 32% |
-| Switch, checkbox, thanh tiến độ | kích thước M3 (52×32, ô 18px, cao 4) |
-| Thanh điều hướng | top app bar cao 64, mục đang mở là chip secondary-container |
+| Chữ | tiêu đề, nút: Be Vietnam Pro nét 600–700; đoạn văn: Nunito Sans |
+| Nút | bo tròn hẳn; `primary` nền cam chữ trắng, `light` nền trắng bóng mềm (nút "Login"), `outline` viền cam |
+| Thẻ | nền trắng, góc 20, bóng `0 10px 60px rgba(38,45,118,.08)` |
+| Ô nhập | góc 12, cao 52, viền navy khi focus |
+| Tabs | `boxed`: chữ navy, gạch cam; `segmented`: nền kem, mục chọn nền cam |
+| Thanh điều hướng | cao 76, mục đang mở gạch cam; trang chủ cùng nền kem với hero |
+| Chân trang | nền navy `#252641`, chữ `#B2B3CF` |
 
-M3 không có màu "thành công"; `--md-success*` là màu xanh lá thêm vào, cùng độ sáng với primary.
+Phòng học (`components/meet/meet.css`): khu video luôn tối (navy `#1B1C33`, điểm nhấn cam sáng `#FFB45C`); bảng bên, phòng chờ, hộp thoại dùng `--md-*` của trang. Màu bảng phấn giữ nguyên vì là nội dung.
 
-Phòng học (`components/meet/meet.css`): khu video luôn dùng bảng màu tối của M3 (như Meet); bảng bên, phòng chờ, hộp thoại dùng `--md-*` nên đổi theo chế độ của trang. Màu bảng phấn giữ nguyên vì là nội dung.
-
-## Khác với Figma E-Learning (có chủ ý)
+## Khác với Figma (có chủ ý)
 
 | Figma | Ở đây | Lý do |
 | --- | --- | --- |
-| Font Poppins, màu teal | Roboto, bảng màu M3 | chuyển sang Material 3 |
-| Icon Font Awesome (đồng hồ, ô vuông) | SVG vẽ lại trong `internal.tsx` | không nạp cả bộ font icon |
-| Chữ "Lorem ipsum", tiếng Anh | tiếng Việt | quy ước dự án |
-| Logo "TOTC" | "BĐ" + "Bảng Đen", khung thoi vẽ bằng CSS | TOTC là thương hiệu mẫu; khung đổi màu theo chế độ |
-| Lớp phủ ảnh trang Login ("Rectangle 78") | chuyển màu tối bằng CSS | Figma xuất ra SVG rỗng |
-| "Remember me", "Forgot Password?" | không có | app chưa có hai tính năng này |
+| Font Poppins | Be Vietnam Pro | Poppins không có dấu tiếng Việt (Google Fonts không có bộ `vietnamese`); Be Vietnam Pro cùng kiểu hình học |
+| Link, nút chữ, tab màu cam | navy (`--ui-primary-text`) | chữ cam cỡ nhỏ trên nền trắng chỉ đạt 2,4:1; nút nền cam chữ trắng giữ như Figma |
+| Logo "Skilline" | chữ viết tắt trong hình thoi xanh ngọc + tên trang | đổi được ở `/admin/site` |
+| Thẻ nổi "250k Assisted Student", "User Experience Class" | số buổi học, số học viên, buổi học sắp tới lấy từ dữ liệu thật | |
+| Khối "What is Skilline", "Our Features", "Testimonial", "News", đăng ký bản tin | không có | app chưa có nội dung tương ứng |
+| Chữ tiếng Anh | tiếng Việt | quy ước dự án |
 
-Figma chỉ có 6 component gốc (icon mạng xã hội); các component dưới đây được tách từ phần lặp lại trên 18 màn hình.
-
-## Token (`tokens.css`)
-
-Màu `--ui-primary`, `--ui-primary-strong`, `--ui-navy` (`#252641`, tiêu đề và footer), `--ui-text-body` (`#696984`), `--ui-section` (nền xanh nhạt), `--ui-star` (`#FDB022`); bo góc `--ui-radius-md` 20px (thẻ), `--ui-radius-sm` 12px (tab), `--ui-radius-pill` (nút, ô nhập); bóng `--ui-shadow-card` `0 18.83px 47.08px rgba(47,50,125,.1)`; chiều cao `--ui-control-md` 49px, `--ui-input-h` 54px, `--ui-control-lg` 60px.
+Bộ E-Learning chỉ có 6 component gốc (icon mạng xã hội); các component dưới đây được tách từ phần lặp lại trên 18 màn hình.
 
 ## Components
 
 | Component | Figma node | Dùng khi |
 | --- | --- | --- |
-| `Button` `variant: primary · outline · ghost · light · glass`, `size: sm · md · lg`, `square`, `block`, `loading` | 28:169, 136:347, 39:268 | nút bấm. `light`/`glass` cho nền teal |
+| `Button` `variant: primary · outline · ghost · light · glass`, `size: sm · md · lg`, `square`, `block`, `loading` | 28:169, 136:347, 39:268 | nút bấm. `light` nền trắng trên nền kem, `glass` viền theo màu nền |
 | `ButtonLink` | | liên kết trông như nút (`next/link`) |
 | `IconButton` `label` bắt buộc, `tone: solid · soft` | 47:339 | nút chỉ có icon |
 | `CarouselNav` | 47:339 | cặp nút trước/sau của dải khoá học |
@@ -91,9 +81,9 @@ Màu `--ui-primary`, `--ui-primary-strong`, `--ui-navy` (`#252641`, tiêu đề 
 | `RatingSummary` `average`, `counts[5]` | 52:226 | hộp tổng hợp đánh giá |
 | `Review` | 52:300 | một nhận xét |
 | `SectionHeader` `title`, `actionHref` | 54:435 | tiêu đề khối + "Xem tất cả" |
-| `CtaBanner` | 54:554 | khối kêu gọi nền xanh than |
-| `Logo` `tone: dark · light`, `href` | 47:266 | logo TOTC (khung thoi từ Figma) |
-| `Footer` `links`, `onSubscribe` | 47:262 | footer nền xanh than, đăng ký bản tin |
+| `CtaBanner` | 54:554 | khối kêu gọi nền kem, hai vòng tròn trang trí |
+| `Logo` `tone: dark · light`, `href`, `image` | Skilline 4:2 | chữ viết tắt trong hình thoi xanh ngọc (bản `light` trên nền navy là viền); có `image` thì hiện ảnh logo |
+| `Footer` `links`, `onSubscribe` | Skilline 173:6 | chân trang nền navy, đăng ký bản tin (khi có `onSubscribe`) |
 | `Modal` `open`, `onClose`, `title`, `footer` | (không có trong Figma) | hộp thoại: Esc, bấm ra ngoài, giữ focus, trả focus |
 | `Pagination` `page`, `total`, `onChange` | (mũi tên theo 47:339) | phân trang có số |
 | `EmptyState` | (không có trong Figma) | danh sách trống |
@@ -102,16 +92,19 @@ Màu `--ui-primary`, `--ui-primary-strong`, `--ui-navy` (`#252641`, tiêu đề 
 | `Alert` `tone: error · success · info` | | thông báo trong trang (lỗi đọc ngay bằng `role="alert"`) |
 | `Muted` | | chữ phụ màu xám |
 | `Table` `caption` | (không có trong Figma) | bảng bo góc, cuộn ngang trong khung trên màn hẹp |
-| `ClassroomMockup` | (Landing 10:358, phần hình bên phải) | hình phòng học dựng bằng HTML/CSS cho phần mở đầu trang chủ (bảng phấn, dải video, thanh điều khiển); ẩn khỏi trình đọc màn hình, tắt chuyển động khi `prefers-reduced-motion` |
+| `ClassroomMockup` | (Landing 10:358, phần hình bên phải) | hình phòng học dựng bằng HTML/CSS (bảng phấn, dải video, thanh điều khiển); ẩn khỏi trình đọc màn hình. Trang chủ không còn dùng, giữ cho trang `/ui` |
 | `FeatureIcon` `name: video · screen · board · quiz · groups · record` | | icon nét cho thẻ tính năng (`CategoryCard` trong `.ui-features`) |
 | `Steps` `items: {title, text}[]` | | các bước đánh số nối bằng đường kẻ; màn hẹp xếp dọc |
-| `TeacherIntro` `name`, `title`, `bio`, `highlights`, `photo` | | thẻ giới thiệu giáo viên trên trang chủ (nội dung trong `lib/site.ts`) |
+| `TeacherIntro` `name`, `title`, `bio`, `highlights`, `photo`, `eyebrow` | Skilline 112:4 | giới thiệu giáo viên: chữ trái, ảnh phải với hai khối màu ở góc; không có ảnh thì dùng ảnh lớp học minh hoạ |
+| `Hero` `slide`, `actions`, `trust`, `decor` | Skilline 173:9 | đầu trang chủ một màn: nền kem, mép dưới cong, chữ trái, ảnh phải (mặc định ảnh học viên tách nền) |
+| `HeroSlider` `slides`, `autoplaySec`, `actions`, `trust`, `decor` | | như `Hero` nhưng nhiều slide: tự chuyển, dừng khi rê chuột hoặc focus, nút tạm dừng, phím mũi tên |
+| `HeroCard` `icon`, `color`, `title`, `text`, `place`; `HeroClassCard`; `HeroChip` | Skilline 22:4, 32:0, 38:2 | thẻ kính nổi trên ảnh đầu trang (truyền vào `decor`) |
 | `Faq` `items: {q, a}[]` | | câu hỏi thường gặp, dùng `details/summary` nên mở/đóng được bằng bàn phím |
 | `Switch` | | công tắc bật/tắt (`role="switch"`) |
 | `Stat` | Landing "15K+ Students" | số liệu lớn kèm nhãn; nhiều cái đặt trong `div.ui-stats` |
 | `List`, `ListRow` `lead`, `title`, `meta`, `actions`, `highlight` | (từ thẻ Figma) | dòng danh sách dạng thẻ: lịch học, buổi học, bản ghi, tài liệu |
 
-Class bố cục dùng trực tiếp: `ui-cols` (2 cột, tự xuống 1 cột), `ui-grid-cards` (lưới thẻ), `ui-stats`, `ui-actions` (hàng nút), `ui-form` / `ui-form-row` (form và hàng ô nhập), `ui-hero` (phần mở đầu trang chủ), `ui-auth` (trang đăng nhập/đăng ký theo Figma Login 28:131).
+Class bố cục dùng trực tiếp: `ui-cols` (2 cột, tự xuống 1 cột), `ui-grid-cards` (lưới thẻ), `ui-stats`, `ui-actions` (hàng nút), `ui-form` / `ui-form-row` (form và hàng ô nhập), `ui-landing` (bọc trang chủ: thanh điều hướng nền kem), `ui-page--landing` (khoảng cách rộng giữa các khối), `ui-auth` (trang đăng nhập/đăng ký theo Figma Login 28:131).
 
 ## Ví dụ
 
@@ -141,4 +134,4 @@ Class bố cục dùng trực tiếp: `ui-cols` (2 cột, tự xuống 1 cột),
 
 ## Asset
 
-Tải từ Figma vào `public/ui/`: `stars-5.svg` (node 52:231), `logo-mark.svg` (47:268), `eye-off.svg` (28:157, icon "invisible"). Ảnh mẫu cho trang `/ui` ở `public/ui/demo/` (đã thu nhỏ còn 800px); không dùng trong app.
+Ảnh từ Figma Skilline ở `public/ui/skilline/` (JPEG, đã cắt và thu nhỏ): `hero-student.jpg` (ảnh học viên tách nền đặt trên nền kem `#FFF2E1`, node 20:6), `classroom.jpg` (node 62:6); quản trị viên thay bằng ảnh slide và ảnh giáo viên ở `/admin/site`. Tải từ Figma E-Learning vào `public/ui/`: `stars-5.svg` (node 52:231), `logo-mark.svg` (47:268), `eye-off.svg` (28:157, icon "invisible"). Ảnh mẫu cho trang `/ui` ở `public/ui/demo/` (đã thu nhỏ còn 800px); không dùng trong app.

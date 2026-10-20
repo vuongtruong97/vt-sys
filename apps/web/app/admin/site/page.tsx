@@ -194,12 +194,12 @@ export default function SiteAdminPage() {
                     <Switch
                       checked={!!d.brand.primaryColor}
                       label="Dùng màu chủ đạo riêng"
-                      onChange={(on) => edit((x) => (x.brand.primaryColor = on ? x.brand.primaryColor ?? '#1a73e8' : null))}
+                      onChange={(on) => edit((x) => (x.brand.primaryColor = on ? x.brand.primaryColor ?? '#f48c06' : null))}
                     />
                     {d.brand.primaryColor && (
                       <label className="sa-color__pick">
                         <input type="color" value={d.brand.primaryColor} onChange={(e) => edit((x) => (x.brand.primaryColor = e.target.value))} />
-                        <span>{d.brand.primaryColor} · bảng màu sáng và tối được sinh tự động theo Material 3</span>
+                        <span>{d.brand.primaryColor} · nút chính dùng đúng màu này, nền nhạt đi kèm được sinh tự động</span>
                       </label>
                     )}
                   </div>

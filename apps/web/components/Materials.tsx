@@ -3,6 +3,7 @@ import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { fmtDay } from '@/lib/format';
 import { Alert, Button, ListRow, Muted } from '@/components/ui';
+import { Icon } from '@/components/meet/icons';
 
 export type Material = { id: string; name: string; contentType: string; sizeBytes: number; sessionId: string | null; createdAt: string };
 
@@ -109,7 +110,7 @@ export function Materials(props: {
         {items?.map((m) => (
           <ListRow
             key={m.id}
-            title={`📄 ${m.name}`}
+            title={<><Icon name="files" size={18} style={{ verticalAlign: '-0.2em', marginRight: 6 }} />{m.name}</>}
             meta={`${fmtSize(m.sizeBytes)} · ${fmtDay(m.createdAt)} · ${m.sessionId ? 'theo buổi' : 'tài liệu chung'}`}
             actions={
               <>
@@ -142,7 +143,7 @@ export function Materials(props: {
       {items?.map((m) => (
         <div key={m.id} className={room ? 'person' : 'item'}>
           <span className={room ? 'pn' : 'info'} style={{ minWidth: 0 }}>
-            <span className={room ? '' : 't'} style={{ overflowWrap: 'anywhere' }}>📄 {m.name}</span>
+            <span className={room ? '' : 't'} style={{ overflowWrap: 'anywhere' }}><Icon name="files" size={16} style={{ verticalAlign: '-0.2em', marginRight: 6 }} />{m.name}</span>
             {!room && (
               <span className="small muted">
                 {fmtSize(m.sizeBytes)} · {fmtDay(m.createdAt)}

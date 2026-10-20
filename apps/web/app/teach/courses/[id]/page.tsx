@@ -36,6 +36,25 @@ type Course = {
 
 const statusLabel: Record<string, string> = { SCHEDULED: 'Đã lên lịch', LIVE: 'Đang diễn ra', ENDED: 'Đã kết thúc', CANCELLED: 'Đã huỷ' };
 
+/** Thời lượng chọn được khi thêm buổi (giống form trong Lịch học). */
+const DURATIONS = [30, 45, 60, 90, 120, 180, 240];
+
+type SessionLite = { status: string; startsAt: string; endsAt: string };
+
+/** Buổi đã xong: huỷ, quá giờ kết thúc, hoặc đã kết thúc sau giờ bắt đầu (cùng cách tính với Lịch học). */
+const isDone = (s: SessionLite) =>
+  s.status === 'CANCELLED' ||
+  (s.status !== 'LIVE' && new Date(s.endsAt).getTime() < Date.now()) ||
+  (s.status === 'ENDED' && new Date(s.startsAt).getTime() <= Date.now());
+
+/** Buổi sắp tới trước (gần nhất lên đầu), buổi đã xong sau (mới nhất lên đầu). */
+function sortSessions<T extends SessionLite>(list: T[]) {
+  const t = (s: T) => new Date(s.startsAt).getTime();
+  const next = list.filter((s) => !isDone(s)).sort((a, b) => t(a) - t(b));
+  const done = list.filter(isDone).sort((a, b) => t(b) - t(a));
+  return [...next, ...done];
+}
+
 export default function CoursePage({ params }: { params: { id: string } }) {
   const me = useMe({ redirect: true });
   const [course, setCourse] = useState<Course | null>(null);
@@ -106,7 +125,7 @@ export default function CoursePage({ params }: { params: { id: string } }) {
               <Section title={`Buổi học (${course.sessions.length})`}>
                 {course.sessions.length === 0 && <Muted>Chưa có buổi nào. Thêm buổi đầu tiên bên dưới.</Muted>}
                 <List>
-                  {course.sessions.map((s) => (
+                  {sortSessions(course.sessions).map((s) => (
                     <ListRow
                       key={s.id}
                       highlight={s.status === 'LIVE'}
@@ -120,9 +139,13 @@ export default function CoursePage({ params }: { params: { id: string } }) {
                       }
                       actions={
                         <>
-                          {s.status !== 'CANCELLED' && <ButtonLink href={`/room/${s.id}`} size="sm">Mở lớp</ButtonLink>}
-                          <ButtonLink href={`/teach/sessions/${s.id}`} variant="outline" size="sm">Điểm danh</ButtonLink>
-                          <ButtonLink href={`/sessions/${s.id}`} variant="outline" size="sm">Ghi hình, tài liệu</ButtonLink>
+                          {!isDone(s) && <ButtonLink href={`/room/${s.id}`} size="sm">{s.status === 'LIVE' ? 'Vào lại' : 'Vào phòng'}</ButtonLink>}
+                          {isDone(s) && s.status !== 'CANCELLED' && (
+                            <>
+                              <ButtonLink href={`/teach/sessions/${s.id}`} variant="outline" size="sm">Điểm danh</ButtonLink>
+                              <ButtonLink href={`/sessions/${s.id}`} variant="outline" size="sm">Ghi hình, tài liệu</ButtonLink>
+                            </>
+                          )}
                           {s.status === 'SCHEDULED' && (
                             <Button
                               variant="ghost"
@@ -150,8 +173,8 @@ export default function CoursePage({ params }: { params: { id: string } }) {
                       <Select
                         label="Thời lượng"
                         name="minutes"
-                        defaultValue="90"
-                        options={[45, 60, 90, 120].map((m) => ({ value: String(m), label: `${m} phút` }))}
+                        defaultValue="120"
+                        options={DURATIONS.map((m) => ({ value: String(m), label: `${m} phút` }))}
                       />
                     </div>
                     <div className="ui-actions">
@@ -176,11 +199,10 @@ export default function CoursePage({ params }: { params: { id: string } }) {
                   </div>
                 </form>
                 {course.enrollments.length > 0 && (
-                  <Table caption="Học viên của khoá">
+                  <Table caption="Học viên của khoá" style={{ minWidth: 0 }}>
                     <thead>
                       <tr>
-                        <th>Họ tên</th>
-                        <th>Liên hệ</th>
+                        <th>Học viên</th>
                         <th>
                           <span className="ui-sr-only">Thao tác</span>
                         </th>
@@ -192,14 +214,11 @@ export default function CoursePage({ params }: { params: { id: string } }) {
                           <td>
                             <span className="ui-who">
                               <Avatar name={e.user.name} src={e.user.avatarUrl} size={32} decorative />
-                              <span>
+                              <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>
                                 {e.user.name}
+                                <span className="ui-sub">{e.user.email}{e.user.phone && ` · ${e.user.phone}`}</span>
                               </span>
                             </span>
-                          </td>
-                          <td>
-                            {e.user.email}
-                            {e.user.phone && <span className="ui-sub">{e.user.phone}</span>}
                           </td>
                           <td style={{ textAlign: 'right' }}>
                             <Button

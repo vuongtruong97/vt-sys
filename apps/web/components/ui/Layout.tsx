@@ -2,8 +2,9 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { HTMLAttributes, ReactNode, TableHTMLAttributes, useEffect, useId, useState } from 'react';
+import { Icon } from '@/components/meet/icons';
 import { Avatar, Logo } from './Display';
-import { cx } from './internal';
+import { CloseIcon, cx, MenuIcon } from './internal';
 
 // ---------- Navbar ----------
 
@@ -42,7 +43,7 @@ export function Navbar({ links, user, onLogout, guestActions, brand }: NavbarPro
           aria-label={open ? 'Đóng menu' : 'Mở menu'}
           onClick={() => setOpen((o) => !o)}
         >
-          <span aria-hidden>{open ? '✕' : '☰'}</span>
+          {open ? <CloseIcon size={22} /> : <MenuIcon />}
         </button>
         <nav id={menuId} className={cx('ui-nav__menu', open && 'ui-nav__menu--open')} aria-label="Điều hướng chính">
           <ul className="ui-nav__links">
@@ -97,7 +98,8 @@ export function PageHeader({ title, description, back, actions, className }: Pag
     <div className={cx('ui-pagehead', className)}>
       {back && (
         <Link href={back.href} className="ui-pagehead__back">
-          ← {back.label}
+          <Icon name="arrow-left" size={16} style={{ verticalAlign: '-0.2em', marginRight: 4 }} />
+          {back.label}
         </Link>
       )}
       <div className="ui-pagehead__row">

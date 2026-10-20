@@ -132,15 +132,23 @@ export default function AdminPage() {
   const groups = Array.from(new Set(perms.map((p) => p.group)));
 
   const statsTab = stats && (
-    <div className="ui-stats">
-      {stats.users.map((r) => (
-        <Stat key={r.id} value={r.count} label={r.name.toLowerCase()} />
-      ))}
-      <Stat value={stats.courses} label="khoá học" />
-      <Stat value={stats.upcomingSessions} label="buổi sắp tới" />
-      <Stat value={stats.liveSessions} label="đang diễn ra" />
-      <Stat value={stats.recordings.count} label={`bản ghi · ${fmtSize(stats.recordings.bytes)}`} />
-    </div>
+    <>
+      <Section title="Tài khoản">
+        <div className="ui-stats">
+          {stats.users.map((r) => (
+            <Stat key={r.id} value={r.count} label={r.name.toLowerCase()} />
+          ))}
+        </div>
+      </Section>
+      <Section title="Hoạt động">
+        <div className="ui-stats">
+          <Stat value={stats.courses} label="khoá học" />
+          <Stat value={stats.upcomingSessions} label="buổi sắp tới" />
+          <Stat value={stats.liveSessions} label="đang diễn ra" />
+          <Stat value={stats.recordings.count} label={`bản ghi · ${fmtSize(stats.recordings.bytes)}`} />
+        </div>
+      </Section>
+    </>
   );
 
   const usersTab = (

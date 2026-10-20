@@ -81,7 +81,7 @@ export function SidePanel(props: Props) {
             props.courseId ? (
               <Materials courseId={props.courseId} sessionId={props.sessionId} canEdit={isTeacher} room onMessage={props.say} />
             ) : (
-              <p className="mt-muted">Meeting chưa có mục tài liệu.</p>
+              <p className="mt-muted">Cuộc họp chưa có mục tài liệu.</p>
             )
           ) : panel === 'groups' && isTeacher ? (
             <BreakoutPanel sessionId={props.sessionId} participants={props.participants} currentGroup={props.group?.index ?? null} switchRoom={props.switchRoom} say={props.say} />
@@ -350,7 +350,7 @@ function ActivitiesPanel({ setPanel, activities, quiz, group, courseId }: Props)
         </>
       )}
       {!activities && <p className="mt-muted">Bảng trắng, ghi hình và phát trực tiếp chỉ dùng được ở phòng chính.</p>}
-      {activities && !courseId && <p className="mt-muted">Meeting chưa hỗ trợ ghi hình và phát trực tiếp.</p>}
+      {activities && !courseId && <p className="mt-muted">Cuộc họp chưa hỗ trợ ghi hình và phát trực tiếp.</p>}
     </>
   );
 }

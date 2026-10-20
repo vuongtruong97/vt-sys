@@ -9,7 +9,13 @@ import { DEFAULT_CONTENT, SiteContent } from '@/lib/siteTypes';
 const API = process.env.API_INTERNAL_URL || 'http://localhost:3001';
 
 /**
- * Nội dung trang đã xuất bản (quản trị ở /admin/site). Lấy phía server, làm mới tối đa 30 giây một lần;
+ * Dựng trang theo từng lượt tải, không dựng sẵn lúc build: lúc build API chưa chạy nên trang dựng sẵn
+ * mang nội dung mặc định (logo "BĐ") cho tới lần làm mới đầu tiên. Đổi lại mỗi lượt tải gọi API /site một lần (nhẹ).
+ */
+export const dynamic = 'force-dynamic';
+
+/**
+ * Nội dung trang đã xuất bản (quản trị ở /admin/site). Lấy phía server mỗi lượt tải trang;
  * API chưa chạy (lúc build) hoặc lỗi thì dùng nội dung mặc định để trang vẫn hiện.
  */
 async function loadSite(): Promise<SiteContent> {

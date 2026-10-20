@@ -2,6 +2,7 @@
 import { ReactNode, useId, useRef, useState } from 'react';
 import { Button, Input } from '@/components/ui';
 import { assetUrl } from '@/lib/site';
+import { Icon } from '@/components/meet/icons';
 
 /** Cỡ ảnh tối đa theo chỗ dùng; ảnh lớn hơn được thu nhỏ trên trình duyệt trước khi gửi. */
 export const IMAGE_KINDS = {
@@ -131,8 +132,8 @@ export function ListEditor<T>({
         <fieldset key={i} className="sa-list__item">
           <legend>{itemLabel(i)}</legend>
           <div className="sa-list__tools">
-            <Button size="sm" variant="ghost" disabled={i === 0} aria-label={`Chuyển ${itemLabel(i)} lên`} onClick={() => move(i, -1)}>↑</Button>
-            <Button size="sm" variant="ghost" disabled={i === items.length - 1} aria-label={`Chuyển ${itemLabel(i)} xuống`} onClick={() => move(i, 1)}>↓</Button>
+            <Button size="sm" variant="ghost" disabled={i === 0} aria-label={`Chuyển ${itemLabel(i)} lên`} onClick={() => move(i, -1)}><Icon name="arrow-up" size={18} /></Button>
+            <Button size="sm" variant="ghost" disabled={i === items.length - 1} aria-label={`Chuyển ${itemLabel(i)} xuống`} onClick={() => move(i, 1)}><Icon name="arrow-down" size={18} /></Button>
             <Button size="sm" variant="ghost" aria-label={`Xoá ${itemLabel(i)}`} onClick={() => onChange(items.filter((_, k) => k !== i))}>Xoá</Button>
           </div>
           {render(it, (next) => onChange(items.map((x, k) => (k === i ? next : x))), i)}

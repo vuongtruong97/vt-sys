@@ -1,7 +1,7 @@
 'use client';
 import { ReactNode, useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronIcon, cx } from './internal';
+import { ChevronIcon, CloseIcon, cx } from './internal';
 import { IconButton } from './Button';
 
 // ---------- Modal ----------
@@ -72,7 +72,7 @@ export function Modal({ open, onClose, title, children, footer, className }: Mod
             {title}
           </h2>
           <button type="button" className="ui-modal__close" aria-label="Đóng" onClick={onClose}>
-            ✕
+            <CloseIcon />
           </button>
         </div>
         {children && <div className="ui-modal__body">{children}</div>}

@@ -59,7 +59,9 @@ export default function RoomPage({ params }: { params: { id: string } }) {
 
   const join = useCallback(async (group?: number) => {
     try {
-      const r = await api<JoinRes>(`/sessions/${params.id}/join`, { json: group != null ? { group } : {} });
+      // Link mời trực tiếp của meeting có ?key=...: vào thẳng, không qua phòng chờ.
+      const key = new URLSearchParams(window.location.search).get('key') || undefined;
+      const r = await api<JoinRes>(`/sessions/${params.id}/join`, { json: { ...(group != null && { group }), ...(key && { key }) } });
       if (r.status === 'ok') {
         stopPoll();
         setPhase({ k: 'in', token: r.token, url: r.url, role: r.role, group: r.group });
@@ -116,7 +118,7 @@ export default function RoomPage({ params }: { params: { id: string } }) {
 
   if (phase.k === 'error') {
     return (
-      <LobbyMessage icon="info" title="Chưa vào được lớp" account={me?.email} actions={<Link className="mt-pbtn" href="/schedule">Về lịch học</Link>}>
+      <LobbyMessage icon="info" title="Chưa vào được phòng" account={me?.name} actions={<Link className="mt-pbtn" href="/schedule">Về lịch học</Link>}>
         <p>{phase.message}</p>
       </LobbyMessage>
     );
@@ -127,7 +129,7 @@ export default function RoomPage({ params }: { params: { id: string } }) {
       <LobbyMessage
         icon="check"
         title="Buổi học đã kết thúc"
-        account={me?.email}
+        account={me?.name}
         actions={
           <>
             <Link className="mt-pbtn" href={`/sessions/${params.id}`}>Xem lại buổi học</Link>
@@ -141,7 +143,7 @@ export default function RoomPage({ params }: { params: { id: string } }) {
       <LobbyMessage
         icon="leave"
         title="Bạn đã rời lớp"
-        account={me?.email}
+        account={me?.name}
         actions={
           <>
             <button type="button" className="mt-pbtn" onClick={rejoin}>Vào lại lớp</button>
@@ -159,7 +161,7 @@ export default function RoomPage({ params }: { params: { id: string } }) {
       <LobbyMessage
         spinner
         title="Đang chờ giáo viên cho vào"
-        account={me?.email}
+        account={me?.name}
         actions={<button type="button" className="mt-pbtn mt-pbtn--ghost" onClick={() => { stopPoll(); setPhase({ k: 'prejoin' }); }}>Huỷ yêu cầu</button>}
       >
         {info?.course ? (
@@ -226,8 +228,8 @@ export default function RoomPage({ params }: { params: { id: string } }) {
   return (
     <PreJoinScreen
       name={me.name}
-      account={me.email}
-      courseTitle={info.course?.title ?? 'Meeting'}
+      account={me.name}
+      courseTitle={info.course?.title ?? 'Cuộc họp'}
       title={info.title}
       time={time}
       role={info.role}

@@ -199,7 +199,7 @@ export class CoursesController {
     const s = await this.prisma.classSession.findUnique({ where: { id } });
     if (!s) throw new NotFoundException('Không tìm thấy buổi học');
     if (s.courseId) await this.ownCourse(user, s.courseId);
-    else if (s.hostId !== user.id) throw new ForbiddenException('Đây không phải meeting của bạn');
+    else if (s.hostId !== user.id) throw new ForbiddenException('Đây không phải cuộc họp của bạn');
     return this.prisma.classSession.update({
       where: { id },
       data: {
@@ -236,6 +236,8 @@ export class CoursesController {
       students: s.course?._count.enrollments ?? 0,
       /** Mình là người dạy/chủ phòng của buổi này (nút Mở lớp, Điểm danh). */
       mine: s.course ? s.course.teacherId === user.id : s.hostId === user.id,
+      /** Khoá link mời vào thẳng của meeting; chỉ chủ phòng thấy. */
+      inviteKey: !s.course && s.hostId === user.id ? s.inviteKey : null,
     }));
   }
 }

@@ -34,7 +34,7 @@ class UploadDto {
   @IsOptional() @IsString() sessionId?: string;
 }
 
-/** Ai được xem tài liệu và bản ghi của khoá: giáo viên dạy khoá, học viên đã đăng ký. */
+/** Ai được xem tài liệu và bản ghi của khoá: giáo viên dạy khoá, người quản lý/xem mọi khoá, học viên đã đăng ký. */
 @Injectable()
 export class CourseAccess {
   constructor(private prisma: PrismaService) {}
@@ -42,7 +42,9 @@ export class CourseAccess {
   async check(user: AuthUser, courseId: string) {
     const course = await this.prisma.course.findUnique({ where: { id: courseId } });
     if (!course) throw new NotFoundException('Không tìm thấy khoá học');
-    if (course.teacherId === user.id) return { course, teacher: true };
+    // Người quản lý mọi khoá học làm được như giáo viên; người được xem mọi khoá học xem như học viên.
+    if (course.teacherId === user.id || can(user, 'course.manage_all')) return { course, teacher: true };
+    if (can(user, 'course.view_all')) return { course, teacher: false };
     const enrolled = await this.prisma.enrollment.findUnique({ where: { userId_courseId: { userId: user.id, courseId } } });
     if (!enrolled) throw new ForbiddenException('Bạn chưa đăng ký khoá học này');
     return { course, teacher: false };

@@ -32,6 +32,7 @@ import {
   Textarea,
 } from '@/components/ui';
 import { useMe } from '@/lib/useMe';
+import { Icon } from '@/components/meet/icons';
 
 const teacher = { name: 'Lina', avatar: '/ui/demo/avatar.jpg' };
 const desc = 'Nền tảng điện toán đám mây từ cơ bản tới thiết kế hệ thống, kèm bài tập thực hành sau mỗi buổi.';
@@ -80,7 +81,7 @@ export default function UiPage() {
           <p className="ui-course__desc" style={{ WebkitLineClamp: 'unset' }}>
             Giao diện theo Figma Skilline (cam, navy, xanh ngọc; chỉ chế độ sáng). Mã nguồn ở <code>apps/web/components/ui</code>, hướng dẫn trong README.md cùng thư mục.
           </p>
-          <ButtonLink href="/ui/meeting" variant="outline" size="sm">Mockup phòng học kiểu Google Meet →</ButtonLink>
+          <ButtonLink href="/ui/meeting" variant="outline" size="sm">Mockup phòng học kiểu Google Meet <Icon name="arrow-right" size={16} /></ButtonLink>
         </header>
 
         <Demo title="Nút" node="28:169, 136:347, 39:268">
@@ -208,9 +209,9 @@ export default function UiPage() {
 
         <Demo title="Thẻ danh mục" node="54:297">
           <div className="ui-demo__cards">
-            <CategoryCard title="Thiết kế" description={desc} icon={<span style={{ fontSize: 32 }}>✎</span>} color={{ fg: 'var(--md-on-primary-container)', bg: 'var(--md-primary-container)' }} />
-            <CategoryCard title="Nhiếp ảnh" description={desc} icon={<span style={{ fontSize: 32 }}>📷</span>} color={{ fg: 'var(--md-on-tertiary-container)', bg: 'var(--md-tertiary-container)' }} />
-            <CategoryCard title="Kinh doanh" description={desc} icon={<span style={{ fontSize: 32 }}>💼</span>} color={{ fg: 'var(--md-on-secondary-container)', bg: 'var(--md-secondary-container)' }} />
+            <CategoryCard title="Thiết kế" description={desc} icon={<Icon name="pen" size={32} />} color={{ fg: 'var(--md-on-primary-container)', bg: 'var(--md-primary-container)' }} />
+            <CategoryCard title="Nhiếp ảnh" description={desc} icon={<Icon name="cam" size={32} />} color={{ fg: 'var(--md-on-tertiary-container)', bg: 'var(--md-tertiary-container)' }} />
+            <CategoryCard title="Kinh doanh" description={desc} icon={<Icon name="briefcase" size={32} />} color={{ fg: 'var(--md-on-secondary-container)', bg: 'var(--md-secondary-container)' }} />
           </div>
         </Demo>
 
@@ -256,7 +257,7 @@ export default function UiPage() {
           >
             Bạn sẽ không vào được các buổi học tiếp theo. Bản ghi và tài liệu đã xem vẫn giữ trong 30 ngày.
           </Modal>
-          <EmptyState title="Chưa có khoá học nào" icon={<span style={{ fontSize: 30 }}>📚</span>} action={<ButtonLink href="/schedule" size="sm">Xem lịch học</ButtonLink>}>
+          <EmptyState title="Chưa có khoá học nào" icon={<Icon name="book" size={32} />} action={<ButtonLink href="/schedule" size="sm">Xem lịch học</ButtonLink>}>
             Khi giáo viên thêm bạn vào khoá học, khoá học sẽ hiện ở đây.
           </EmptyState>
         </Demo>

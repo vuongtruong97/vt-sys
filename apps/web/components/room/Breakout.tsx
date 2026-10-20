@@ -3,6 +3,7 @@ import { Participant } from 'livekit-client';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { roleOf } from './shared';
+import { Icon } from '@/components/meet/icons';
 
 type Group = { index: number; name: string; members: string[]; online: string[] };
 type State = { active: boolean; endsAt: string | null; groups: Group[] };
@@ -132,7 +133,7 @@ export function BreakoutPanel(props: {
         {state.endsAt && ` · hẹn về lúc ${new Date(state.endsAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`}
       </div>
       {currentGroup != null && (
-        <button className="mini pri" style={{ justifySelf: 'start' }} disabled={busy} onClick={() => run(() => switchRoom())}>← Về phòng chính</button>
+        <button className="mini pri" style={{ justifySelf: 'start' }} disabled={busy} onClick={() => run(() => switchRoom())}><Icon name="arrow-left" size={14} style={{ verticalAlign: '-0.15em', marginRight: 4 }} />Về phòng chính</button>
       )}
       {state.groups.map((g) => (
         <div key={g.index} className="quiz-item">

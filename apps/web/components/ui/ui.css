@@ -62,7 +62,7 @@
 .ui-iconbtn:disabled { cursor: not-allowed; background-color: color-mix(in srgb, var(--ui-text) 12%, transparent); color: color-mix(in srgb, var(--ui-text) 38%, transparent); }
 
 /* ---------- Field, Input, Textarea, Select (M3 outlined text field: cao 56, góc 4) ---------- */
-.ui-field { display: grid; gap: 6px; font-family: var(--ui-font); }
+.ui-field { display: grid; gap: 6px; align-content: start; font-family: var(--ui-font); }
 .ui-field__label { font-size: var(--ui-text-sm); font-weight: 700; letter-spacing: .1px; color: var(--ui-text); }
 .ui-field:focus-within .ui-field__label { color: var(--ui-heading); }
 .ui-field__hint { padding: 0 var(--ui-space-4); font-size: var(--ui-text-xs); letter-spacing: .4px; color: var(--ui-text-body); }
@@ -132,6 +132,7 @@
 /* Nhãn "giảm %" góc ảnh ưu đãi */
 .ui-badge--discount { padding: 6px 12px; border-radius: var(--ui-radius-sm); background: var(--ui-danger); color: var(--ui-on-danger); font-size: var(--ui-text-md); font-weight: 500; }
 .ui-badge__icon { color: var(--ui-text-body); }
+.ui-badge--danger { min-height: 24px; padding: 2px 10px; border-radius: var(--ui-radius-sm); background: var(--ui-danger-container); color: var(--ui-on-danger-container); font-weight: 600; }
 .ui-badge--neutral { min-height: 24px; padding: 2px 10px; border-radius: var(--ui-radius-sm); border: 1px solid var(--ui-outline-variant); background: transparent; color: var(--ui-text-body); }
 
 /* ---------- Avatar ---------- */
@@ -233,7 +234,7 @@ a.ui-card:focus-visible { outline: none; box-shadow: var(--ui-shadow-card), var(
 .ui-modal__title { margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; color: var(--ui-heading); }
 .ui-modal__body { font-size: var(--ui-text-sm); line-height: 20px; letter-spacing: .25px; color: var(--ui-text-body); }
 .ui-modal__foot { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--ui-space-2); margin-top: var(--ui-space-6); }
-.ui-modal__close { flex: none; width: 40px; height: 40px; margin: -8px -8px 0 0; border: 0; border-radius: 50%; background-color: transparent; color: var(--ui-text-body); cursor: pointer; font-size: 20px; line-height: 1; }
+.ui-modal__close { flex: none; display: grid; place-items: center; width: 40px; height: 40px; margin: -8px -8px 0 0; border: 0; border-radius: 50%; background-color: transparent; color: var(--ui-text-body); cursor: pointer; font-size: 20px; line-height: 1; }
 .ui-modal__close:focus-visible { outline: none; box-shadow: var(--ui-focus); }
 
 /* ---------- EmptyState ---------- */
@@ -317,7 +318,7 @@ body { background: var(--ui-surface); color: var(--ui-text); font-family: var(--
 /* headline-large → display-small */
 .ui-pagehead__title { margin: 0; font-family: var(--ui-font-display); font-size: clamp(28px, 4vw, 36px); font-weight: 600; line-height: 1.25; color: var(--ui-heading); }
 .ui-pagehead__desc { font-size: var(--ui-text-md); line-height: 24px; letter-spacing: .5px; color: var(--ui-text-body); }
-.ui-pagehead__actions { display: flex; flex-wrap: wrap; gap: var(--ui-space-2); }
+.ui-pagehead__actions { display: flex; flex-wrap: wrap; gap: var(--ui-space-2); margin-left: auto; }
 .ui-sec { display: grid; gap: var(--ui-space-4); align-content: start; }
 .ui-sec__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--ui-space-3); }
 .ui-sec__title { margin: 0; font-family: var(--ui-font-display); font-size: var(--ui-text-xl); line-height: 28px; font-weight: 600; color: var(--ui-heading); }
@@ -412,7 +413,7 @@ body { background: var(--ui-surface); color: var(--ui-text); font-family: var(--
 .ui-hero__copy .ui-btn--lg { height: 60px; padding: 0 34px; font-size: 17px; }
 .ui-hero__trust { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0; padding: 0; list-style: none; font-size: var(--ui-text-sm); font-weight: 600; color: var(--ui-text); }
 .ui-hero__trust li { display: inline-flex; align-items: center; gap: 8px; }
-.ui-hero__trust li::before { content: "✓"; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--md-success); color: #fff; font-size: 11px; font-weight: 700; }
+.ui-hero__trust li::before { content: ""; flex: none; width: 20px; height: 20px; border-radius: 50%; background: var(--ui-check) center / 12px no-repeat, var(--md-success); }
 
 /* Ảnh: mặc định là ảnh học viên đã tách nền (đáy ảnh chạm mép cong); ảnh tải lên ở /admin/site đóng khung bo 20. */
 .ui-hero__media { position: relative; align-self: end; display: grid; justify-items: center; }
@@ -588,7 +589,7 @@ body { background: var(--ui-surface); color: var(--ui-text); font-family: var(--
 .ui-teacher__bio { margin: 0; font-size: clamp(16px, 1.5vw, 18px); line-height: 1.8; color: var(--ui-text-body); }
 .ui-teacher__list { display: grid; gap: 10px; margin: 4px 0 0; padding: 0; list-style: none; }
 .ui-teacher__list li { display: flex; gap: 12px; font-size: var(--ui-text-md); line-height: 24px; color: var(--ui-text); }
-.ui-teacher__list li::before { content: "✓"; flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--ui-primary-container); color: var(--ui-on-primary-container); font-size: 12px; font-weight: 700; }
+.ui-teacher__list li::before { content: ""; flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--ui-check-dark) center / 13px no-repeat, var(--ui-primary-container); }
 .ui-teacher__media { position: relative; margin: 28px; }
 .ui-teacher__media::before, .ui-teacher__media::after { content: ""; position: absolute; border-radius: var(--ui-radius-md); }
 .ui-teacher__media::before { left: -28px; top: -28px; width: 26%; aspect-ratio: 1; background: var(--ui-deco-cyan); }
@@ -600,8 +601,9 @@ body { background: var(--ui-surface); color: var(--ui-text); font-family: var(--
 .ui-faq__item { border-radius: var(--ui-radius-md); background: var(--ui-surface); box-shadow: var(--ui-shadow-card); }
 .ui-faq__q { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 24px; cursor: pointer; list-style: none; font-family: var(--ui-font-display); font-size: var(--ui-text-md); font-weight: 600; color: var(--ui-heading); border-radius: var(--ui-radius-md); }
 .ui-faq__q::-webkit-details-marker { display: none; }
-.ui-faq__q::after { content: "+"; flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--ui-primary-container); color: var(--ui-on-primary-container); font-size: 20px; font-weight: 500; transition: transform var(--ui-ease), background-color var(--ui-ease), color var(--ui-ease); }
-.ui-faq__item[open] .ui-faq__q::after { transform: rotate(45deg); background: var(--ui-primary); color: var(--ui-on-primary); }
+/* Dấu cộng vẽ bằng hai vạch (currentColor) để luôn nằm giữa, không phụ thuộc font. */
+.ui-faq__q::after { content: ""; flex: none; width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(currentColor, currentColor) center / 14px 2px no-repeat, linear-gradient(currentColor, currentColor) center / 2px 14px no-repeat, var(--ui-primary-container); color: var(--ui-on-primary-container); transition: transform var(--ui-ease), background-color var(--ui-ease), color var(--ui-ease); }
+.ui-faq__item[open] .ui-faq__q::after { transform: rotate(45deg); background-color: var(--ui-primary); color: var(--ui-on-primary); }
 .ui-faq__q:focus-visible { outline: none; box-shadow: var(--ui-focus); }
 .ui-faq__a { margin: 0; padding: 0 24px 22px; font-size: var(--ui-text-md); line-height: 1.75; color: var(--ui-text-body); }
 

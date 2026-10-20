@@ -5,6 +5,7 @@ import { Alert, Badge, Button, ButtonLink, EmptyState, Input, Modal, Muted, Page
 import { api } from '@/lib/api';
 import { can, canTeachArea } from '@/lib/can';
 import { useMe } from '@/lib/useMe';
+import { Icon } from '@/components/meet/icons';
 
 type Course = {
   id: string;
@@ -91,7 +92,7 @@ export default function TeachPage() {
         <Section>
           {courses === null && !error && <Muted>Đang tải…</Muted>}
           {courses?.length === 0 && (
-            <EmptyState title="Chưa có khoá học" icon="📚" action={canCreate && <Button onClick={openCreate}>Tạo khoá học đầu tiên</Button>}>
+            <EmptyState title="Chưa có khoá học" icon={<Icon name="book" size={32} />} action={canCreate && <Button onClick={openCreate}>Tạo khoá học đầu tiên</Button>}>
               {canCreate ? 'Tạo khoá học, rồi lên lịch buổi học và thêm học viên bằng email.' : 'Chưa có giáo viên nào tạo khoá học.'}
             </EmptyState>
           )}

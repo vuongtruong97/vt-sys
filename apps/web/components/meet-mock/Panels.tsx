@@ -150,7 +150,7 @@ function Quiz() {
             const pct = total ? Math.round((o.votes / total) * 100) : 0;
             return (
               <div key={o.text} className={`mt-opt${o.correct ? ' mt-opt--ok' : ''}`} style={{ '--w': `${pct}%` } as React.CSSProperties}>
-                <span>{o.text}{o.correct ? ' ✓' : ''}</span>
+                <span>{o.text}{o.correct && <Icon name="check" size={14} style={{ verticalAlign: '-0.15em', marginLeft: 4 }} />}</span>
                 <b>{pct}%</b>
               </div>
             );

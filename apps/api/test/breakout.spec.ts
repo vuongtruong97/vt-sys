@@ -112,6 +112,6 @@ describe('Học viên vào lớp theo giờ', () => {
 
   it('lớp chưa mở và chưa tới giờ thì học viên bị chặn', async () => {
     const { classroom } = setup(session({ status: 'SCHEDULED', ...tomorrow }));
-    await expect(classroom.join(student, 's1', {})).rejects.toThrow(/Lớp mở cửa lúc/);
+    await expect(classroom.join(student, 's1', {})).rejects.toThrow(/Phòng mở cửa lúc/);
   });
 });

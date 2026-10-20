@@ -36,6 +36,8 @@ export default function SessionReviewPage({ params }: { params: { id: string } }
   }, [me, params.id]);
 
   const teacher = info?.role === 'teacher';
+  // Buổi chưa diễn ra: chưa có bản ghi; tài liệu vẫn tải lên trước được.
+  const notYet = !!info && info.status === 'SCHEDULED' && new Date(info.startsAt).getTime() > Date.now();
 
   return (
     <>
@@ -48,12 +50,18 @@ export default function SessionReviewPage({ params }: { params: { id: string } }
           <>
             <PageHeader
               back={{ href: '/schedule', label: 'Lịch học' }}
-              title={info.course ? `${info.course.title} · ${info.title}` : `Meeting · ${info.title}`}
+              title={info.course ? `${info.course.title} · ${info.title}` : info.title}
               description={`${fmtDay(info.startsAt)}, ${fmtTime(info.startsAt)} – ${fmtTime(info.endsAt)}`}
               actions={teacher && <ButtonLink href={`/teach/sessions/${info.id}`} variant="outline">Điểm danh</ButtonLink>}
             />
+            {notYet && (
+              <Alert tone="info">
+                Buổi chưa diễn ra, bắt đầu {fmtDay(info.startsAt).toLowerCase()} lúc {fmtTime(info.startsAt)}. Bản ghi hình sẽ có ở đây sau buổi học.
+                {teacher && ' Tài liệu tải lên trước sẽ hiện cho học viên ngay.'}
+              </Alert>
+            )}
             <div className="ui-cols">
-              {showRecordings && (
+              {showRecordings && !notYet && (
                 <Section title="Bản ghi hình">
                   <Recordings sessionId={info.id} canEdit={teacher} />
                 </Section>

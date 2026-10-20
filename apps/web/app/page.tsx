@@ -25,6 +25,7 @@ import { api } from '@/lib/api';
 import { fmtDay, fmtTime } from '@/lib/format';
 import { assetUrl, useSite } from '@/lib/site';
 import { useMe } from '@/lib/useMe';
+import { Icon } from '@/components/meet/icons';
 
 type PublicCourse = {
   id: string;
@@ -145,7 +146,7 @@ export default function Home() {
               {home.courses.text && <p>{home.courses.text}</p>}
             </div>
             {courses === null && <Muted>Đang tải…</Muted>}
-            {courses?.length === 0 && <EmptyState title="Chưa có khoá học công khai" icon="📚">Giáo viên đang chuẩn bị, quay lại sau nhé.</EmptyState>}
+            {courses?.length === 0 && <EmptyState title="Chưa có khoá học công khai" icon={<Icon name="book" size={32} />}>Giáo viên đang chuẩn bị, quay lại sau nhé.</EmptyState>}
             <div className="ui-grid-cards">
               {courses?.map((c, i) => (
                 <CourseCard

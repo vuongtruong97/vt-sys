@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import { fmtTime } from '@/lib/format';
 import { fmtSize, openSigned } from './Materials';
 import { Alert, Badge, Button, ListRow, Muted } from '@/components/ui';
+import { Icon } from '@/components/meet/icons';
 
 type Recording = {
   id: string;
@@ -67,7 +68,7 @@ export function Recordings({ sessionId, canEdit }: { sessionId: string; canEdit:
       {items?.map((r, i) => (
         <ListRow
           key={r.id}
-          title={`🎬 Bản ghi ${i + 1} · bắt đầu ${fmtTime(r.startedAt)}`}
+          title={<><Icon name="film" size={18} style={{ verticalAlign: '-0.2em', marginRight: 6 }} />Bản ghi {i + 1} · bắt đầu {fmtTime(r.startedAt)}</>}
           meta={
             <>
               <Badge variant={r.status === 'READY' ? 'soft' : 'neutral'}>{label[r.status]}</Badge>

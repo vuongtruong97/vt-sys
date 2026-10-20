@@ -18,7 +18,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { ClassSession, Course } from '@prisma/client';
-import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 import type { Request } from 'express';
 import jwt from 'jsonwebtoken';
 import { SkipThrottle } from '@nestjs/throttler';
@@ -49,6 +49,9 @@ class DecideDto {
 class JoinDto {
   /** Giáo viên chọn ghé nhóm nào khi đang chia nhóm; bỏ trống là phòng chính. Học viên gửi lên sẽ bị bỏ qua. */
   @IsOptional() @IsInt() @Min(0) group?: number;
+
+  /** Khoá trong link mời trực tiếp của meeting; đúng khoá thì vào luôn, không qua phòng chờ. */
+  @IsOptional() @IsString() @MaxLength(64) key?: string;
 }
 
 /** Buổi học (có khoá học) hoặc meeting độc lập (course = null, chủ phòng là hostId). */
@@ -144,9 +147,18 @@ export class ClassroomController {
   @HttpCode(200)
   async join(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: JoinDto = {}) {
     const s = await this.svc.session(id);
-    if (s.status === 'CANCELLED') throw new BadRequestException(isMeeting(s) ? 'Meeting này đã bị huỷ' : 'Buổi học này đã bị huỷ');
+    if (s.status === 'CANCELLED') throw new BadRequestException(isMeeting(s) ? 'Cuộc họp này đã bị huỷ' : 'Buổi học này đã bị huỷ');
 
-    const role = await this.svc.roleOf(user, s);
+    let role = await this.svc.roleOf(user, s);
+    if (!role && isMeeting(s) && s.inviteKey && dto.key === s.inviteKey) {
+      // Link mời trực tiếp: duyệt sẵn, kể cả khi trước đó bị từ chối.
+      await this.prisma.joinRequest.upsert({
+        where: { sessionId_userId: { sessionId: s.id, userId: user.id } },
+        create: { sessionId: s.id, userId: user.id, status: 'APPROVED' },
+        update: { status: 'APPROVED' },
+      });
+      role = 'student';
+    }
     if (!role) {
       const req = await this.prisma.joinRequest.upsert({
         where: { sessionId_userId: { sessionId: s.id, userId: user.id } },
@@ -161,8 +173,8 @@ export class ClassroomController {
       const now = Date.now();
       const opens = s.startsAt.getTime() - config.openBeforeMinutes * 60_000;
       const closes = s.endsAt.getTime() + config.closeAfterMinutes * 60_000;
-      if (now < opens) throw new ForbiddenException(`Lớp mở cửa lúc ${fmtTime(new Date(opens))}`);
-      if (now > closes || s.status === 'ENDED') throw new ForbiddenException('Buổi học đã kết thúc');
+      if (now < opens) throw new ForbiddenException(`Phòng mở cửa lúc ${fmtTime(new Date(opens))}`);
+      if (now > closes || s.status === 'ENDED') throw new ForbiddenException(isMeeting(s) ? 'Cuộc họp đã kết thúc' : 'Buổi học đã kết thúc');
     } else if (s.status === 'SCHEDULED' || s.status === 'ENDED') {
       await this.prisma.classSession.update({ where: { id: s.id }, data: { status: 'LIVE' } });
     }

@@ -24,7 +24,7 @@ export type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
    * "category": nhãn danh mục có icon ô vuông. "soft": viên thuốc teal nhạt (trạng thái tốt: đang diễn ra, có mặt).
    * "neutral": viên thuốc xám (đã huỷ, vắng, đã ẩn). "discount": ô đỏ "50%" trên ảnh ưu đãi.
    */
-  variant?: 'category' | 'soft' | 'neutral' | 'discount';
+  variant?: 'category' | 'soft' | 'neutral' | 'discount' | 'danger';
 };
 
 export function Badge({ variant = 'soft', className, children, ...rest }: BadgeProps) {

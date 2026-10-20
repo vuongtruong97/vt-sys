@@ -112,6 +112,8 @@ model ClassSession {
   roomName          String          @unique
   status            SessionStatus   @default(SCHEDULED)
   allowStudentShare Boolean         @default(false)
+  /// Meeting: khoá trong link mời trực tiếp (?key=...), người có khoá vào luôn không qua phòng chờ.
+  inviteKey         String?         @unique
   /// Đang chia nhóm: học viên có trong breakout_groups vào phòng nhóm thay vì phòng chính.
   breakoutActive    Boolean         @default(false)
   /// Giờ giáo viên hẹn gọi các nhóm về (chỉ để hiện đồng hồ, không tự đóng).

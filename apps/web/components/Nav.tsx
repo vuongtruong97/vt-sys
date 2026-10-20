@@ -12,7 +12,6 @@ export function Nav({ me }: { me: Me | null | undefined }) {
   const links: NavLink[] = [{ href: '/', label: 'Trang chủ' }];
   if (me) {
     links.push({ href: '/schedule', label: 'Lịch học' });
-    if (can(me, 'meeting.create')) links.push({ href: '/meet', label: 'Meeting' });
     if (canTeachArea(me)) links.push({ href: '/teach', label: 'Quản lý lớp' });
     if (canAdminArea(me)) links.push({ href: '/admin', label: 'Quản trị' });
   }

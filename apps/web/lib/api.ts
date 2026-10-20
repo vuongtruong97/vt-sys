@@ -38,4 +38,6 @@ export type ScheduleItem = {
   students: number;
   /** Mình là người dạy/chủ phòng của buổi này (nút Mở lớp, Điểm danh). */
   mine: boolean;
+  /** Meeting của mình: khoá link mời vào thẳng (null nếu không phải chủ phòng hoặc meeting cũ). */
+  inviteKey: string | null;
 };

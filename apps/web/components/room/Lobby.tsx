@@ -4,17 +4,18 @@ import { LocalAudioTrack, LocalVideoTrack, Track } from 'livekit-client';
 import Link from 'next/link';
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon, IconName } from '@/components/meet/icons';
-import { useSite } from '@/lib/site';
+import { assetUrl, useSite } from '@/lib/site';
 import { applyEffect, useVideoEffect } from '@/lib/videoEffect';
 import { BackgroundPicker, useBackgroundsSupported } from './BackgroundPicker';
 
 /** Khung chung của các màn hình ngoài phòng học (nền sáng, logo). */
 export function LobbyShell({ children, account }: { children: ReactNode; account?: string }) {
   const { brand } = useSite();
+  const logo = assetUrl(brand.logoAssetId);
   return (
     <div className="mt mt-lobby">
       <header className="mt-lobby__top" style={{ paddingTop: 20 }}>
-        <Link href="/" className="mt-brand" style={{ textDecoration: 'none' }}><i>{brand.short}</i>{brand.name}</Link>
+        <Link href="/" className="mt-brand" style={{ textDecoration: 'none' }}>{logo ? <img src={logo} alt="" /> : <i>{brand.short}</i>}{brand.name}</Link>
         {account && <span className="mt-muted">{account}</span>}
       </header>
       {children}
@@ -203,9 +204,9 @@ export function PreJoinScreen(props: {
         <div className="mt-join">
           {props.courseTitle && <span className="mt-muted">{props.courseTitle}{props.time ? ` · ${props.time}` : ''}</span>}
           <h1>{props.title ? props.title : 'Sẵn sàng vào lớp?'}</h1>
-          <p>{props.role === null ? 'Bạn chưa có trong danh sách lớp nên cần chờ giáo viên duyệt.' : 'Kiểm tra camera và micro rồi bấm Vào lớp.'}</p>
+          <p>{props.role === null ? 'Bạn chưa có trong danh sách lớp nên cần chờ giáo viên duyệt.' : 'Kiểm tra camera và micro rồi bấm Vào phòng.'}</p>
           <button type="button" className="mt-pbtn" disabled={props.joining} onClick={join}>
-            {props.joining ? 'Đang vào…' : props.role === null ? 'Xin vào lớp' : 'Vào lớp'}
+            {props.joining ? 'Đang vào…' : props.role === null ? 'Xin vào phòng' : 'Vào phòng'}
           </button>
           {error && <p className="mt-error" role="alert">{error}</p>}
           <div className="mt-checks" aria-label="Kiểm tra trước khi vào">

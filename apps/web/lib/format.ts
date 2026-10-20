@@ -22,13 +22,13 @@ export const toLocalInput = (d: Date) => {
 export const OPEN_BEFORE_MIN = 10;
 export const CLOSE_AFTER_MIN = 30;
 
-/** Trạng thái nút "Vào lớp" của học viên. */
+/** Trạng thái nút "Vào phòng" của học viên. */
 export function joinState(s: { startsAt: string; endsAt: string; status: string }, now = Date.now()) {
   if (s.status === 'CANCELLED') return { open: false, label: 'Đã huỷ' };
-  if (s.status === 'LIVE') return { open: true, label: 'Vào lớp' };
+  if (s.status === 'LIVE') return { open: true, label: 'Vào phòng' };
   const opens = new Date(s.startsAt).getTime() - OPEN_BEFORE_MIN * 60_000;
   const closes = new Date(s.endsAt).getTime() + CLOSE_AFTER_MIN * 60_000;
   if (s.status === 'ENDED' || now > closes) return { open: false, label: 'Đã kết thúc' };
   if (now < opens) return { open: false, label: `Mở lúc ${fmtTime(new Date(opens))}` };
-  return { open: true, label: 'Vào lớp' };
+  return { open: true, label: 'Vào phòng' };
 }

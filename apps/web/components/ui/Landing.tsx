@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Avatar } from './Display';
 import { cx } from './internal';
+import { Icon } from '@/components/meet/icons';
 
 // ---------- Hình minh hoạ phòng học ----------
 
@@ -36,17 +37,17 @@ export function ClassroomMockup({ className }: { className?: string }) {
           ))}
         </div>
         <div className="ui-mock__controls">
-          <span>🎙</span>
-          <span>📷</span>
-          <span>🖥</span>
-          <span className="ui-mock__ctrl--on">✏️</span>
+          <span><Icon name="mic" size={16} /></span>
+          <span><Icon name="cam" size={16} /></span>
+          <span><Icon name="screen" size={16} /></span>
+          <span className="ui-mock__ctrl--on"><Icon name="pen" size={16} /></span>
           <span className="ui-mock__ctrl--leave">Rời lớp</span>
         </div>
       </div>
       <div className="ui-mock__chip ui-mock__chip--live">
         <i /> Đang học · 18 người
       </div>
-      <div className="ui-mock__chip ui-mock__chip--hand">✋ Lan Anh giơ tay</div>
+      <div className="ui-mock__chip ui-mock__chip--hand"><Icon name="hand" size={18} /> Lan Anh giơ tay</div>
     </div>
   );
 }

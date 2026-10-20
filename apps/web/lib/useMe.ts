@@ -11,7 +11,7 @@ export function useMe(opts: { redirect?: boolean } = {}) {
       .catch((e) => {
         setMe(null);
         if (opts.redirect && e instanceof ApiError && e.status === 401) {
-          window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+          window.location.href = `/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
         }
       });
   }, [opts.redirect]);

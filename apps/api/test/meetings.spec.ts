@@ -30,7 +30,7 @@ const dtoErrors = async (body: object) => {
 };
 
 describe('Tạo meeting', () => {
-  it('họp ngay: bắt đầu bây giờ, dài 60 phút, chủ phòng là người tạo, không thuộc khoá học', async () => {
+  it('họp ngay: bắt đầu bây giờ, dài 120 phút, chủ phòng là người tạo, không thuộc khoá học', async () => {
     const { prisma, meetings } = setup();
     prisma.classSession.create.mockImplementation(({ data }: any) => Promise.resolve({ id: 'm1', status: 'SCHEDULED', ...data }));
     const before = Date.now();
@@ -38,10 +38,10 @@ describe('Tạo meeting', () => {
     const data = prisma.classSession.create.mock.calls[0][0].data;
     expect(data.hostId).toBe(teacher.id);
     expect(data.courseId).toBeUndefined();
-    expect(data.title).toBe('Meeting của Thầy Minh');
+    expect(data.title).toBe('Cuộc họp của Thầy Minh');
     expect(data.roomName).toMatch(/^bd-[0-9a-f]{12}$/);
     expect(data.startsAt.getTime()).toBeGreaterThanOrEqual(before);
-    expect(data.endsAt.getTime() - data.startsAt.getTime()).toBe(60 * 60_000);
+    expect(data.endsAt.getTime() - data.startsAt.getTime()).toBe(120 * 60_000);
     expect(m.id).toBe('m1');
   });
 
@@ -86,6 +86,19 @@ describe('Vào meeting', () => {
     expect(await classroom.join(student, 's1')).toEqual({ status: 'waiting' });
   });
 
+  it('link mời trực tiếp: đúng khoá thì vào luôn, không qua phòng chờ', async () => {
+    const { classroom, prisma } = setup(meeting({ inviteKey: 'k123' }));
+    const res = await classroom.join(outsider, 's1', { key: 'k123' });
+    expect(res).toMatchObject({ status: 'ok', role: 'student' });
+    expect(prisma.joinRequest.upsert).toHaveBeenCalledWith(expect.objectContaining({ update: { status: 'APPROVED' } }));
+  });
+
+  it('sai khoá thì vẫn phải chờ duyệt', async () => {
+    const { classroom, prisma } = setup(meeting({ inviteKey: 'k123', status: 'LIVE' }));
+    prisma.joinRequest.upsert.mockResolvedValue({ status: 'PENDING' });
+    expect(await classroom.join(outsider, 's1', { key: 'sai' })).toEqual({ status: 'waiting' });
+  });
+
   it('thông tin phòng: loại meeting, không có khoá học', async () => {
     const { classroom } = setup();
     const info = await classroom.info(teacher, 's1');
@@ -94,7 +107,7 @@ describe('Vào meeting', () => {
 
   it('meeting đã huỷ thì không vào được', async () => {
     const { classroom } = setup(meeting({ status: 'CANCELLED' }));
-    await expect(classroom.join(teacher, 's1')).rejects.toThrow('Meeting này đã bị huỷ');
+    await expect(classroom.join(teacher, 's1')).rejects.toThrow('Cuộc họp này đã bị huỷ');
   });
 
   it('điểm danh: chỉ liệt kê người đã vào, không tính chủ phòng', async () => {

@@ -19,7 +19,7 @@ import { PrismaService } from '../common/prisma.service';
 class MeetingDto {
   @IsOptional()
   @IsString()
-  @MinLength(2, { message: 'Tên meeting cần ít nhất 2 ký tự' })
+  @MinLength(2, { message: 'Tên cuộc họp cần ít nhất 2 ký tự' })
   @MaxLength(160)
   title?: string;
 
@@ -31,7 +31,8 @@ class MeetingDto {
 
 /**
  * Meeting độc lập kiểu Google Meet: buổi không thuộc khoá học, chủ phòng là người tạo.
- * Người có link xin vào qua phòng chờ như buổi học (POST /sessions/:id/join).
+ * Hai loại link mời: `/room/:id` thì xin vào qua phòng chờ như buổi học (POST /sessions/:id/join);
+ * `/room/:id?key=<inviteKey>` thì vào thẳng. Chỉ chủ phòng thấy inviteKey.
  */
 @Controller('meetings')
 @UseGuards(PermissionGuard)
@@ -45,17 +46,18 @@ export class MeetingsController {
     const startsAt = dto.startsAt ? new Date(dto.startsAt) : new Date(now);
     // Hẹn giờ trong quá khứ (lệch đồng hồ vài phút thì bỏ qua).
     if (dto.startsAt && startsAt.getTime() < now - 5 * 60_000) throw new BadRequestException('Giờ bắt đầu đã qua');
-    const endsAt = new Date(startsAt.getTime() + (dto.durationMinutes ?? 60) * 60_000);
+    const endsAt = new Date(startsAt.getTime() + (dto.durationMinutes ?? 120) * 60_000);
     const m = await this.prisma.classSession.create({
       data: {
         hostId: user.id,
-        title: dto.title?.trim() || `Meeting của ${user.name}`,
+        title: dto.title?.trim() || `Cuộc họp của ${user.name}`,
         startsAt,
         endsAt,
         roomName: `bd-${randomBytes(6).toString('hex')}`,
+        inviteKey: randomBytes(12).toString('base64url'),
       },
     });
-    return { id: m.id, title: m.title, startsAt: m.startsAt, endsAt: m.endsAt, status: m.status };
+    return { id: m.id, title: m.title, startsAt: m.startsAt, endsAt: m.endsAt, status: m.status, inviteKey: m.inviteKey };
   }
 
   /** Meeting mình tạo, mới nhất trước. */
@@ -65,7 +67,7 @@ export class MeetingsController {
       where: { hostId: user.id },
       orderBy: { startsAt: 'desc' },
       take: 50,
-      select: { id: true, title: true, startsAt: true, endsAt: true, status: true },
+      select: { id: true, title: true, startsAt: true, endsAt: true, status: true, inviteKey: true },
     });
   }
 

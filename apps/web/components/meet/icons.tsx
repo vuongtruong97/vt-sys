@@ -1,11 +1,13 @@
-import { ReactNode } from 'react';
+import { CSSProperties, ReactNode } from 'react';
 
 /** Bộ icon nét cho mockup phòng học (24×24, màu theo currentColor). */
 export type IconName =
   | 'mic' | 'mic-off' | 'cam' | 'cam-off' | 'screen' | 'hand' | 'board' | 'chat' | 'people' | 'poll' | 'groups'
   | 'files' | 'record' | 'more' | 'settings' | 'leave' | 'layout' | 'close' | 'send' | 'pin' | 'info' | 'smile'
   | 'live' | 'search' | 'check' | 'x' | 'spark' | 'speaker' | 'captions' | 'shield' | 'clock' | 'chevron' | 'star'
-  | 'phone' | 'monitor' | 'copy' | 'apps' | 'upload';
+  | 'phone' | 'monitor' | 'copy' | 'apps' | 'upload'
+  | 'book' | 'calendar' | 'lock' | 'film' | 'pen' | 'briefcase' | 'party'
+  | 'arrow-left' | 'arrow-right' | 'arrow-up' | 'arrow-down';
 
 const P: Record<IconName, ReactNode> = {
   mic: <><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></>,
@@ -45,12 +47,23 @@ const P: Record<IconName, ReactNode> = {
   monitor: <><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></>,
   upload: <><path d="M12 16V4M7 9l5-5 5 5M5 20h14" /></>,
   copy: <><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></>,
+  book: <><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4z" /><path d="M5 17a3 3 0 0 1 3-3h11M9 8h6M9 11h4" /></>,
+  calendar: <><rect x="3.5" y="5" width="17" height="15" rx="2" /><path d="M3.5 10h17M8 3v4M16 3v4" /></>,
+  lock: <><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7.5a4 4 0 0 1 8 0V11M12 15v2" /></>,
+  film: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4" /></>,
+  pen: <><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" /><path d="m13.5 6.5 4 4" /></>,
+  briefcase: <><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18" /></>,
+  party: <><path d="M4 20 8.5 8l7.5 7.5z" /><path d="M14 4v2M18 8h2M16.5 5.5l-1.5 1.5M12.5 10.5c1-2 3-3 5.5-3" /></>,
+  'arrow-left': <><path d="M19 12H5M11 6l-6 6 6 6" /></>,
+  'arrow-right': <><path d="M5 12h14M13 6l6 6-6 6" /></>,
+  'arrow-up': <><path d="M12 19V5M6 11l6-6 6 6" /></>,
+  'arrow-down': <><path d="M12 5v14M6 13l6 6 6-6" /></>,
   apps: <><rect x="4" y="4" width="6" height="6" rx="1.5" /><rect x="14" y="4" width="6" height="6" rx="1.5" /><rect x="4" y="14" width="6" height="6" rx="1.5" /><rect x="14" y="14" width="6" height="6" rx="1.5" /></>,
 };
 
-export function Icon({ name, size = 22, className }: { name: IconName; size?: number; className?: string }) {
+export function Icon({ name, size = 22, className, style }: { name: IconName; size?: number; className?: string; style?: CSSProperties }) {
   return (
-    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden focusable="false">
+    <svg className={className} style={style} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden focusable="false">
       {P[name]}
     </svg>
   );

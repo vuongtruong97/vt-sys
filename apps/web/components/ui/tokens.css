@@ -58,6 +58,9 @@
   --ui-on-primary: var(--md-on-primary);
   --ui-primary-container: var(--md-primary-container);
   --ui-on-primary-container: var(--md-on-primary-container);
+  /* Dấu ✓ vẽ bằng SVG (ký tự ✓ lệch tâm theo font): trắng trên nền đậm, nâu trên nền primary-container. */
+  --ui-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+  --ui-check-dark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b3a00' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
   --ui-secondary-container: var(--md-secondary-container);
   --ui-on-secondary-container: var(--md-on-secondary-container);
   --ui-tertiary-container: var(--md-tertiary-container);
@@ -83,6 +86,8 @@
   --ui-star: var(--md-star);
   --ui-danger: var(--md-error);
   --ui-danger-strong: var(--md-error);
+  --ui-danger-container: var(--md-error-container);
+  --ui-on-danger-container: var(--md-on-error-container);
   --ui-on-danger: var(--md-on-error);
   --ui-inverse: var(--md-inverse-surface);
   --ui-on-inverse: var(--md-inverse-on-surface);
@@ -108,7 +113,7 @@
      nên tiêu đề dùng Be Vietnam Pro (cùng kiểu hình học), đoạn văn giữ Nunito Sans. */
   --ui-font-display: "Be Vietnam Pro", "Nunito Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --ui-font: "Nunito Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --ui-text-xs: 12px;
+  --ui-text-xs: 13px; /* 12px quá nhỏ cho nhãn, ngày dưới giờ, chữ phụ trong bảng */
   --ui-text-sm: 14px;
   --ui-text-md: 16px;
   --ui-text-lg: 18px;

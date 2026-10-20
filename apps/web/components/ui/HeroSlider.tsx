@@ -1,6 +1,6 @@
 'use client';
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
-import { cx } from './internal';
+import { ChevronIcon, cx, PauseIcon, PlayIcon } from './internal';
 
 export type HeroSlide = {
   /** Ảnh bên phải; không có thì dùng ảnh học viên minh hoạ của Figma. */
@@ -147,7 +147,7 @@ export function HeroSlider({ slides, autoplaySec = 6, className, ...shared }: He
         <div className="ui-slider__bar">
           <div className="ui-slider__bar-inner">
             <div className="ui-slider__controls">
-              <button type="button" className="ui-slider__btn" aria-label="Slide trước" onClick={() => go(index - 1)}>‹</button>
+              <button type="button" className="ui-slider__btn" aria-label="Slide trước" onClick={() => go(index - 1)}><ChevronIcon dir="left" /></button>
               <div className="ui-slider__dots">
                 {slides.map((_, i) => (
                   <button
@@ -160,10 +160,10 @@ export function HeroSlider({ slides, autoplaySec = 6, className, ...shared }: He
                   />
                 ))}
               </div>
-              <button type="button" className="ui-slider__btn" aria-label="Slide sau" onClick={() => go(index + 1)}>›</button>
+              <button type="button" className="ui-slider__btn" aria-label="Slide sau" onClick={() => go(index + 1)}><ChevronIcon dir="right" /></button>
               {auto && (
                 <button type="button" className="ui-slider__btn" aria-label={paused ? 'Tiếp tục tự chuyển' : 'Tạm dừng tự chuyển'} onClick={() => setPaused(!paused)}>
-                  {paused ? '▶' : '❚❚'}
+                  {paused ? <PlayIcon /> : <PauseIcon />}
                 </button>
               )}
             </div>

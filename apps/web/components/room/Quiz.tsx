@@ -1,5 +1,6 @@
 'use client';
 import { FormEvent, useState } from 'react';
+import { Icon } from '@/components/meet/icons';
 import type { Quiz } from './interaction';
 
 type Quizzes = {
@@ -27,7 +28,7 @@ function Results({ q }: { q: Quiz }) {
             <div className="fill" style={{ width: `${pct}%` }} />
             <span className="lbl">
               {LETTERS[i]}. {o}
-              {right && ' ✓'}
+              {right && <Icon name="check" size={16} style={{ verticalAlign: '-0.2em', marginLeft: 4 }} />}
             </span>
             <span className="num">{n} · {pct}%</span>
           </div>
@@ -94,7 +95,7 @@ export function QuizPanel({ quiz, say }: { quiz: Quizzes; say: (m: string) => vo
                   setCorrect(correct === i ? null : correct != null && correct > i ? correct - 1 : correct);
                 }}
               >
-                ✕
+                <Icon name="close" size={16} />
               </button>
             )}
           </div>
@@ -151,13 +152,13 @@ export function QuizCard({ quiz, say }: { quiz: Quizzes; say: (m: string) => voi
           <div className="grp">{latest.closed ? 'Kết quả câu hỏi' : 'Câu hỏi nhanh'}</div>
           <b>{latest.question}</b>
         </div>
-        <button className="mini" aria-label="Ẩn" onClick={() => setHidden(latest.id)}>✕</button>
+        <button className="mini" aria-label="Ẩn" onClick={() => setHidden(latest.id)}><Icon name="close" size={16} /></button>
       </div>
       {latest.closed ? (
         <>
           <Results q={latest} />
           {latest.correct != null && latest.mine != null && (
-            <div className="quiz-verdict">{latest.mine === latest.correct ? '🎉 Bạn trả lời đúng' : `Đáp án đúng là ${LETTERS[latest.correct]}`}</div>
+            <div className="quiz-verdict">{latest.mine === latest.correct ? <><Icon name="party" size={18} style={{ verticalAlign: '-0.25em', marginRight: 6 }} />Bạn trả lời đúng</> : `Đáp án đúng là ${LETTERS[latest.correct]}`}</div>
           )}
         </>
       ) : (

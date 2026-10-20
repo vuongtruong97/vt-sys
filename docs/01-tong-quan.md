@@ -190,7 +190,7 @@ API đọc vai trò và quyền từ DB mỗi lần gọi (`currentUser`), nên 
 
 ### Meeting
 
-Giáo viên và quản trị tạo meeting ở `/meet`: "Họp ngay" (bắt đầu bây giờ, 60 phút) hoặc "Hẹn giờ". Link mời là `/room/:id`. Meeting không có danh sách lớp, nên mọi người khác đều xin vào qua phòng chờ và chủ phòng duyệt. Meeting hiện trong Lịch học của người tạo, không gửi email nhắc lịch, chưa có tài liệu, ghi hình, phát trực tiếp (quyền xem các mục đó dựa trên danh sách lớp).
+Buổi học và meeting nằm chung trang Lịch học (`/schedule`, `/meet` chuyển hướng về đây), chia theo ngày. Nút "Tạo buổi học / cuộc họp" mở một form: chọn loại (cuộc họp, hoặc buổi học của một khoá mình dạy), giờ bắt đầu mặc định là bây giờ, thời lượng mặc định 120 phút, tối đa 240. Có hai loại link mời: `/room/:id` (cần duyệt: người nhận xin vào qua phòng chờ, chủ phòng duyệt) và `/room/:id?key=<inviteKey>` (vào thẳng: đúng khoá thì API tự duyệt). `inviteKey` sinh khi tạo meeting, chỉ chủ phòng thấy qua `GET /meetings` và `GET /schedule`; meeting tạo trước khi có cột này chỉ có link cần duyệt. Meeting hiện trong Lịch học của người tạo, không gửi email nhắc lịch, chưa có tài liệu, ghi hình, phát trực tiếp (quyền xem các mục đó dựa trên danh sách lớp).
 
 ### Kết thúc buổi
 

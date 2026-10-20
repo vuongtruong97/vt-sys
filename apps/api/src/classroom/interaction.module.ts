@@ -27,6 +27,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { AuthGuard, AuthUser, CurrentUser } from '../auth/auth.guard';
+import { avatarUrl } from '../common/avatar';
 import { PrismaService } from '../common/prisma.service';
 import { ClassroomModule, ClassroomService, hostIdOf } from './classroom.module';
 import { LivekitService } from './livekit.service';
@@ -118,7 +119,7 @@ export class InteractionController {
       where: { sessionId: id },
       orderBy: { createdAt: 'desc' },
       take: 200,
-      include: { user: { select: { id: true, name: true } } },
+      include: { user: { select: { id: true, name: true, avatarVersion: true } } },
     });
     return rows.reverse().map(toChat);
   }
@@ -130,7 +131,7 @@ export class InteractionController {
     this.svc.throttle(user.id);
     const m = await this.prisma.chatMessage.create({
       data: { sessionId: id, userId: user.id, text: dto.text },
-      include: { user: { select: { id: true, name: true } } },
+      include: { user: { select: { id: true, name: true, avatarVersion: true } } },
     });
     const msg = toChat(m);
     await this.svc.toClass(s, TOPIC.chat, msg);
@@ -215,8 +216,8 @@ export class InteractionController {
   }
 }
 
-function toChat(m: { id: string; text: string; createdAt: Date; user: { id: string; name: string } }) {
-  return { id: m.id, text: m.text, at: m.createdAt, from: { id: m.user.id, name: m.user.name } };
+function toChat(m: { id: string; text: string; createdAt: Date; user: { id: string; name: string; avatarVersion: number } }) {
+  return { id: m.id, text: m.text, at: m.createdAt, from: { id: m.user.id, name: m.user.name, avatarUrl: avatarUrl(m.user) } };
 }
 
 @Module({

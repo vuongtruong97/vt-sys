@@ -17,6 +17,7 @@ import { config } from './common/config';
 import { PrismaModule } from './common/prisma.service';
 import { CoursesModule } from './courses/courses.module';
 import { HealthController } from './health.controller';
+import { ProfileModule } from './profile/profile.module';
 import { MeetingsModule } from './meetings/meetings.module';
 import { GgbModule } from './geogebra/ggb.module';
 import { SiteModule } from './site/site.module';
@@ -32,7 +33,7 @@ class RateLimitGuard extends ThrottlerGuard {
 @Module({
   imports: [
     ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 300 }]),
-    PrismaModule, StorageModule, AuthModule, CoursesModule, ClassroomModule, InteractionModule, MediaModule, ReminderModule, AdminModule, BreakoutModule, WebinarModule, MeetingsModule, GgbModule, SiteModule,
+    PrismaModule, StorageModule, AuthModule, CoursesModule, ClassroomModule, InteractionModule, MediaModule, ReminderModule, AdminModule, BreakoutModule, WebinarModule, MeetingsModule, GgbModule, SiteModule, ProfileModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: RateLimitGuard }],

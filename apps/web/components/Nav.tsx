@@ -21,7 +21,7 @@ export function Nav({ me }: { me: Me | null | undefined }) {
     <Navbar
       brand={<SiteLogo href="/" size={48} />}
       links={links}
-      user={me ? { name: me.name, href: '/account' } : me}
+      user={me ? { name: me.name, avatar: me.avatarUrl, href: '/account' } : me}
       onLogout={logout}
       guestActions={
         <>

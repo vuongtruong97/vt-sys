@@ -1,13 +1,13 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { Nav } from '@/components/Nav';
-import { Alert, Badge, ButtonLink, Muted, Page, PageHeader, Stat, Table } from '@/components/ui';
+import { Alert, Avatar, Badge, ButtonLink, Muted, Page, PageHeader, Stat, Table } from '@/components/ui';
 import { api } from '@/lib/api';
 import { fmtDay, fmtTime } from '@/lib/format';
 import { useMe } from '@/lib/useMe';
 
 type Row = {
-  user: { id: string; name: string; email: string };
+  user: { id: string; name: string; email: string; phone: string | null; avatarUrl: string | null };
   firstJoin: string | null;
   lastLeave: string | null;
   minutes: number;
@@ -62,8 +62,13 @@ export default function AttendancePage({ params }: { params: { id: string } }) {
                 {data.rows.map((r) => (
                   <tr key={r.user.id}>
                     <td>
-                      {r.user.name}
-                      <span className="ui-sub">{r.user.email}</span>
+                      <span className="ui-who">
+                              <Avatar name={r.user.name} src={r.user.avatarUrl} size={32} decorative />
+                              <span>
+                                {r.user.name}
+                                <span className="ui-sub">{[r.user.email, r.user.phone].filter(Boolean).join(' · ')}</span>
+                              </span>
+                            </span>
                     </td>
                     <td>
                       <Badge variant={r.present ? 'soft' : 'neutral'}>{r.present ? 'Có mặt' : 'Vắng'}</Badge>

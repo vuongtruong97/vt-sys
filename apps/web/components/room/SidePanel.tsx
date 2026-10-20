@@ -10,9 +10,10 @@ import type { GroupInfo } from './shared';
 import { BreakoutPanel } from './Breakout';
 import { QuizPanel } from './Quiz';
 import { handUp, Panel, roleOf, RoomMeta } from './shared';
-import { displayName, PersonAvatar } from './Stage';
+import { AvatarImg } from '@/components/ui/AvatarImg';
+import { displayName, initials, PersonAvatar, tintOf } from './Stage';
 
-type JoinRequest = { id: string; user: { id: string; name: string; email: string } };
+type JoinRequest = { id: string; user: { id: string; name: string; email: string; avatarUrl: string | null } };
 
 /** Các việc giáo viên làm từ bảng "Hoạt động" (chỉ có ở phòng chính). */
 export type Activities = {
@@ -131,6 +132,12 @@ function ChatPanel({ chat, teacherId, say }: { chat: ReturnType<typeof useRoomCh
           return (
             <div key={m.id} className={`mt-msg${mine ? ' mt-msg--me' : ''}`}>
               <div className="mt-msg__meta">
+                {!mine && (
+                  <span className="mt-person__av mt-msg__av" style={{ background: tintOf(m.from.id) }} aria-hidden>
+                    {initials(m.from.name)}
+                    {m.from.avatarUrl && <AvatarImg src={m.from.avatarUrl} />}
+                  </span>
+                )}
                 <b className={m.from.id === teacherId ? 't' : undefined}>{mine ? 'Bạn' : m.from.name}</b>
                 <small>{new Date(m.at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</small>
               </div>
@@ -202,7 +209,10 @@ function PeoplePanel(props: Props) {
           <div className="mt-group__head"><span>Phòng chờ · {waiting.length}</span></div>
           {waiting.map((w) => (
             <div key={w.id} className="mt-person">
-              <span className="mt-person__av" style={{ background: 'var(--md-outline)' }} aria-hidden>{w.user.name.trim()[0]?.toUpperCase()}</span>
+              <span className="mt-person__av" style={{ background: 'var(--md-outline)' }} aria-hidden>
+                {w.user.name.trim()[0]?.toUpperCase()}
+                {w.user.avatarUrl && <AvatarImg src={w.user.avatarUrl} />}
+              </span>
               <div className="mt-person__name"><b>{w.user.name}</b><small>{w.user.email} · chưa có trong lớp</small></div>
               <div className="mt-person__acts">
                 <button type="button" aria-label={`Từ chối ${w.user.name}`} title="Từ chối" onClick={() => mod(`join-requests/${w.id}`, { approve: false }, `Đã từ chối ${w.user.name}`).then(loadWaiting)}>

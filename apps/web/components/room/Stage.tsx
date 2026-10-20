@@ -3,6 +3,7 @@ import { isTrackReference, TrackReferenceOrPlaceholder, VideoTrack } from '@live
 import { Participant } from 'livekit-client';
 import { CSSProperties, ReactNode } from 'react';
 import { Icon } from '@/components/meet/icons';
+import { AvatarImg } from '@/components/ui/AvatarImg';
 import { handUp, roleOf } from './shared';
 
 /** Màu nền avatar cố định theo người (khi tắt camera). */
@@ -22,11 +23,15 @@ export function initials(name: string) {
 }
 export const displayName = (p: Participant) => p.name || p.identity;
 
+/** Ảnh đại diện theo identity (= users.id). Chưa có ảnh thì API trả 404, AvatarImg tự ẩn để hiện chữ cái đầu. */
+export const avatarOf = (identity: string) => `/api/users/${encodeURIComponent(identity)}/avatar`;
+
 /** Avatar tròn chữ cái đầu (danh sách người tham gia, ô tắt camera). */
 export function PersonAvatar({ p, size }: { p: Participant; size?: number }) {
   return (
     <span className="mt-person__av" style={{ background: tintOf(p.identity), ...(size ? { width: size, height: size } : {}) }} aria-hidden>
       {initials(displayName(p))}
+      <AvatarImg src={avatarOf(p.identity)} />
     </span>
   );
 }
@@ -44,6 +49,7 @@ export function RoomTile({ trackRef, style }: { trackRef: TrackReferenceOrPlaceh
       ) : (
         <span className="mt-tile__avatar" style={{ background: tintOf(p.identity) }} aria-hidden>
           {initials(name)}
+          <AvatarImg src={avatarOf(p.identity)} />
         </span>
       )}
       <div className="mt-tile__state">

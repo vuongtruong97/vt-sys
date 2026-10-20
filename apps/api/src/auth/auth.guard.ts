@@ -10,6 +10,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
 import jwt from 'jsonwebtoken';
+import { avatarUrl } from '../common/avatar';
 import { config } from '../common/config';
 import { PrismaService } from '../common/prisma.service';
 import { can, effectivePermissions, Permission, permissionLabel } from './permissions';
@@ -17,7 +18,7 @@ import { can, effectivePermissions, Permission, permissionLabel } from './permis
 /** Vai trò rút gọn gắn với người dùng (key: admin, teacher, student hoặc chuỗi của vai trò tự tạo). */
 export type RoleRef = { id: string; key: string; name: string };
 
-export type AuthUser = { id: string; name: string; email: string; role: RoleRef; permissions: Permission[] };
+export type AuthUser = { id: string; name: string; email: string; avatarUrl: string | null; role: RoleRef; permissions: Permission[] };
 
 type JwtPayload = { sub: string; ver?: number };
 
@@ -36,11 +37,12 @@ function decode(req: Request): JwtPayload | null {
 }
 
 /** Người dùng kèm vai trò từ DB → AuthUser (quyền thực tế đã tính, admin có tất cả). */
-export function toAuthUser(u: { id: string; name: string; email: string; role: RoleRef & { permissions: string[] } }): AuthUser {
+export function toAuthUser(u: { id: string; name: string; email: string; avatarVersion?: number; role: RoleRef & { permissions: string[] } }): AuthUser {
   return {
     id: u.id,
     name: u.name,
     email: u.email,
+    avatarUrl: avatarUrl({ id: u.id, avatarVersion: u.avatarVersion ?? 0 }),
     role: { id: u.role.id, key: u.role.key, name: u.role.name },
     permissions: effectivePermissions(u.role),
   };
@@ -51,6 +53,7 @@ export const USER_WITH_ROLE = {
   id: true,
   name: true,
   email: true,
+  avatarVersion: true,
   role: { select: { id: true, key: true, name: true, permissions: true } },
 } as const;
 

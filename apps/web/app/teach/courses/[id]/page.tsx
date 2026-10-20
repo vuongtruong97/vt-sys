@@ -4,6 +4,7 @@ import { Materials } from '@/components/Materials';
 import { Nav } from '@/components/Nav';
 import {
   Alert,
+  Avatar,
   Badge,
   Button,
   ButtonLink,
@@ -30,7 +31,7 @@ type Course = {
   description: string;
   published: boolean;
   sessions: Session[];
-  enrollments: { id: string; user: { id: string; name: string; email: string } }[];
+  enrollments: { id: string; user: { id: string; name: string; email: string; phone: string | null; avatarUrl: string | null } }[];
 };
 
 const statusLabel: Record<string, string> = { SCHEDULED: 'Đã lên lịch', LIVE: 'Đang diễn ra', ENDED: 'Đã kết thúc', CANCELLED: 'Đã huỷ' };
@@ -179,7 +180,7 @@ export default function CoursePage({ params }: { params: { id: string } }) {
                     <thead>
                       <tr>
                         <th>Họ tên</th>
-                        <th>Email</th>
+                        <th>Liên hệ</th>
                         <th>
                           <span className="ui-sr-only">Thao tác</span>
                         </th>
@@ -188,8 +189,18 @@ export default function CoursePage({ params }: { params: { id: string } }) {
                     <tbody>
                       {course.enrollments.map((e) => (
                         <tr key={e.id}>
-                          <td>{e.user.name}</td>
-                          <td>{e.user.email}</td>
+                          <td>
+                            <span className="ui-who">
+                              <Avatar name={e.user.name} src={e.user.avatarUrl} size={32} decorative />
+                              <span>
+                                {e.user.name}
+                              </span>
+                            </span>
+                          </td>
+                          <td>
+                            {e.user.email}
+                            {e.user.phone && <span className="ui-sub">{e.user.phone}</span>}
+                          </td>
                           <td style={{ textAlign: 'right' }}>
                             <Button
                               variant="ghost"

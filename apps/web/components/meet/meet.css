@@ -484,3 +484,9 @@
 .mt-ggb-laser { fill: #e53935; stroke: #fff; stroke-width: 2; }
 .mt-ggb-laser__glow { fill: rgba(229, 57, 53, .25); }
 .mt-ggb-ink { fill: none; stroke: #1d1b20; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Ảnh đại diện phủ lên chữ cái đầu (AvatarImg tự ẩn khi người dùng chưa có ảnh). */
+.mt-person__av, .mt-tile__avatar { position: relative; overflow: hidden; }
+.mt-person__av img, .mt-tile__avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.mt-msg__meta { align-items: center; }
+.mt-msg__av { width: 22px; height: 22px; font-size: 10px; }

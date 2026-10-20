@@ -48,6 +48,13 @@ model User {
   role           Role           @relation(fields: [roleId], references: [id])
   /// Tăng lên để vô hiệu mọi phiên đăng nhập cũ (đổi mật khẩu, đăng xuất mọi nơi).
   tokenVersion   Int            @default(0)
+  /// Hồ sơ: số điện thoại (chỉ giáo viên của khoá và quản trị thấy), giới thiệu, ngày sinh.
+  phone          String?
+  bio            String         @default("")
+  birthday       DateTime?      @db.Date
+  /// 0: chưa có ảnh đại diện. Tăng mỗi lần đổi ảnh để làm mới cache (?v= trong URL ảnh).
+  avatarVersion  Int            @default(0)
+  avatar         UserAvatar?
   createdAt      DateTime       @default(now())
   courses        Course[]       @relation("TeacherCourses")
   enrollments    Enrollment[]
@@ -348,6 +355,17 @@ model SiteContent {
 }
 
 /// Ảnh của trang công khai (slider, logo, favicon…). Không sửa sau khi tải lên: đổi ảnh là tải ảnh mới, nên cache được lâu.
+/// Ảnh đại diện (đã thu nhỏ ở trình duyệt, khoảng 512×512). Tách khỏi users để truy vấn người dùng không kéo theo byte ảnh.
+model UserAvatar {
+  userId      String   @id
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  data        Bytes
+  contentType String
+  updatedAt   DateTime @updatedAt
+
+  @@map("user_avatars")
+}
+
 model SiteAsset {
   id          String   @id @default(cuid())
   data        Bytes

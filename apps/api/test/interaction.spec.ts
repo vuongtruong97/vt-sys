@@ -26,10 +26,10 @@ describe('Trò chuyện', () => {
   it('lưu tin rồi phát xuống phòng với tên do server xác định', async () => {
     const { prisma, lk, ctl } = setup();
     prisma.chatMessage.create.mockImplementation(({ data }: any) =>
-      Promise.resolve({ id: 'm1', text: data.text, createdAt: new Date(), user: { id: student.id, name: student.name } }),
+      Promise.resolve({ id: 'm1', text: data.text, createdAt: new Date(), user: { id: student.id, name: student.name, avatarVersion: 3 } }),
     );
     const msg = await ctl.send(student, 's1', { text: 'Em chào thầy' });
-    expect(msg.from).toEqual({ id: student.id, name: 'Lan' });
+    expect(msg.from).toEqual({ id: student.id, name: 'Lan', avatarUrl: '/api/users/hv1/avatar?v=3' });
     expect(lk.broadcast).toHaveBeenCalledWith('bd-room', 'chat', msg, undefined);
   });
 

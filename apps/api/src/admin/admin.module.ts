@@ -20,6 +20,7 @@ import { ArrayUnique, IsArray, IsIn, IsOptional, IsString, MaxLength, MinLength 
 import { randomBytes } from 'node:crypto';
 import { AuthUser, CurrentUser, Need, PermissionGuard } from '../auth/auth.guard';
 import { effectivePermissions, Permission, PERMISSION_CODES, permissionLabel, PERMISSIONS } from '../auth/permissions';
+import { brief } from '../common/avatar';
 import { PrismaService } from '../common/prisma.service';
 
 class SetRoleDto {
@@ -70,6 +71,8 @@ const userSelect = {
   id: true,
   email: true,
   name: true,
+  phone: true,
+  avatarVersion: true,
   createdAt: true,
   role: { select: { id: true, key: true, name: true } },
 } as const;
@@ -223,17 +226,18 @@ export class AdminController {
 
   @Get('users')
   @Need('user.manage')
-  users(@Query('q') q?: string, @Query('roleId') roleId?: string) {
+  async users(@Query('q') q?: string, @Query('roleId') roleId?: string) {
     const where: Prisma.UserWhereInput = {};
     const term = q?.trim();
     if (term) where.OR = [{ email: { contains: term, mode: 'insensitive' } }, { name: { contains: term, mode: 'insensitive' } }];
     if (roleId) where.roleId = roleId;
-    return this.prisma.user.findMany({
+    const users = await this.prisma.user.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       take: 100,
       select: { ...userSelect, _count: { select: { courses: true, enrollments: true } } },
     });
+    return users.map(brief);
   }
 
   @Patch('users/:id')

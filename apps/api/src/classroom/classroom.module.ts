@@ -25,6 +25,7 @@ import { SkipThrottle } from '@nestjs/throttler';
 import { WebhookReceiver } from 'livekit-server-sdk';
 import { AuthGuard, AuthUser, CurrentUser } from '../auth/auth.guard';
 import { can } from '../auth/permissions';
+import { brief, USER_BRIEF } from '../common/avatar';
 import { config } from '../common/config';
 import { PrismaService } from '../common/prisma.service';
 import { LivekitService, RoomRole } from './livekit.service';
@@ -207,11 +208,12 @@ export class ClassroomController {
   @Get(':id/join-requests')
   async requests(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     await this.svc.requireTeacher(user, id);
-    return this.prisma.joinRequest.findMany({
+    const reqs = await this.prisma.joinRequest.findMany({
       where: { sessionId: id, status: 'PENDING' },
       orderBy: { createdAt: 'asc' },
-      include: { user: { select: { id: true, name: true, email: true } } },
+      include: { user: { select: USER_BRIEF } },
     });
+    return reqs.map((r) => ({ ...r, user: brief(r.user) }));
   }
 
   @Post(':id/join-requests/:reqId')
@@ -316,18 +318,18 @@ export class ClassroomController {
       this.prisma.attendance.findMany({
         where: { sessionId: id },
         orderBy: { joinedAt: 'asc' },
-        include: { user: { select: { id: true, name: true, email: true } } },
+        include: { user: { select: { ...USER_BRIEF, phone: true } } },
       }),
       // Meeting không có danh sách lớp: chỉ liệt kê người đã vào.
       s.courseId
         ? this.prisma.enrollment.findMany({
             where: { courseId: s.courseId },
-            include: { user: { select: { id: true, name: true, email: true } } },
+            include: { user: { select: { ...USER_BRIEF, phone: true } } },
           })
         : Promise.resolve([]),
     ]);
     type Row = {
-      user: { id: string; name: string; email: string };
+      user: ReturnType<typeof brief<{ id: string; name: string; email: string; phone: string | null; avatarVersion: number }>>;
       firstJoin: Date | null;
       lastLeave: Date | null;
       minutes: number;
@@ -337,7 +339,7 @@ export class ClassroomController {
     const byUser = new Map<string, Row>();
     const now = Date.now();
     for (const r of rows) {
-      const cur: Row = byUser.get(r.userId) ?? { user: r.user, firstJoin: r.joinedAt, lastLeave: null, minutes: 0, visits: 0, present: true };
+      const cur: Row = byUser.get(r.userId) ?? { user: brief(r.user), firstJoin: r.joinedAt, lastLeave: null, minutes: 0, visits: 0, present: true };
       const end = r.leftAt?.getTime() ?? now;
       cur.minutes += Math.max(0, (end - r.joinedAt.getTime()) / 60_000);
       cur.visits += 1;
@@ -350,7 +352,7 @@ export class ClassroomController {
       .map((v) => ({ ...v, minutes: Math.round(v.minutes) }));
     for (const e of enrolled) {
       if (!byUser.has(e.userId)) {
-        result.push({ user: e.user, firstJoin: null, lastLeave: null, minutes: 0, visits: 0, present: false });
+        result.push({ user: brief(e.user), firstJoin: null, lastLeave: null, minutes: 0, visits: 0, present: false });
       }
     }
     return { session: { id: s.id, title: s.title, startsAt: s.startsAt, endsAt: s.endsAt }, rows: result };

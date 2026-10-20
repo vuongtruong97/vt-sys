@@ -68,7 +68,7 @@ Nguyên tắc chính:
 | --- | --- | --- |
 | `/` | `app/page.tsx` | Trang chủ, các khoá học công khai |
 | `/login`, `/register` | `components/AuthForm.tsx` | Đăng nhập, đăng ký (tài khoản mới luôn là học viên). Nút Google hiện khi API có `GOOGLE_CLIENT_ID`; lỗi đăng nhập Google hiện qua `?error=` |
-| `/account` | `app/account/page.tsx` | Đổi mật khẩu (tài khoản tạo bằng Google: đặt mật khẩu lần đầu), đăng xuất khỏi mọi thiết bị (bấm tên trên thanh điều hướng) |
+| `/account` | `app/account/page.tsx`, `components/AvatarEditor.tsx` | Hồ sơ (bấm tên trên thanh điều hướng): tab Hồ sơ (ảnh đại diện có cắt ảnh, họ tên, số điện thoại, ngày sinh, giới thiệu) và tab Bảo mật (đổi/đặt mật khẩu, đăng xuất mọi nơi) |
 | `/schedule` | `app/schedule/page.tsx` | Lịch học; nút "Vào lớp" mở trước giờ học 10 phút |
 | `/teach` | `app/teach/page.tsx` | Giáo viên: danh sách khoá học, tạo khoá |
 | `/teach/courses/[id]` | `app/teach/courses/[id]/page.tsx` | Buổi học, thêm học viên, công khai khoá |
@@ -118,7 +118,8 @@ Image chính thức `livekit/livekit-server`. Khoá API truyền qua biến `LIV
 
 | Bảng | Ý nghĩa | Ghi chú |
 | --- | --- | --- |
-| `users` | Tài khoản | `roleId` → `roles`. Tài khoản trong `SEED_TEACHER_EMAIL` luôn là quản trị viên |
+| `users` | Tài khoản | `roleId` → `roles`. Tài khoản trong `SEED_TEACHER_EMAIL` luôn là quản trị viên. Hồ sơ: `phone`, `bio`, `birthday`, `avatarVersion` (0 = chưa có ảnh; tăng mỗi lần đổi ảnh để làm mới cache) |
+| `user_avatars` | Ảnh đại diện | Byte ảnh (WebP/JPEG 512×512 đã cắt ở trình duyệt), tách khỏi `users` để truy vấn người dùng không kéo theo ảnh. Lưu trong Postgres, nằm trong bản sao lưu DB |
 | `roles` | Vai trò | `key` (`admin`, `teacher`, `student` cho 3 vai trò hệ thống, `system: true`, không xoá được), `permissions` là mảng mã quyền. Quản trị viên luôn có mọi quyền |
 | `courses` | Khoá học | `published` quyết định hiện trên trang chủ |
 | `enrollments` | Học viên thuộc khoá | khoá duy nhất (userId, courseId) |
@@ -231,6 +232,9 @@ Giáo viên bật bảng thì metadata phòng `board=true`. Mỗi máy lấy tok
 | --- | --- | --- |
 | POST | `/auth/register`, `/auth/login`, `/auth/logout` | mọi người |
 | GET | `/auth/me` | đã đăng nhập |
+| GET, PATCH | `/me/profile` `{name?, phone?, bio?, birthday?}` | đã đăng nhập |
+| PUT, DELETE | `/me/avatar` (multipart `file`, tối đa 2 MB, JPEG/PNG/WebP) | đã đăng nhập |
+| GET | `/users/:id/avatar?v=` | đã đăng nhập; 404 khi chưa có ảnh (giao diện hiện chữ cái đầu) |
 | POST | `/auth/password` `{currentPassword, newPassword}` | đã đăng nhập; tăng `tokenVersion`, máy khác bị đăng xuất |
 | POST | `/auth/logout-all` | đã đăng nhập; tăng `tokenVersion` |
 | GET | `/auth/methods` | đã đăng nhập (`{hasPassword, google}`) |

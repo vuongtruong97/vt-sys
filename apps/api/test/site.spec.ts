@@ -1,7 +1,8 @@
 import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { effectivePermissions } from '../src/auth/permissions';
 import { DEFAULT_CONTENT, safeHref, sanitize } from '../src/site/site-content';
-import { imageInfo, SiteAdminController, SiteController, SiteService } from '../src/site/site.module';
+import { imageInfo } from '../src/common/image';
+import { SiteAdminController, SiteController, SiteService } from '../src/site/site.module';
 import { admin, mockPrisma, roles } from './helpers';
 
 const ids = new Set(['img1', 'img2']);

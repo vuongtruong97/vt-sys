@@ -2,7 +2,7 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { fmtSize } from '@/components/Materials';
 import { Nav } from '@/components/Nav';
-import { Alert, Badge, Button, ButtonLink, Checkbox, Input, Modal, Muted, Page, PageHeader, Section, Select, Stat, Table, Tabs, Textarea } from '@/components/ui';
+import { Alert, Avatar, Badge, Button, ButtonLink, Checkbox, Input, Modal, Muted, Page, PageHeader, Section, Select, Stat, Table, Tabs, Textarea } from '@/components/ui';
 import { api } from '@/lib/api';
 import { can, canAdminArea } from '@/lib/can';
 import { fmtDay, fmtTime } from '@/lib/format';
@@ -11,7 +11,7 @@ import { useMe } from '@/lib/useMe';
 type RoleRef = { id: string; key: string; name: string };
 type Role = RoleRef & { description: string; permissions: string[]; system: boolean; users: number };
 type PermissionDef = { code: string; group: string; label: string; hint: string };
-type User = { id: string; email: string; name: string; role: RoleRef; createdAt: string; _count: { courses: number; enrollments: number } };
+type User = { id: string; email: string; name: string; phone: string | null; avatarUrl: string | null; role: RoleRef; createdAt: string; _count: { courses: number; enrollments: number } };
 type Course = {
   id: string;
   title: string;
@@ -165,7 +165,7 @@ export default function AdminPage() {
         <thead>
           <tr>
             <th>Họ tên</th>
-            <th>Email</th>
+            <th>Liên hệ</th>
             <th>Vai trò</th>
             <th>Dạy / học</th>
             <th>Tạo lúc</th>
@@ -175,10 +175,17 @@ export default function AdminPage() {
           {users?.map((u) => (
             <tr key={u.id}>
               <td>
-                {u.name}
-                {u.id === me?.id && <span className="ui-sub">(bạn)</span>}
+                <span className="ui-who">
+                              <Avatar name={u.name} src={u.avatarUrl} size={32} decorative />
+                              <span>
+                                {u.name}{u.id === me?.id && ' (bạn)'}
+                              </span>
+                            </span>
               </td>
-              <td>{u.email}</td>
+              <td>
+                {u.email}
+                {u.phone && <span className="ui-sub">{u.phone}</span>}
+              </td>
               <td>
                 {u.id === me?.id ? (
                   <Badge>{u.role.name}</Badge>

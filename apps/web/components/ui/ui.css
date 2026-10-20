@@ -136,7 +136,7 @@
 
 /* ---------- Avatar ---------- */
 .ui-avatar { position: relative; display: inline-grid; place-items: center; flex: none; overflow: hidden; border-radius: 50%; background: var(--ui-primary-container); color: var(--ui-on-primary-container); font-family: var(--ui-font); font-weight: 500; }
-.ui-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.ui-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
 .ui-person { display: inline-flex; align-items: center; gap: var(--ui-space-3); font-family: var(--ui-font); font-size: var(--ui-text-md); font-weight: 500; letter-spacing: .15px; color: var(--ui-text); }
 
 /* ---------- Card (Figma: nền trắng, góc 20, bóng mềm ánh navy) ---------- */
@@ -736,3 +736,23 @@ body { background: var(--ui-surface); color: var(--ui-text); font-family: var(--
 /* Bảng: cột số căn phải; chữ phụ cắt còn một dòng (mô tả khoá học ở /teach). */
 .ui-table th.ui-num, .ui-table td.ui-num { text-align: right; }
 .ui-clamp-1, .ui-table .ui-sub.ui-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; max-width: 46ch; }
+
+/* Trang Hồ sơ (/account) */
+.profile { display: grid; gap: var(--ui-space-6); }
+.profile__photo { display: grid; justify-items: center; gap: var(--ui-space-4); padding: var(--ui-space-4); border: 2px dashed transparent; border-radius: var(--ui-radius-md); text-align: center; transition: border-color var(--ui-ease), background var(--ui-ease); }
+.profile__photo.is-over { border-color: var(--ui-primary); background: var(--ui-primary-tint); }
+.profile__photo-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--ui-space-2); }
+
+/* Hộp thoại cắt ảnh đại diện */
+.avatar-editor { display: grid; justify-items: center; gap: var(--ui-space-4); }
+.avatar-editor__frame { position: relative; max-width: 100%; overflow: hidden; border-radius: var(--ui-radius-md); background: #111; cursor: grab; touch-action: none; user-select: none; }
+.avatar-editor__frame:active { cursor: grabbing; }
+.avatar-editor__frame img { position: absolute; top: 0; left: 0; max-width: none; pointer-events: none; }
+/* Che bốn góc để thấy ảnh sẽ hiện hình tròn. */
+.avatar-editor__mask { position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 999px rgba(0, 0, 0, .55); pointer-events: none; }
+.avatar-editor__zoom { display: flex; align-items: center; gap: var(--ui-space-3); width: min(280px, 100%); font-size: var(--ui-text-sm); }
+.avatar-editor__zoom input { flex: 1; accent-color: var(--ui-primary); }
+
+/* Ô người dùng trong bảng: ảnh nhỏ, tên, dòng phụ. */
+.ui-who { display: inline-flex; align-items: center; gap: var(--ui-space-3); }
+.ui-who > span:last-child { display: grid; }

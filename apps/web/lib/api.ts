@@ -24,7 +24,7 @@ export async function api<T = unknown>(path: string, init: RequestInit & { json?
 }
 
 /** Tài khoản đang đăng nhập. Vai trò do quản trị viên tạo; kiểm tra quyền bằng can() trong lib/can.ts. */
-export type Me = { id: string; name: string; email: string; role: { id: string; key: string; name: string }; permissions: string[] };
+export type Me = { id: string; name: string; email: string; avatarUrl: string | null; role: { id: string; key: string; name: string }; permissions: string[] };
 
 export type ScheduleItem = {
   id: string;

@@ -16,6 +16,7 @@ import {
 import { randomBytes } from 'crypto';
 import { IsBoolean, IsEmail, IsISO8601, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { PrismaService } from '../common/prisma.service';
+import { brief, USER_BRIEF } from '../common/avatar';
 import { AuthGuard, AuthUser, CurrentUser, Need, PermissionGuard } from '../auth/auth.guard';
 import { can } from '../auth/permissions';
 
@@ -135,13 +136,15 @@ export class CoursesController {
   @Need('course.create', 'course.view_all', 'course.manage_all')
   async course(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     await this.ownCourse(user, id, 'view');
-    return this.prisma.course.findUnique({
+    const course = await this.prisma.course.findUnique({
       where: { id },
       include: {
         sessions: { orderBy: { startsAt: 'asc' } },
-        enrollments: { include: { user: { select: { id: true, name: true, email: true } } }, orderBy: { createdAt: 'asc' } },
+        // Số điện thoại chỉ đi qua đây: người được xem khoá này (giáo viên, quản lý khoá học).
+        enrollments: { include: { user: { select: { ...USER_BRIEF, phone: true } } }, orderBy: { createdAt: 'asc' } },
       },
     });
+    return course && { ...course, enrollments: course.enrollments.map((e) => ({ ...e, user: brief(e.user) })) };
   }
 
   @Patch('courses/:id')

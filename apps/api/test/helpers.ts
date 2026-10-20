@@ -58,6 +58,7 @@ export function mockPrisma() {
     attendance: table(),
     user: table(),
     role: table(),
+    userAvatar: table(),
     breakoutGroup: table(),
     ggbDocument: table(),
     siteContent: table(),

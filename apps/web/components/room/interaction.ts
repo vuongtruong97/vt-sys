@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 
 const decoder = new TextDecoder();
 
-export type ChatMsg = { id: string; text: string; at: string; from: { id: string; name: string } };
+export type ChatMsg = { id: string; text: string; at: string; from: { id: string; name: string; avatarUrl?: string | null } };
 
 export type Quiz = {
   id: string;

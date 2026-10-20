@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { HTMLAttributes, ReactNode } from 'react';
+import { AvatarImg } from './AvatarImg';
 import { ClockIcon, cx, GridIcon } from './internal';
 
 // ---------- Card ----------
@@ -66,7 +67,9 @@ export function Avatar({ name, src, size = 44, decorative, className }: AvatarPr
     .join('');
   return (
     <span className={cx('ui-avatar', className)} style={{ width: size, height: size, fontSize: Math.round(size * 0.38) }} aria-hidden={decorative || undefined}>
-      {src ? <img src={src} alt="" /> : <span aria-hidden>{initials}</span>}
+      {/* Chữ cái đầu luôn có; ảnh phủ lên trên và tự ẩn khi tải lỗi. */}
+      <span aria-hidden>{initials}</span>
+      {src && <AvatarImg src={src} />}
       {!decorative && <span className="ui-sr-only">{name}</span>}
     </span>
   );
@@ -77,7 +80,8 @@ export function Person({ name, src, size = 44, className }: AvatarProps) {
   return (
     <span className={cx('ui-person', className)}>
       <span className="ui-avatar" style={{ width: size, height: size, fontSize: Math.round(size * 0.38) }} aria-hidden>
-        {src ? <img src={src} alt="" /> : name.trim()[0]?.toUpperCase()}
+        <span aria-hidden>{name.trim()[0]?.toUpperCase()}</span>
+        {src && <AvatarImg src={src} />}
       </span>
       {name}
     </span>

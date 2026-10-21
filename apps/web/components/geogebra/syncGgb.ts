@@ -14,9 +14,21 @@ import type { GgbApi } from '@/lib/geogebra';
  *   setCoords/setValue nên đối tượng phụ thuộc tự tính lại ngay (evalXML thì không).
  *   Đối tượng tự do loại khác gửi XML, máy xem evalXML rồi UpdateConstruction; trường hợp này
  *   ghi thêm snapshot sau khi ngừng kéo cho chắc khớp.
+ *
+ * Ảnh chèn vào bảng: XML chỉ có tên file (`<file name="…"/>`), dữ liệu nằm trong kho file của applet.
+ * Map IMAGES giữ tên file → data URL, ghi cùng transaction với snapshot có ảnh mới. Tên file ảnh của
+ * GeoGebra là mã băm nội dung nên mỗi ảnh chỉ ghi một lần. Máy xem addImage() rồi mới setXML().
  */
 export const SNAPSHOT = 'ggb';
 export const LIVE = 'ggbLive';
+export const IMAGES = 'ggbImages';
+/** Ảnh lớn hơn thì không gửi (data URL base64, ~3 MB ảnh gốc), tránh làm chậm cả lớp. */
+const MAX_IMAGE_CHARS = 4_000_000;
+
+/** Tên các file ảnh mà XML của bài tham chiếu. */
+function imageNames(xml: string): string[] {
+  return [...new Set([...xml.matchAll(/<file name="([^"]+)"/g)].map((m) => m[1]))];
+}
 const LOCAL = 'ggb-local';
 
 type Live = { k: 'pt'; x: number; y: number; z: number } | { k: 'num'; v: number } | { k: 'xml'; xml: string };
@@ -72,20 +84,39 @@ function encode(api: GgbApi, name: string): Live {
 export type BindOptions = {
   /** Gọi sau mỗi lần nạp snapshot (setXML), ví dụ để ẩn lại danh sách đối tượng ở máy học viên. */
   afterLoad?: () => void;
+  /** Người cầm bút chèn ảnh quá lớn để gửi cho cả lớp. */
+  onImageTooLarge?: () => void;
 };
 
 export function bindGgbToYDoc(api: GgbApi, ydoc: Y.Doc, canWrite: () => boolean, opts: BindOptions = {}) {
   const snapshot = ydoc.getMap<string>(SNAPSHOT);
   const live = ydoc.getMap<string>(LIVE);
+  const images = ydoc.getMap<string>(IMAGES);
   let applying = false;
   const dirty = new Set<string>();
   let usedXmlLive = false;
+  /** Ảnh đã báo quá lớn (chỉ báo một lần mỗi ảnh). */
+  const tooLarge = new Set<string>();
 
   // ---- ghi (người cầm bút) ----
   const writeSnapshot = () => {
     usedXmlLive = false;
+    const xml = api.getXML();
+    // Chỉ đọc kho file khi XML có ảnh chưa gửi.
+    const missing = imageNames(xml).filter((n) => !images.has(n) && !tooLarge.has(n));
+    const add: [string, string][] = [];
+    if (missing.length) {
+      for (const f of api.getFileJSON().archive) {
+        if (!missing.includes(f.fileName)) continue;
+        if (f.fileContent.length > MAX_IMAGE_CHARS) {
+          tooLarge.add(f.fileName);
+          opts.onImageTooLarge?.();
+        } else add.push([f.fileName, f.fileContent]);
+      }
+    }
     ydoc.transact(() => {
-      snapshot.set('xml', api.getXML());
+      add.forEach(([n, data]) => images.set(n, data));
+      snapshot.set('xml', xml);
       live.clear();
     }, LOCAL);
   };
@@ -147,14 +178,36 @@ export function bindGgbToYDoc(api: GgbApi, ydoc: Y.Doc, canWrite: () => boolean,
       applying = false;
     }
   };
+  /** Ảnh đã đưa vào applet này. */
+  const loaded = new Set<string>();
+  const loadImages = () => {
+    let added = false;
+    images.forEach((data, name) => {
+      if (loaded.has(name)) return;
+      loaded.add(name);
+      try {
+        api.addImage(name, data);
+        added = true;
+      } catch {
+        /* ảnh hỏng: bỏ qua, phần còn lại của bài vẫn hiện */
+      }
+    });
+    return added;
+  };
   const loadSnapshot = () => {
     const xml = snapshot.get('xml');
     if (!xml) return;
+    loadImages();
     apply(() => api.setXML(xml));
     opts.afterLoad?.();
   };
   const onSnapshot = (e: Y.YMapEvent<string>) => {
     if (e.transaction.origin !== LOCAL && e.keysChanged.has('xml')) loadSnapshot();
+  };
+  // Ảnh tới riêng (không kèm XML mới): nạp ảnh rồi dựng lại bài để ảnh hiện.
+  const onImages = (e: Y.YMapEvent<string>) => {
+    if (e.transaction.origin === LOCAL || e.transaction.changed.has(snapshot as never)) return;
+    if (loadImages() && snapshot.get('xml')) loadSnapshot();
   };
   /** Áp toạ độ / giá trị đang kéo (các khoá trong map live) lên applet. */
   const applyLive = (keys: Iterable<string>) =>
@@ -182,6 +235,7 @@ export function bindGgbToYDoc(api: GgbApi, ydoc: Y.Doc, canWrite: () => boolean,
   };
   snapshot.observe(onSnapshot);
   live.observe(onLive);
+  images.observe(onImages);
 
   /** Gọi khi Y.Doc đã đồng bộ với máy chủ: dựng lại từ bảng hiện có, hoặc người cầm bút đưa bài của mình lên. */
   const synced = () => {
@@ -200,6 +254,7 @@ export function bindGgbToYDoc(api: GgbApi, ydoc: Y.Doc, canWrite: () => boolean,
       flushLive.cancel();
       snapshot.unobserve(onSnapshot);
       live.unobserve(onLive);
+      images.unobserve(onImages);
       api.unregisterAddListener(onAdd);
       api.unregisterRemoveListener(onStructure);
       api.unregisterRenameListener(onRename);

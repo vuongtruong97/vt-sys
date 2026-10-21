@@ -13,6 +13,11 @@ export const GGB_CODEBASE = process.env.NEXT_PUBLIC_GGB_CODEBASE || '';
 export interface GgbApi {
   getBase64(): string;
   setBase64(base64: string, callback?: () => void): void;
+  /** Kho file của bài (geogebra.xml, ảnh…); ảnh là data URL trong `fileContent`. */
+  getFileJSON(): { archive: { fileName: string; fileContent: string }[] };
+  setFileJSON(json: { archive: { fileName: string; fileContent: string }[] }): void;
+  /** Đưa ảnh vào kho file của applet (để XML tham chiếu tới `fileName` hiện được ảnh). */
+  addImage(fileName: string, urlOrSvgContent: string): void;
   getXML(objName?: string): string;
   setXML(xml: string): void;
   evalXML(xml: string): void;

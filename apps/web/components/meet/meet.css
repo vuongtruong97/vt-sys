@@ -466,6 +466,15 @@
 .mt-pip__stage .mt-share__label { font-size: 11.5px; }
 .mt-pip__hands { position: absolute; top: 8px; right: 8px; flex: none; color: #ffb95c; }
 .mt-pip__ctrls { display: flex; justify-content: center; gap: 8px; }
+/* Dải người dưới màn hình chia sẻ: 4 ô 16:9; cửa sổ thấp thì ẩn để ô chính đủ lớn */
+.mt-pip:has(.mt-pip__strip) { grid-template-rows: minmax(0, 1fr) auto auto; }
+.mt-pip__strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.mt-pip__strip .mt-tile { aspect-ratio: 16 / 9; border-radius: 8px; }
+.mt-pip__strip .mt-tile__avatar { width: 40%; font-size: 14px; }
+.mt-pip__strip .mt-tile__name { left: 4px; bottom: 4px; padding: 1px 6px; font-size: 10.5px; }
+.mt-pip__strip .mt-tile__state { transform: scale(.75); transform-origin: top right; }
+.mt-pip__more { font-size: 16px; font-weight: 600; color: var(--mt-muted); }
+@media (max-height: 300px) { .mt-pip__strip { display: none; } .mt-pip:has(.mt-pip__strip) { grid-template-rows: minmax(0, 1fr) auto; } }
 .mt-pip__ctrls .mt-cbtn { width: 40px; height: 40px; }
 .mt-pip__ctrls .mt-cbtn--leave { width: 56px; }
 

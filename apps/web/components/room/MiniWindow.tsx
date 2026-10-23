@@ -3,7 +3,7 @@ import { TrackReferenceOrPlaceholder } from '@livekit/components-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from '@/components/meet/icons';
-import { roleOf } from './shared';
+import { handUp, roleOf } from './shared';
 import { RoomTile, ShareTile } from './Stage';
 
 /** Document Picture-in-Picture (Chrome, Edge 116+ trên máy tính). Chưa có trong lib.dom của TypeScript. */
@@ -43,7 +43,7 @@ export function useMiniWindow(title: string) {
       api.window.focus();
       return;
     }
-    const w = await api.requestWindow({ width: 420, height: 320 });
+    const w = await api.requestWindow({ width: 480, height: 400 });
     copyStyles(w.document);
     w.document.title = title;
     w.document.body.style.margin = '0';
@@ -82,13 +82,30 @@ function featured(cameras: TrackReferenceOrPlaceholder[]) {
   );
 }
 
+/** Số ô tối đa ở dải người dưới ô chính. */
+const STRIP_MAX = 4;
+
 /**
- * Nội dung cửa sổ nổi: màn hình chia sẻ (hoặc người đang nói) và các nút micro, camera, giơ tay, rời lớp.
+ * Dải người dưới ô chính: bỏ người đang ở ô chính và chính mình; người đang nói, đang giơ tay lên trước.
+ * Còn người không hiện thì ô cuối là "+N".
+ */
+function stripOf(cameras: TrackReferenceOrPlaceholder[], main: TrackReferenceOrPlaceholder | undefined, isShare: boolean) {
+  const rank = (t: TrackReferenceOrPlaceholder) => (t.participant.isSpeaking ? 0 : handUp(t.participant) ? 1 : 2);
+  const rest = cameras
+    .filter((t) => !t.participant.isLocal && (isShare || t.participant.identity !== main?.participant.identity))
+    .sort((a, b) => rank(a) - rank(b));
+  if (rest.length <= STRIP_MAX) return { tiles: rest, more: 0 };
+  return { tiles: rest.slice(0, STRIP_MAX - 1), more: rest.length - (STRIP_MAX - 1) };
+}
+
+/**
+ * Nội dung cửa sổ nổi: màn hình chia sẻ (hoặc người đang nói), dải người trong lớp và các nút micro, camera, giơ tay, rời lớp.
  * Render bằng portal nên vẫn dùng chung context LiveKit của phòng.
  */
 export function MiniWindow(p: Props) {
   const root = useRef<HTMLDivElement>(null);
   const main = p.screen ?? featured(p.cameras);
+  const strip = stripOf(p.cameras, main, !!p.screen);
 
   // LiveKit tạm dừng video khi ô không nằm trong khung nhìn của tab chính hoặc tab bị ẩn.
   // Ô trong cửa sổ nổi nằm ở document khác: báo cho LiveKit đây là PiP để video tiếp tục chạy.
@@ -114,6 +131,18 @@ export function MiniWindow(p: Props) {
           </span>
         )}
       </div>
+      {strip.tiles.length > 0 && (
+        <div className="mt-pip__strip">
+          {strip.tiles.map((t) => (
+            <RoomTile key={t.participant.identity} trackRef={t} />
+          ))}
+          {strip.more > 0 && (
+            <div className="mt-tile mt-pip__more" title={`Còn ${strip.more} người`}>
+              +{strip.more}
+            </div>
+          )}
+        </div>
+      )}
       <div className="mt-pip__ctrls">
         <button type="button" className={`mt-cbtn${p.mic.enabled ? '' : ' mt-cbtn--off'}`} aria-pressed={p.mic.enabled} aria-label={p.mic.enabled ? 'Tắt micro' : 'Bật micro'} title={p.mic.enabled ? 'Tắt micro' : 'Bật micro'} disabled={p.mic.pending} onClick={p.mic.toggle}>
           <Icon name={p.mic.enabled ? 'mic' : 'mic-off'} />

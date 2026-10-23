@@ -29,6 +29,8 @@ export function GgbStage({ sessionId, title, canWrite, say }: { sessionId: strin
   const [root, setRoot] = useState<HTMLDivElement | null>(null);
   const writer = useRef(canWrite);
   writer.current = canWrite;
+  const sayRef = useRef(say);
+  sayRef.current = say;
   const laserRef = useRef(laser);
   laserRef.current = laser;
 
@@ -73,6 +75,7 @@ export function GgbStage({ sessionId, title, canWrite, say }: { sessionId: strin
         if (!writer.current) ggb.setPerspective('G');
         setTick((t) => t + 1);
       },
+      onImageTooLarge: () => sayRef.current('Ảnh vừa chèn lớn hơn 3 MB nên học viên không thấy. Hãy chèn ảnh nhỏ hơn.'),
     });
     binding.synced();
     return () => binding.destroy();
